@@ -1,0 +1,9 @@
+{
+  "name": "onUserCreated",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "^17.0.0"
+  }
+}
