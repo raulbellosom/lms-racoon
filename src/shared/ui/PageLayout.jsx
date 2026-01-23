@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "../utils/cn";
+import { cn } from "./cn";
 
 export function PageLayout({ children, className, title, subtitle, actions }) {
   return (

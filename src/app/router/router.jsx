@@ -5,8 +5,7 @@ import { PublicLayout } from "../ui/layouts/PublicLayout";
 import { AppLayout } from "../ui/layouts/AppLayout";
 
 import { LandingView } from "../../features/public";
-import { CatalogPage } from "../../pages/public/CatalogPage";
-import { CoursePublicPage } from "../../pages/public/CoursePublicPage";
+import { CatalogView, CourseDetailView } from "../../features/catalog";
 import { LoginView, RegisterView } from "../../features/auth";
 import {
   StudentHomeView,
@@ -31,8 +30,10 @@ export const router = createBrowserRouter([
         element: <PublicLayout />,
         children: [
           { index: true, element: <LandingView /> },
-          { path: "/catalog", element: <CatalogPage /> },
-          { path: "/courses/:courseId", element: <CoursePublicPage /> },
+          { path: "/catalog", element: <CatalogView /> },
+          { path: "/catalog/:id", element: <CourseDetailView /> },
+          // Legacy route redirect or keep
+          { path: "/courses/:courseId", element: <CourseDetailView /> },
           { path: "/auth/login", element: <LoginView /> },
           { path: "/auth/register", element: <RegisterView /> },
         ],

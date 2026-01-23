@@ -11,17 +11,22 @@ import {
   Menu,
   X,
   Monitor,
+  User,
+  ChevronDown,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Drawer, DrawerSection } from "../../../shared/ui/Drawer";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownDivider,
+} from "../../../shared/ui/Dropdown";
+import { Avatar } from "../../../shared/ui/Avatar";
 import { useAuth } from "../../providers/AuthProvider";
 import { logout } from "../../../shared/services/auth";
-import {
-  useTheme,
-  ThemeToggleButton,
-} from "../../../shared/theme/ThemeProvider";
+import { useTheme, ThemeSelector } from "../../../shared/theme/ThemeProvider";
 
 function NavItem({ to, icon: Icon, label, onClick }) {
   return (
@@ -128,18 +133,6 @@ export function AppLayout() {
           </span>
         </div>
 
-        {/* User info */}
-        <div className="border-b border-[rgb(var(--border-base))] p-4">
-          <div className="rounded-xl bg-[rgb(var(--bg-muted))] p-4">
-            <div className="text-sm font-bold">
-              {t("student.welcome")}, {displayName} 👋
-            </div>
-            <div className="mt-0.5 text-xs text-[rgb(var(--text-secondary))]">
-              {role.charAt(0).toUpperCase() + role.slice(1)}
-            </div>
-          </div>
-        </div>
-
         {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto p-4">
           {navItems.map((item) => (
@@ -147,28 +140,61 @@ export function AppLayout() {
           ))}
         </nav>
 
-        {/* Theme & bottom actions */}
+        {/* Theme & User actions */}
         <div className="border-t border-[rgb(var(--border-base))] p-4 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-[rgb(var(--text-secondary))]">
               {t("common.theme")}
             </span>
-            <ThemeToggleButton />
+            <ThemeSelector />
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" size="sm">
-              <Settings className="h-4 w-4" /> {t("common.settings")}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={onLogout}
-              className="flex-1"
-              size="sm"
+          <Dropdown
+            align="left"
+            className="w-56 mb-2"
+            trigger={
+              <div className="flex w-full items-center gap-3 rounded-xl bg-[rgb(var(--bg-muted))] p-2 transition hover:bg-[rgb(var(--bg-muted))/0.8]">
+                <Avatar
+                  name={displayName}
+                  src={auth.profile?.avatarFileId} // Assuming this maps to URL or handled by Avatar
+                  size="sm"
+                  ring
+                />
+                <div className="flex-1 overflow-hidden text-left">
+                  <div className="truncate text-sm font-bold text-[rgb(var(--text-primary))]">
+                    {displayName}
+                  </div>
+                  <div className="truncate text-xs text-[rgb(var(--text-secondary))]">
+                    {auth.user?.email}
+                  </div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+              </div>
+            }
+          >
+            <div className="px-3 py-2">
+              <div className="text-xs font-bold text-[rgb(var(--text-primary))]">
+                {displayName}
+              </div>
+              <div className="text-xs text-[rgb(var(--text-secondary))]">
+                {role.charAt(0).toUpperCase() + role.slice(1)}
+              </div>
+            </div>
+            <DropdownDivider />
+            <DropdownItem icon={User} onClick={() => navigate("/app/profile")}>
+              {t("nav.profile", "Mi Perfil")}
+            </DropdownItem>
+            <DropdownItem
+              icon={Settings}
+              onClick={() => navigate("/app/settings")}
             >
-              <LogOut className="h-4 w-4" /> {t("common.logout")}
-            </Button>
-          </div>
+              {t("common.settings")}
+            </DropdownItem>
+            <DropdownDivider />
+            <DropdownItem icon={LogOut} onClick={onLogout} danger>
+              {t("common.logout")}
+            </DropdownItem>
+          </Dropdown>
         </div>
       </aside>
 
@@ -237,7 +263,7 @@ export function AppLayout() {
         {/* Theme */}
         <DrawerSection title={t("common.theme")}>
           <div className="flex justify-end">
-            <ThemeToggleButton />
+            <ThemeSelector className="w-full" />
           </div>
         </DrawerSection>
 
