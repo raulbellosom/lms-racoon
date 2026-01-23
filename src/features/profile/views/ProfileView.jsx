@@ -5,15 +5,81 @@ import { PageLayout } from "../../../shared/ui/PageLayout";
 import { Avatar } from "../../../shared/ui/Avatar";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
-import { Edit } from "lucide-react";
+import { Input } from "../../../shared/ui/Input";
+import { Edit, Save, X, Camera } from "lucide-react";
+import { ProfileService } from "../../../shared/data/profiles";
+import { useToast } from "../../../app/providers/ToastProvider";
 
 export function ProfileView() {
   const { t } = useTranslation();
-  const { auth } = useAuth();
+  const { auth, refreshProfile } = useAuth();
+  const { showToast } = useToast();
+
   const user = auth.user;
   const profile = auth.profile;
 
-  const displayName = profile?.firstName || user?.name || t("student.welcome");
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [formData, setFormData] = React.useState({});
+  const fileInputRef = React.useRef(null);
+
+  // Initialize form data when editing starts or profile loads
+  React.useEffect(() => {
+    if (profile) {
+      setFormData({
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        phone: profile.phone || "",
+        bio: profile.bio || "",
+      });
+    }
+  }, [profile]);
+
+  const displayName = profile?.firstName
+    ? `${profile.firstName} ${profile.lastName || ""}`.trim()
+    : user?.name || t("student.welcome");
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await ProfileService.update(profile.$id, formData);
+      await refreshProfile(); // Reload profile in AuthContext
+      showToast("Perfil actualizado correctamente", "success");
+      setIsEditing(false);
+    } catch (error) {
+      console.error(error);
+      showToast("Error al actualizar el perfil", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Optional: Validate file size/type
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("La imagen debe ser menor a 5MB", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const fileDoc = await ProfileService.uploadAvatar(file);
+      // Update profile with new avatar ID
+      await ProfileService.update(profile.$id, { avatarFileId: fileDoc.$id });
+      await refreshProfile();
+      showToast("Foto de perfil actualizada", "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Error al subir la imagen", "error");
+    } finally {
+      setLoading(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <PageLayout
@@ -24,13 +90,31 @@ export function ProfileView() {
         {/* Profile Card */}
         <Card className="p-6 md:col-span-1">
           <div className="flex flex-col items-center text-center">
-            <Avatar
-              src={profile?.avatarFileId}
-              name={displayName}
-              size="xl"
-              ring
-              className="mb-4"
-            />
+            <div className="relative group">
+              <Avatar
+                src={ProfileService.getAvatarUrl(profile?.avatarFileId)}
+                name={displayName}
+                size="xl"
+                ring
+                className="mb-4"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="absolute bottom-4 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] text-white shadow-md transition-transform hover:scale-110 disabled:opacity-50"
+                title="Cambiar foto"
+              >
+                <Camera className="h-4 w-4" />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
+            </div>
+
             <h2 className="text-xl font-bold text-[rgb(var(--text-primary))]">
               {displayName}
             </h2>
@@ -49,9 +133,29 @@ export function ProfileView() {
             <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
               Información Personal
             </h3>
-            <Button variant="secondary" size="sm">
-              <Edit className="mr-2 h-4 w-4" /> Editar
-            </Button>
+            {isEditing ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsEditing(false)}
+                  disabled={loading}
+                >
+                  <X className="mr-2 h-4 w-4" /> Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={loading}>
+                  <Save className="mr-2 h-4 w-4" /> Guardar
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit className="mr-2 h-4 w-4" /> Editar
+              </Button>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -60,33 +164,69 @@ export function ProfileView() {
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
                   Nombre
                 </label>
-                <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
-                  {profile?.firstName || "-"}
-                </div>
+                {isEditing ? (
+                  <Input
+                    value={formData.firstName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, firstName: e.target.value })
+                    }
+                    placeholder="Tu nombre"
+                  />
+                ) : (
+                  <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
+                    {profile?.firstName || "-"}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
                   Apellidos
                 </label>
-                <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
-                  {profile?.lastName || "-"}
-                </div>
+                {isEditing ? (
+                  <Input
+                    value={formData.lastName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lastName: e.target.value })
+                    }
+                    placeholder="Tus apellidos"
+                  />
+                ) : (
+                  <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
+                    {profile?.lastName || "-"}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
                   Email
                 </label>
-                <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
+                <div className="mt-1 flex h-10 items-center text-sm font-medium text-[rgb(var(--text-secondary))] opacity-60">
+                  {/* Email is read-only unless admin (but even admin shouldn't edit own email here easily) */}
                   {user?.email || "-"}
+                  {profile?.role === "admin" && (
+                    <span className="ml-2 text-[10px] text-amber-500">
+                      (Admin)
+                    </span>
+                  )}
                 </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
                   Teléfono
                 </label>
-                <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
-                  {profile?.phone || "-"}
-                </div>
+                {isEditing ? (
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    placeholder="+1 234 567 890"
+                  />
+                ) : (
+                  <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
+                    {profile?.phone || "-"}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -94,9 +234,21 @@ export function ProfileView() {
               <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
                 Bio
               </label>
-              <div className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
-                {profile?.bio || "Sin biografía."}
-              </div>
+              {isEditing ? (
+                <textarea
+                  className="mt-1 w-full rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
+                  value={formData.bio}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bio: e.target.value })
+                  }
+                  placeholder="Cuéntanos un poco sobre ti..."
+                  rows={4}
+                />
+              ) : (
+                <div className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
+                  {profile?.bio || "Sin biografía."}
+                </div>
+              )}
             </div>
           </div>
         </Card>

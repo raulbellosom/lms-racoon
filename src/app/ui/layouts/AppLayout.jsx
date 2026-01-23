@@ -12,6 +12,7 @@ import {
   X,
   Monitor,
   User,
+  Users,
   ChevronDown,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +28,7 @@ import { Avatar } from "../../../shared/ui/Avatar";
 import { useAuth } from "../../providers/AuthProvider";
 import { logout } from "../../../shared/services/auth";
 import { useTheme, ThemeSelector } from "../../../shared/theme/ThemeProvider";
+import { ProfileService } from "../../../shared/data/profiles";
 
 function NavItem({ to, icon: Icon, label, onClick }) {
   return (
@@ -119,6 +121,9 @@ export function AppLayout() {
     ...(role !== "student"
       ? [{ to: "/app/teach", icon: SquarePen, label: t("nav.teacherPanel") }]
       : []),
+    ...(role === "admin"
+      ? [{ to: "/app/admin/users", icon: Users, label: "Usuarios" }]
+      : []),
   ];
 
   return (
@@ -159,7 +164,7 @@ export function AppLayout() {
               <div className="flex w-full items-center gap-3 rounded-xl bg-[rgb(var(--bg-muted))] p-2 transition hover:bg-[rgb(var(--bg-muted))/0.8]">
                 <Avatar
                   name={displayName}
-                  src={auth.profile?.avatarFileId} // Assuming this maps to URL or handled by Avatar
+                  src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
                   size="sm"
                   ring
                 />

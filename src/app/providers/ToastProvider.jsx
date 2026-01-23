@@ -31,7 +31,17 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const api = React.useMemo(() => ({ push, remove }), [push, remove]);
+  const showToast = React.useCallback(
+    (message, variant = "default") => {
+      push({ message, variant });
+    },
+    [push],
+  );
+
+  const api = React.useMemo(
+    () => ({ push, remove, showToast }),
+    [push, remove, showToast],
+  );
 
   return (
     <ToastContext.Provider value={api}>
@@ -44,7 +54,7 @@ export function ToastProvider({ children }) {
               "animate-fadeIn rounded-[var(--radius)] border p-3 shadow-soft backdrop-blur-soft",
               "bg-[rgb(var(--bg-surface))/0.92] border-[rgb(var(--border-base))]",
               t.variant === "success" && "border-[rgb(var(--success))]",
-              t.variant === "error" && "border-[rgb(var(--error))]"
+              t.variant === "error" && "border-[rgb(var(--error))]",
             )}
           >
             <div className="flex items-start gap-3">

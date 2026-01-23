@@ -18,6 +18,7 @@ import { ProfileView, SettingsView } from "../../features/profile";
 import { TeachHomePage } from "../../pages/app/teacher/TeachHomePage";
 import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
 import { TeacherCourseEditorPage } from "../../pages/app/teacher/TeacherCourseEditorPage";
+import { AdminUsersPage } from "../../pages/app/admin/AdminUsersPage";
 
 import { requireAuthLoader, requireRoleLoader } from "./routeGuards";
 
@@ -64,6 +65,11 @@ export const router = createBrowserRouter([
                 element: <TeacherCourseEditorPage />,
               },
             ],
+          },
+          {
+            path: "admin",
+            loader: requireRoleLoader(["admin"]),
+            children: [{ path: "users", element: <AdminUsersPage /> }],
           },
         ],
       },

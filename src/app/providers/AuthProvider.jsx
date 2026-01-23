@@ -19,7 +19,12 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const value = React.useMemo(() => ({ auth, authStore }), [auth]);
+  const refreshProfile = React.useCallback(() => authStore.hydrate(), []);
+
+  const value = React.useMemo(
+    () => ({ auth, authStore, refreshProfile }),
+    [auth, refreshProfile],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
