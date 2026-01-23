@@ -85,9 +85,16 @@ export function ThemeToggleButton({ className = "" }) {
   return (
     <button
       ref={ref}
-      className={className}
+      className={[
+        "flex items-center justify-center rounded-xl px-3 py-2 text-lg transition",
+        "text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]",
+        className,
+      ].join(" ")}
       onClick={toggleSwitchTheme}
       aria-label="Cambiar tema"
+      title={
+        resolved === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"
+      }
     >
       {resolved === "dark" ? "🌙" : "☀️"}
     </button>

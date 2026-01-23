@@ -10,8 +10,6 @@ import {
   SquarePen,
   Menu,
   X,
-  Sun,
-  Moon,
   Monitor,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -20,7 +18,10 @@ import { Button } from "../../../shared/ui/Button";
 import { Drawer, DrawerSection } from "../../../shared/ui/Drawer";
 import { useAuth } from "../../providers/AuthProvider";
 import { logout } from "../../../shared/services/auth";
-import { useTheme } from "../../../shared/theme/ThemeProvider";
+import {
+  useTheme,
+  ThemeToggleButton,
+} from "../../../shared/theme/ThemeProvider";
 
 function NavItem({ to, icon: Icon, label, onClick }) {
   return (
@@ -81,35 +82,6 @@ function MobileNavItem({ to, icon: Icon, label }) {
   );
 }
 
-function ThemeSelector() {
-  const { theme, setTheme } = useTheme();
-
-  const themes = [
-    { value: "light", icon: Sun, label: "Claro" },
-    { value: "dark", icon: Moon, label: "Oscuro" },
-    { value: "system", icon: Monitor, label: "Sistema" },
-  ];
-
-  return (
-    <div className="flex items-center gap-1 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-1">
-      {themes.map(({ value, icon: Icon }) => (
-        <button
-          key={value}
-          onClick={() => setTheme(value)}
-          className={[
-            "rounded-lg p-2 transition-all",
-            theme === value
-              ? "bg-[rgb(var(--bg-surface))] text-[rgb(var(--brand-primary))] shadow-sm"
-              : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-secondary))]",
-          ].join(" ")}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function AppLayout() {
   const { t } = useTranslation();
   const { auth } = useAuth();
@@ -120,8 +92,7 @@ export function AppLayout() {
   const role = auth.profile?.role || "student";
   const displayName =
     auth.profile?.firstName ||
-    auth.profile?.displayName ||
-    auth.user?.name ||
+    auth.user?.name?.split(" ")[0] ||
     t("student.welcome");
 
   const onLogout = async () => {
@@ -182,7 +153,7 @@ export function AppLayout() {
             <span className="text-xs font-medium text-[rgb(var(--text-secondary))]">
               {t("common.theme")}
             </span>
-            <ThemeSelector />
+            <ThemeToggleButton />
           </div>
 
           <div className="flex gap-2">
@@ -265,7 +236,9 @@ export function AppLayout() {
 
         {/* Theme */}
         <DrawerSection title={t("common.theme")}>
-          <ThemeSelector />
+          <div className="flex justify-end">
+            <ThemeToggleButton />
+          </div>
         </DrawerSection>
 
         {/* Actions */}

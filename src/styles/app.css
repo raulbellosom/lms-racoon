@@ -24,8 +24,8 @@
   --text-inverted: 255 255 255;
 
   /* === Borders === */
-  --border-base: 228 228 231;
-  --border-hover: 212 212 216;
+  --border-base: 235 235 240;
+  --border-hover: 220 220 225;
 
   /* === Brand Colors === */
   --brand-primary: 225 29 72; /* rose-600 */
@@ -99,8 +99,8 @@
   --text-inverted: 9 9 11;
 
   /* === Borders === */
-  --border-base: 39 39 42;
-  --border-hover: 63 63 70;
+  --border-base: 55 55 60;
+  --border-hover: 75 75 82;
 
   /* === Brand Colors === */
   --brand-primary: 244 63 94; /* rose-500 */

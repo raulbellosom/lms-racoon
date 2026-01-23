@@ -1,5 +1,6 @@
 import { createBrowserRouter, redirect } from "react-router-dom";
 import { RootLayout } from "../ui/layouts/RootLayout";
+import { RouteErrorBoundary } from "../../shared/ui/ErrorPage";
 import { PublicLayout } from "../ui/layouts/PublicLayout";
 import { AppLayout } from "../ui/layouts/AppLayout";
 
@@ -7,11 +8,13 @@ import { LandingView } from "../../features/public";
 import { CatalogPage } from "../../pages/public/CatalogPage";
 import { CoursePublicPage } from "../../pages/public/CoursePublicPage";
 import { LoginView, RegisterView } from "../../features/auth";
+import {
+  StudentHomeView,
+  MyCoursesView,
+  ProgressView,
+} from "../../features/student";
 
-import { StudentHomePage } from "../../pages/app/student/StudentHomePage";
-import { MyCoursesPage } from "../../pages/app/student/MyCoursesPage";
 import { LearnPage } from "../../pages/app/student/LearnPage";
-import { ProgressPage } from "../../pages/app/student/ProgressPage";
 
 import { TeachHomePage } from "../../pages/app/teacher/TeachHomePage";
 import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
@@ -22,6 +25,7 @@ import { requireAuthLoader, requireRoleLoader } from "./routeGuards";
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         element: <PublicLayout />,
@@ -39,9 +43,9 @@ export const router = createBrowserRouter([
         loader: requireAuthLoader,
         children: [
           { index: true, loader: () => redirect("/app/home") },
-          { path: "home", element: <StudentHomePage /> },
-          { path: "my-courses", element: <MyCoursesPage /> },
-          { path: "progress", element: <ProgressPage /> },
+          { path: "home", element: <StudentHomeView /> },
+          { path: "my-courses", element: <MyCoursesView /> },
+          { path: "progress", element: <ProgressView /> },
           { path: "learn/:courseId/:lessonId?", element: <LearnPage /> },
 
           {

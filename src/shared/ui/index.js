@@ -43,5 +43,20 @@ export {
   HoverScale,
 } from "./PageTransition";
 
+// Error Pages
+export {
+  ErrorPage,
+  RouteErrorBoundary,
+  NotFoundPage,
+  ForbiddenPage,
+  UnauthorizedPage,
+} from "./ErrorPage";
+
+// Form Components
+export { Combobox } from "./Combobox";
+
 // Utility
 export { cn } from "./cn";
+
+// Language
+export { LanguageSelector } from "./LanguageSelector";
