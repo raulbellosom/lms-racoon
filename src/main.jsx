@@ -13,6 +13,7 @@ import { ToastProvider } from "./app/providers/ToastProvider";
 import { ThemeProvider } from "./shared/theme/ThemeProvider";
 import { RenderErrorBoundary } from "./shared/errors/RenderErrorBoundary";
 import { PWAInstallPrompt } from "./shared/pwa/PWAInstallPrompt";
+import { LoadingScreen } from "./shared/ui/LoadingScreen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,7 +38,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <ThemeProvider defaultTheme="system" storageKey="racoon-lms-theme">
           <ToastProvider>
             <AuthProvider>
-              <RouterProvider router={router} />
+              <RouterProvider
+                router={router}
+                fallbackElement={<LoadingScreen />}
+              />
               <PWAInstallPrompt />
             </AuthProvider>
           </ToastProvider>

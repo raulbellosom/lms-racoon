@@ -1,4 +1,5 @@
 import { createBrowserRouter, redirect } from "react-router-dom";
+import { LoadingScreen } from "../../shared/ui/LoadingScreen";
 import { RootLayout } from "../ui/layouts/RootLayout";
 import { RouteErrorBoundary } from "../../shared/ui/ErrorPage";
 import { PublicLayout } from "../ui/layouts/PublicLayout";
@@ -12,9 +13,8 @@ import {
   MyCoursesView,
   ProgressView,
 } from "../../features/student";
-
 import { LearnPage } from "../../pages/app/student/LearnPage";
-
+import { ProfileView, SettingsView } from "../../features/profile";
 import { TeachHomePage } from "../../pages/app/teacher/TeachHomePage";
 import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
 import { TeacherCourseEditorPage } from "../../pages/app/teacher/TeacherCourseEditorPage";
@@ -25,6 +25,7 @@ export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     errorElement: <RouteErrorBoundary />,
+    hydrateFallbackElement: <LoadingScreen />,
     children: [
       {
         element: <PublicLayout />,
@@ -48,9 +49,12 @@ export const router = createBrowserRouter([
           { path: "my-courses", element: <MyCoursesView /> },
           { path: "progress", element: <ProgressView /> },
           { path: "learn/:courseId/:lessonId?", element: <LearnPage /> },
+          { path: "profile", element: <ProfileView /> },
+          { path: "settings", element: <SettingsView /> },
 
           {
             path: "teach",
+            element: <TeachHomePage />,
             loader: requireRoleLoader(["teacher", "admin"]),
             children: [
               { index: true, element: <TeachHomePage /> },

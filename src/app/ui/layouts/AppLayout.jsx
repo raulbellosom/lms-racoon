@@ -96,8 +96,10 @@ export function AppLayout() {
 
   const role = auth.profile?.role || "student";
   const displayName =
-    auth.profile?.firstName ||
-    auth.user?.name?.split(" ")[0] ||
+    (auth.profile?.firstName && auth.profile?.lastName
+      ? `${auth.profile.firstName} ${auth.profile.lastName}`
+      : auth.profile?.firstName) ||
+    auth.user?.name ||
     t("student.welcome");
 
   const onLogout = async () => {
@@ -151,7 +153,8 @@ export function AppLayout() {
 
           <Dropdown
             align="left"
-            className="w-56 mb-2"
+            side="top"
+            className="w-56"
             trigger={
               <div className="flex w-full items-center gap-3 rounded-xl bg-[rgb(var(--bg-muted))] p-2 transition hover:bg-[rgb(var(--bg-muted))/0.8]">
                 <Avatar
