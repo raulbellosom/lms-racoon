@@ -5,6 +5,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { QueryClient } from "@tanstack/react-query";
 
+import "./i18n"; // Initialize i18n
 import "./styles/app.css";
 import { router } from "./app/router/router";
 import { AuthProvider } from "./app/providers/AuthProvider";
@@ -29,7 +30,10 @@ const persister = createSyncStoragePersister({ storage: window.localStorage });
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RenderErrorBoundary>
-      <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{ persister }}
+      >
         <ThemeProvider defaultTheme="system" storageKey="racoon-lms-theme">
           <ToastProvider>
             <AuthProvider>
@@ -40,5 +44,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </ThemeProvider>
       </PersistQueryClientProvider>
     </RenderErrorBoundary>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

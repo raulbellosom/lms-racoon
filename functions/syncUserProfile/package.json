@@ -1,5 +1,5 @@
 {
-  "name": "racoon-lms-on-user-created",
+  "name": "racoon-lms-sync-user-profile",
   "version": "1.0.0",
   "main": "src/main.js",
   "type": "commonjs",

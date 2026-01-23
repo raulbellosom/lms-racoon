@@ -3,11 +3,10 @@ import { RootLayout } from "../ui/layouts/RootLayout";
 import { PublicLayout } from "../ui/layouts/PublicLayout";
 import { AppLayout } from "../ui/layouts/AppLayout";
 
-import { LandingPage } from "../../pages/public/LandingPage";
+import { LandingView } from "../../features/public";
 import { CatalogPage } from "../../pages/public/CatalogPage";
 import { CoursePublicPage } from "../../pages/public/CoursePublicPage";
-import { LoginPage } from "../../pages/auth/LoginPage";
-import { RegisterPage } from "../../pages/auth/RegisterPage";
+import { LoginView, RegisterView } from "../../features/auth";
 
 import { StudentHomePage } from "../../pages/app/student/StudentHomePage";
 import { MyCoursesPage } from "../../pages/app/student/MyCoursesPage";
@@ -27,11 +26,11 @@ export const router = createBrowserRouter([
       {
         element: <PublicLayout />,
         children: [
-          { index: true, element: <LandingPage /> },
+          { index: true, element: <LandingView /> },
           { path: "/catalog", element: <CatalogPage /> },
           { path: "/courses/:courseId", element: <CoursePublicPage /> },
-          { path: "/auth/login", element: <LoginPage /> },
-          { path: "/auth/register", element: <RegisterPage /> },
+          { path: "/auth/login", element: <LoginView /> },
+          { path: "/auth/register", element: <RegisterView /> },
         ],
       },
       {
@@ -51,7 +50,10 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <TeachHomePage /> },
               { path: "courses", element: <TeacherCoursesPage /> },
-              { path: "courses/:courseId", element: <TeacherCourseEditorPage /> },
+              {
+                path: "courses/:courseId",
+                element: <TeacherCourseEditorPage />,
+              },
             ],
           },
         ],

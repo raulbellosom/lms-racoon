@@ -1,0 +1,47 @@
+// Shared UI Components Index
+// Re-export all atomic UI components for easy imports
+
+export { Button } from "./Button";
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "./Card";
+export { Input } from "./Input";
+export { Textarea } from "./Textarea";
+export { Badge } from "./Badge";
+export { ProgressBar } from "./ProgressBar";
+export { Tabs, Tab } from "./Tabs";
+
+// New premium components
+export { Modal, ModalFooter } from "./Modal";
+export {
+  Skeleton,
+  CardSkeleton,
+  ListItemSkeleton,
+  CourseGridSkeleton,
+} from "./Skeleton";
+export { Avatar, AvatarGroup } from "./Avatar";
+export { Drawer, DrawerSection } from "./Drawer";
+export {
+  Dropdown,
+  DropdownItem,
+  DropdownDivider,
+  DropdownLabel,
+  Select,
+} from "./Dropdown";
+export { LoadingScreen, LoadingSpinner } from "./LoadingScreen";
+export {
+  PageTransition,
+  FadeIn,
+  StaggerContainer,
+  StaggerItem,
+  ScaleIn,
+  HoverScale,
+} from "./PageTransition";
+
+// Utility
+export { cn } from "./cn";
