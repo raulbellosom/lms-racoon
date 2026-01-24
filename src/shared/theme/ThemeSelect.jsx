@@ -9,7 +9,12 @@ import { useTranslation } from "react-i18next";
 /**
  * Dropdown-style theme selector, similar to LanguageSelector.
  */
-export function ThemeSelect({ className, side = "top" }) {
+export function ThemeSelect({
+  className,
+  side = "top",
+  align = "end",
+  iconOnly = false,
+}) {
   const { theme, setTheme, resolved } = useTheme();
   const { t } = useTranslation();
   // Store the target theme during animation
@@ -73,6 +78,7 @@ export function ThemeSelect({ className, side = "top" }) {
   const CurrentIcon = currentOption.icon;
 
   const sideOffset = side === "top" ? "bottom-full mb-2" : "top-full mt-2";
+  const alignClass = align === "end" ? "right-0" : "left-0";
 
   return (
     <div ref={dropdownRef} className={cn("relative", className)}>
@@ -87,7 +93,7 @@ export function ThemeSelect({ className, side = "top" }) {
         title={t("common.theme")}
       >
         <CurrentIcon className="h-4 w-4 shrink-0" />
-        <span className="shrink-0">{currentOption.label}</span>
+        {!iconOnly && <span className="shrink-0">{currentOption.label}</span>}
       </button>
 
       <AnimatePresence>
@@ -98,8 +104,9 @@ export function ThemeSelect({ className, side = "top" }) {
             exit={{ opacity: 0, scale: 0.95, y: side === "top" ? 5 : -5 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "absolute right-0 z-50 min-w-[140px] rounded-xl border border-[rgb(var(--border-base)/0.5)] bg-[rgb(var(--bg-surface))] p-1.5 shadow-xl",
+              "absolute z-50 min-w-[140px] rounded-xl border border-[rgb(var(--border-base)/0.5)] bg-[rgb(var(--bg-surface))] p-1.5 shadow-xl",
               sideOffset,
+              alignClass,
             )}
           >
             {options.map((opt) => {
@@ -109,7 +116,7 @@ export function ThemeSelect({ className, side = "top" }) {
                   key={opt.value}
                   onClick={(e) => handleThemeChange(opt.value, e)}
                   className={cn(
-                    "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition",
+                    "flex w-full items-center justify-between gap-3 rounded-lg px-4 py-2.5 text-left text-sm transition mx-1 my-0.5 max-w-[calc(100%-8px)]",
                     opt.value === theme
                       ? "bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))]"
                       : "text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-muted))]",

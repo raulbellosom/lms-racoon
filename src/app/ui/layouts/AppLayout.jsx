@@ -51,27 +51,27 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }) {
       onClick={onClick}
       className={({ isActive }) =>
         [
-          "group flex items-center overflow-hidden transition-all relative select-none",
+          "group flex items-center overflow-hidden transition-all relative select-none mx-2 my-0.5 rounded-xl",
           isActive
-            ? "text-[rgb(var(--brand-primary))]"
-            : "text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text-primary))]",
+            ? "bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))] font-semibold"
+            : "text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]",
         ].join(" ")
       }
       title={collapsed ? label : undefined}
     >
       {({ isActive }) => (
         <>
-          {/* Icon Area - ALWAYS w-20 (5rem) and centered. */}
-          <div className="flex h-12 w-20 shrink-0 items-center justify-center">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
-                isActive
-                  ? "bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))]"
-                  : "group-hover:bg-[rgb(var(--bg-muted))]"
+          {/* Icon Area - ALWAYS w-16 (4rem) to be compact but clickable. 
+              Reducing width slightly from w-20 to match standard sizing better if we add margins.
+              Let's keep w-12 for the icon container itself.
+          */}
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+            {/* The icon itself doesn't need a background anymore since the parent has it. */}
+            <Icon
+              className={`h-5 w-5 ${
+                isActive ? "text-[rgb(var(--brand-primary))]" : ""
               }`}
-            >
-              <Icon className="h-5 w-5" />
-            </div>
+            />
           </div>
 
           {/* Text - Smooth reveal */}
@@ -80,7 +80,11 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }) {
               collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
             }`}
           >
-            <span className="overflow-hidden whitespace-nowrap text-sm font-semibold transition-opacity duration-300">
+            <span
+              className={`overflow-hidden whitespace-nowrap text-sm font-semibold transition-opacity duration-300 pr-3 ${
+                isActive ? "text-[rgb(var(--brand-primary))]" : ""
+              }`}
+            >
               {label}
             </span>
           </div>
@@ -188,14 +192,13 @@ export function AppLayout() {
       {/* ========== Desktop Sidebar ========== */}
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] transition-all duration-300 ease-in-out md:flex ${
-          collapsed ? "w-20" : "w-72"
+          collapsed ? "w-16" : "w-72"
         }`}
       >
         {/* Logo Area */}
-        {/* Uses consistent flex layout matches NavItem: [w-20 Icon] [Animated Text] */}
-        <div className="flex h-20 items-center overflow-hidden border-b border-[rgb(var(--border-base))]">
-          <div className="flex h-full w-20 shrink-0 items-center justify-center">
-            <div className="flex h-10 w-10 items-center justify-center">
+        <div className="flex h-16 items-center overflow-hidden border-b border-[rgb(var(--border-base))] mx-2">
+          <div className="flex h-full w-12 shrink-0 items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center">
               <img
                 src={appIcon}
                 alt="Racoon LMS"
@@ -226,16 +229,30 @@ export function AppLayout() {
           {/* Theme Toggle Area */}
           <div className="py-4">
             {collapsed ? (
-              <div className="flex flex-col gap-3 items-center w-20">
-                <LanguageSelector className="w-10 overflow-hidden" />
-                <ThemeToggleButton />
+              <div className="flex flex-col gap-3 items-center px-1">
+                <LanguageSelector
+                  className="w-full justify-center"
+                  iconOnly
+                  side="top"
+                  align="start"
+                />
+                <ThemeSelect
+                  className="w-full justify-center"
+                  iconOnly
+                  side="top"
+                  align="start"
+                />
               </div>
             ) : (
               <div className="px-4 fade-in duration-300">
                 <div className="flex items-center justify-between gap-2">
-                  <LanguageSelector className="flex-1" />
+                  <LanguageSelector
+                    className="flex-1"
+                    side="top"
+                    align="start"
+                  />
                   <div className="h-6 w-px bg-[rgb(var(--border-base))]" />
-                  <ThemeSelect className="flex-1" />
+                  <ThemeSelect className="flex-1" side="top" align="end" />
                 </div>
               </div>
             )}
@@ -246,11 +263,12 @@ export function AppLayout() {
             <Dropdown
               align="left"
               side="top"
-              className="w-60"
+              sideOffset={4}
+              className="w-60 min-w-[240px]"
               trigger={
                 <button className="group flex w-full items-center text-left transition-colors hover:bg-[rgb(var(--bg-muted))] overflow-hidden py-1">
                   {/* Fixed Icon Area: Avatar */}
-                  <div className="flex h-16 w-20 shrink-0 items-center justify-center">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center">
                     <Avatar
                       name={displayName}
                       src={ProfileService.getAvatarUrl(
@@ -326,7 +344,7 @@ export function AppLayout() {
       {/* ========== Desktop Main ========== */}
       <main
         className={`hidden min-h-dvh transition-all duration-300 ease-in-out md:block ${
-          collapsed ? "md:pl-20" : "md:pl-72"
+          collapsed ? "md:pl-16" : "md:pl-72"
         }`}
       >
         <AnimatePresence mode="wait">
@@ -417,16 +435,24 @@ export function AppLayout() {
         {/* Theme and Language */}
         <DrawerSection title={t("common.settings")}>
           <div className="flex items-center gap-2">
-            <LanguageSelector className="flex-1" />
+            <LanguageSelector className="flex-1" side="top" align="start" />
             <div className="h-6 w-px bg-[rgb(var(--border-base))]" />
-            <ThemeSelect className="flex-1" />
+            <ThemeSelect className="flex-1" side="top" align="end" />
           </div>
         </DrawerSection>
 
         {/* Actions */}
         <DrawerSection>
           <div className="space-y-2">
-            <Button variant="secondary" className="w-full" size="sm">
+            <Button
+              variant="secondary"
+              className="w-full"
+              size="sm"
+              onClick={() => {
+                navigate("/app/settings");
+                setDrawerOpen(false);
+              }}
+            >
               <Settings className="h-4 w-4" /> {t("common.settings")}
             </Button>
             <Button

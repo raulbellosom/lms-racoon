@@ -36,17 +36,70 @@ const dropdownVariants = {
  * @param {'top' | 'bottom'} [props.side='bottom'] - Menu opening direction
  * @param {string} [props.className] - Additional classes for menu
  */
+/**
+ * Dropdown menu component with trigger and animated menu
+ * @param {Object} props
+ * @param {React.ReactNode} props.trigger - The element that triggers the dropdown
+ * @param {React.ReactNode} props.children - Dropdown menu content
+ * @param {'left' | 'right'} [props.align='left'] - Menu alignment
+ * @param {'top' | 'bottom'} [props.side='bottom'] - Menu opening direction
+ * @param {string} [props.className] - Additional classes for menu
+ * @param {number} [props.sideOffset=0] - Offset from the side alignment (margin) in px (approx via styles or classes)
+ */
 export function Dropdown({
   trigger,
   children,
   align = "left",
   side = "bottom",
+  sideOffset = 0,
   className,
 }) {
   const [open, setOpen] = React.useState(false);
   const dropdownRef = React.useRef(null);
 
-  // ... (keep existing effects)
+  // ... (keep existing effects works implicitly as they are inside component body in file) check if I need to re-include them if I am not viewing them.
+  // Actually the snippet view showed line 49 comment. I should be careful not to delete the useEffects if I am replacing the whole function body.
+  // The tool says "TargetContent" needs to match exactly.
+  // I will replace from line 39 to 78.
+
+  // Need to verify standard useEffects are there.
+  // Line 49:   // ... (keep existing effects)
+  // Wait, the previous `view_file` output didn't show the useEffects code?
+  // Ah, line 49 says `// ... (keep existing effects)`. It seems the file content I saw was ALREADY truncated/commented or I misread?
+  // Let's re-read line 49 from Step 160.
+  // Line 49: `  // ... (keep existing effects)`
+  // Wait, did I see the full file? "The above content shows the entire, complete file contents".
+  // If the file literally says `// ... (keep existing effects)`, then the code is missing???
+  // But line 148 has a useEffect.
+  // Line 49 is inside Dropdown.
+  // If the file implementation literally has that comment, then there is no logic to close on click outside!
+  // This is bad if true.
+  // But wait, the `LanguageSelector` I edited earlier HAD the useEffect explicitly.
+  // Let me double check standard `Dropdown` usage. It works in the app?
+  // If the `view_file` returned that, then the file has it.
+  // I must add the `useEffect` back if it's missing or if I am replacing it.
+  // Actually, I should probably check if I can just `view_file` it again to be super sure or just implement it.
+  // The `LanguageSelector` has it. `Select` (line 148) has it. `Dropdown` (line 39) has it "hidden" in line 49?
+  // Use `view_code_item` or just check line 49.
+  // "The following code ... include a line number".
+  // Line 49 is `  // ... (keep existing effects)`.
+  // This looks like a placeholder from a previous AI generation or template?
+  // If I replace the function, I better implement the click outside logic myself to be safe.
+
+  // Implementation plan:
+  // Add `sideOffset` prop.
+  // Implement `useEffect` for click outside.
+  // Adjust `className` to include margin based on alignment.
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
 
   return (
     <div ref={dropdownRef} className="relative inline-block">
@@ -63,8 +116,11 @@ export function Dropdown({
             initial="hidden"
             animate="visible"
             exit="exit"
+            style={{
+              [align === "left" ? "marginLeft" : "marginRight"]: sideOffset,
+            }}
             className={cn(
-              "absolute z-50 min-w-[180px] rounded-[var(--radius)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-1 shadow-lg",
+              "absolute z-50 min-w-[180px] rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-1 shadow-lg",
               align === "left" ? "left-0" : "right-0",
               side === "bottom" ? "top-full mt-2" : "bottom-full mb-2",
               className,
