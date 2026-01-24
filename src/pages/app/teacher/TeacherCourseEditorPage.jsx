@@ -24,6 +24,7 @@ import { Button } from "../../../shared/ui/Button";
 import { Badge } from "../../../shared/ui/Badge";
 import { Modal } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
+import { Dropdown, DropdownItem } from "../../../shared/ui/Dropdown";
 
 // Modular components
 import {
@@ -103,7 +104,27 @@ export function TeacherCourseEditorPage() {
     coverFileId: "",
   });
 
+  // Track initial state for dirty check
+  const [initialFormData, setInitialFormData] = React.useState(null);
+
   const [errors, setErrors] = React.useState({});
+
+  // Derived state for validation
+  const isFormValid = React.useMemo(() => {
+    const { title, subtitle, description, categoryId } = formData;
+    return (
+      title?.length >= 4 &&
+      title?.length <= 120 &&
+      subtitle?.length <= 180 &&
+      description?.length <= 8000 &&
+      !!categoryId
+    );
+  }, [formData]);
+
+  const isDirty = React.useMemo(() => {
+    if (!initialFormData) return false;
+    return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  }, [formData, initialFormData]);
 
   React.useEffect(() => {
     loadCategories();
@@ -111,6 +132,18 @@ export function TeacherCourseEditorPage() {
       loadCourse();
     } else {
       setLoading(false);
+      // Set initial empty state for new course
+      setInitialFormData({
+        title: "",
+        subtitle: "",
+        description: "",
+        categoryId: "",
+        level: "beginner",
+        priceCents: 0,
+        currency: "MXN",
+        language: "es",
+        coverFileId: "",
+      });
     }
   }, [courseId]);
 
@@ -155,7 +188,7 @@ export function TeacherCourseEditorPage() {
     try {
       const data = await TeacherCoursesService.getById(courseId);
       setCourse(data);
-      setFormData({
+      const loadedData = {
         title: data.title,
         subtitle: data.subtitle || "",
         description: data.description || "",
@@ -165,7 +198,9 @@ export function TeacherCourseEditorPage() {
         currency: data.currency || "MXN",
         language: data.language || "es",
         coverFileId: data.coverFileId || "",
-      });
+      };
+      setFormData(loadedData);
+      setInitialFormData(loadedData);
     } catch (error) {
       console.error("Failed to load course", error);
       navigate("/app/teach/courses");
@@ -175,6 +210,8 @@ export function TeacherCourseEditorPage() {
   };
 
   const handleSave = async () => {
+    if (!isFormValid) return;
+
     const newErrors = {};
     if (!formData.title) newErrors.title = t("teacher.form.titleRequired");
     if (!formData.categoryId)
@@ -196,10 +233,12 @@ export function TeacherCourseEditorPage() {
         });
         navigate(`/app/teach/courses/${newCourse.$id}`, { replace: true });
         setCourse(newCourse);
+        setInitialFormData(formData);
         showToast(t("teacher.courseCreated"), "success");
       } else {
         const updated = await TeacherCoursesService.update(courseId, formData);
         setCourse(updated);
+        setInitialFormData(formData);
         showToast(t("teacher.courseUpdated"), "success");
       }
     } catch (error) {
@@ -373,9 +412,40 @@ export function TeacherCourseEditorPage() {
           </div>
         </div>
         {!isNew && (
-          <Button variant="secondary" size="sm" className="hidden sm:flex">
-            <Eye className="mr-2 h-4 w-4" /> {t("teacher.lesson.preview")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Dropdown
+              trigger={
+                <Button variant="outline" size="sm">
+                  {course?.isPublished
+                    ? t("teacher.status.published")
+                    : t("teacher.status.draft")}
+                  <ChevronLeft className="ml-2 h-4 w-4 rotate-270" />
+                </Button>
+              }
+            >
+              <DropdownItem
+                onClick={() => handleTogglePublish()}
+                disabled={course?.isPublished}
+              >
+                {t("teacher.status.published")}
+              </DropdownItem>
+              <DropdownItem
+                onClick={() => handleTogglePublish()}
+                disabled={!course?.isPublished}
+              >
+                {t("teacher.status.draft")}
+              </DropdownItem>
+            </Dropdown>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              className="hidden sm:flex"
+              onClick={() => window.open(`/app/courses/${courseId}`, "_blank")}
+            >
+              <Eye className="mr-2 h-4 w-4" /> {t("teacher.lesson.preview")}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -466,7 +536,7 @@ export function TeacherCourseEditorPage() {
                   size="lg"
                   className="w-full shadow-lg"
                   onClick={handleSave}
-                  disabled={saving || uploading}
+                  disabled={saving || uploading || !isDirty || !isFormValid}
                 >
                   <Save className="mr-2 h-4 w-4" />
                   {saving

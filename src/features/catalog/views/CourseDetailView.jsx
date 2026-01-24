@@ -10,102 +10,90 @@ import {
   BarChart,
   Share2,
   Heart,
+  Users,
 } from "lucide-react";
 
 import { Button } from "../../../shared/ui/Button";
 import { CourseCurriculum } from "../components/CourseCurriculum";
-
-// Mock Data
-const MOCK_COURSE_DETAILS = {
-  $id: "c1",
-  title: "Master en React 2024: De Cero a Experto",
-  subtitle:
-    "Aprende Hooks, Context, Redux, Next.js y crea aplicaciones reales y escalables para el mundo laboral.",
-  description: `
-    <p>Este es el curso más completo para aprender React desde cero hasta un nivel avanzado. No necesitas conocimientos previos de la librería, pero sí de JavaScript.</p>
-    <p>A lo largo del curso construiremos 5 aplicaciones reales que podrás incluir en tu portafolio.</p>
-    <h3>¿Qué aprenderás?</h3>
-    <ul>
-      <li>Dominar los fundamentos de React 19</li>
-      <li>Hooks modernos (useState, useEffect, useTransition)</li>
-      <li>Gestión de estado global con Context y Zustand</li>
-      <li>Next.js 14 App Router</li>
-    </ul>
-  `,
-  rating: 4.9,
-  studentsCount: 1540,
-  updatedAt: "2024-01-15",
-  language: "Español",
-  level: "Avanzado",
-  priceCents: 19999,
-  currency: "MXN",
-  coverUrl:
-    "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=1200",
-  instructor: {
-    name: "Raúl Belloso",
-    bio: "Senior Frontend Engineer & Instructor. Apasionado por la enseñanza y el código limpio.",
-    avatarUrl: "https://github.com/raulbellosom.png",
-  },
-  content: [
-    {
-      title: "Introducción a React",
-      lessons: [
-        {
-          $id: "l1",
-          title: "Bienvenida al curso",
-          kind: "video",
-          durationSec: 300,
-        },
-        { $id: "l2", title: "¿Qué es React?", kind: "video", durationSec: 600 },
-        {
-          $id: "l3",
-          title: "Configuración del entorno",
-          kind: "article",
-          durationSec: 0,
-        },
-      ],
-    },
-    {
-      title: "Hooks Fundamentales",
-      lessons: [
-        {
-          $id: "l4",
-          title: "useState en profundidad",
-          kind: "video",
-          durationSec: 1200,
-        },
-        {
-          $id: "l5",
-          title: "useEffect y ciclo de vida",
-          kind: "video",
-          durationSec: 1500,
-        },
-        {
-          $id: "l6",
-          title: "Quiz: Hooks básicos",
-          kind: "quiz",
-          durationSec: 0,
-        },
-      ],
-    },
-  ],
-};
+import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
+import { SectionService } from "../../../shared/data/sections-teacher";
+import { LessonService } from "../../../shared/data/lessons-teacher";
+import { StatsService } from "../../../shared/data/stats";
+import { FileService } from "../../../shared/data/files";
 
 export function CourseDetailView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  // In real app, fetch course by ID
-  const course = MOCK_COURSE_DETAILS;
+  const [course, setCourse] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [stats, setStats] = React.useState(null);
+
+  React.useEffect(() => {
+    if (id) {
+      loadCourseData();
+    }
+  }, [id]);
+
+  const loadCourseData = async () => {
+    setLoading(true);
+    try {
+      const [courseData, sectionsData, lessonsData, statsData] =
+        await Promise.all([
+          TeacherCoursesService.getById(id),
+          SectionService.listByCourse(id),
+          LessonService.listByCourse(id),
+          StatsService.getCourseStats(id),
+        ]);
+
+      // Organize Content
+      const content = sectionsData.map((section) => ({
+        title: section.title,
+        lessons: lessonsData.filter((l) => l.sectionId === section.$id),
+      }));
+
+      setCourse({ ...courseData, content });
+      setStats(statsData);
+    } catch (error) {
+      console.error("Failed to load course details", error);
+      // Optional: navigate("/app/explore");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[rgb(var(--bg-base))]">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[rgb(var(--brand-primary))] border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-[rgb(var(--bg-base))] p-4 text-center">
+        <h2 className="mb-2 text-2xl font-bold">Curso no encontrado</h2>
+        <Button onClick={() => navigate(-1)}>Volver</Button>
+      </div>
+    );
+  }
 
   const formattedPrice =
     course.priceCents === 0
       ? "Gratis"
       : new Intl.NumberFormat("es-MX", {
           style: "currency",
-          currency: course.currency,
+          currency: course.currency || "MXN",
         }).format(course.priceCents / 100);
+
+  const coverUrl = course.coverFileId
+    ? FileService.getCourseCoverUrl(course.coverFileId)
+    : "https://placehold.co/1200x600/2a2a2a/FFF?text=No+Cover";
+
+  const rating = stats?.averageRating || 0;
+  const studentsCount = stats?.totalStudents || 0;
 
   return (
     <div className="min-h-dvh bg-[rgb(var(--bg-base))] pb-32 md:pb-20">
@@ -114,7 +102,7 @@ export function CourseDetailView() {
         {/* Background Blur Image */}
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={course.coverUrl}
+            src={coverUrl}
             alt=""
             className="h-full w-full object-cover opacity-20 blur-3xl"
           />
@@ -125,11 +113,12 @@ export function CourseDetailView() {
           {/* Left Content */}
           <div className="lg:w-2/3">
             <div className="mb-4 flex flex-wrap gap-2">
+              {/* Label based on criteria, e.g. Bestseller if popular, for now just hardcode 'Featured' or New */}
               <span className="rounded bg-[rgb(var(--brand-primary))] px-2 py-1 text-xs font-bold uppercase tracking-wider text-white">
-                Bestseller
+                Curso
               </span>
               <span className="flex items-center gap-1 text-xs font-medium text-amber-400">
-                <span className="text-amber-400">★</span> {course.rating}
+                <span className="text-amber-400">★</span> {rating.toFixed(1)}
               </span>
             </div>
 
@@ -143,31 +132,20 @@ export function CourseDetailView() {
             <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-300">
               <div className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                {course.studentsCount} estudiantes
+                {studentsCount} estudiantes
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" /> Última actualización:{" "}
-                {course.updatedAt}
+                {new Date(course.$updatedAt).toLocaleDateString()}
               </div>
               <div className="flex items-center gap-1">
-                <Globe className="h-4 w-4" /> {course.language}
+                <Globe className="h-4 w-4" />{" "}
+                {course.language === "es" ? "Español" : course.language}
               </div>
             </div>
 
-            {/* Instructor mini */}
-            <div className="mt-8 flex items-center gap-3 border-t border-white/20 pt-6">
-              <img
-                src={course.instructor.avatarUrl}
-                alt={course.instructor.name}
-                className="h-10 w-10 rounded-full border border-white/20"
-              />
-              <div>
-                <div className="text-xs text-gray-400">Creado por</div>
-                <div className="font-semibold text-white underline decoration-dotted underline-offset-4">
-                  {course.instructor.name}
-                </div>
-              </div>
-            </div>
+            {/* Instructor mini (using teacherId placeholder as we don't fetch profile yet, or simple static for logged in user) */}
+            {/* TODO: Fetch Instructor Profile if needed. For now omit or mock generic */}
           </div>
         </div>
       </div>
@@ -182,8 +160,10 @@ export function CourseDetailView() {
             </h2>
             <div
               className="prose prose-invert max-w-none text-[rgb(var(--text-secondary))]"
-              dangerouslySetInnerHTML={{ __html: course.description }}
-            />
+              style={{ whiteSpace: "pre-wrap" }} // Handle plain text formatting nicely
+            >
+              {course.description || "Sin descripción."}
+            </div>
           </section>
 
           {/* Curriculum */}
@@ -191,10 +171,8 @@ export function CourseDetailView() {
             <h2 className="mb-4 text-2xl font-bold text-[rgb(var(--text-primary))]">
               Contenido del curso
             </h2>
-            <CourseCurriculum content={course.content} />
+            <CourseCurriculum content={course.content || []} />
           </section>
-
-          {/* Requirements/Instructor details could go here */}
         </div>
 
         {/* Sidebar Sticky Card (Desktop) */}
@@ -203,7 +181,7 @@ export function CourseDetailView() {
             {/* Video Preview Area */}
             <div className="relative aspect-video w-full overflow-hidden rounded-xl">
               <img
-                src={course.coverUrl}
+                src={coverUrl}
                 alt=""
                 className="h-full w-full object-cover"
               />
@@ -218,7 +196,7 @@ export function CourseDetailView() {
               <div className="mb-2 text-3xl font-black text-[rgb(var(--text-primary))]">
                 {formattedPrice}
               </div>
-              <Button className="mb-3 w-full animate-pulse" size="lg">
+              <Button className="mb-3 w-full" size="lg">
                 Inscribirme ahora
               </Button>
               <Button variant="outline" className="w-full">
@@ -233,7 +211,8 @@ export function CourseDetailView() {
                   <Globe className="h-4 w-4" /> Acceso de por vida
                 </div>
                 <div className="flex items-center gap-2">
-                  <BarChart className="h-4 w-4" /> Nivel {course.level}
+                  <BarChart className="h-4 w-4" /> Nivel{" "}
+                  <span className="capitalize">{course.level}</span>
                 </div>
               </div>
             </div>

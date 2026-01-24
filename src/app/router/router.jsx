@@ -62,6 +62,7 @@ export const router = createBrowserRouter([
           { index: true, loader: () => redirect("/app/home") },
           { path: "home", element: <StudentHomeView /> },
           { path: "explore", element: <ExploreCoursesView /> },
+          { path: "courses/:id", element: <CourseDetailView /> },
           { path: "my-courses", element: <MyCoursesView /> },
           { path: "progress", element: <ProgressView /> },
           { path: "learn/:courseId/:lessonId?", element: <LearnPage /> },

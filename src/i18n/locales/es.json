@@ -126,6 +126,7 @@
     "popular": "Populares",
     "free": "Gratis",
     "price": "Precio",
+    "paid": "De pago",
     "students": "estudiantes",
     "lessons": "lecciones",
     "sections": "secciones",
@@ -211,6 +212,9 @@
     "addLesson": "Añadir lección",
     "noCourses": "Aún no has creado ningún curso",
     "createFirst": "Crear tu primer curso",
+    "created": "Curso creado correctamente",
+    "courseCreated": "Curso creado exitosamente",
+    "courseUpdated": "Curso actualizado correctamente",
     "tabs": {
       "details": "Detalles",
       "curriculum": "Contenido",

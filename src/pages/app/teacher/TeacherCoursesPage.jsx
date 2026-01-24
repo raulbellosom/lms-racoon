@@ -3,20 +3,25 @@ import { Link } from "react-router-dom";
 import {
   Plus,
   Search,
-  MoreVertical,
   BookOpen,
-  AlertCircle,
+  Users,
+  Star,
+  BarChart,
+  Eye,
 } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
+import { StatsService } from "../../../shared/data/stats";
+import { FileService } from "../../../shared/data/files";
 import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
 import { Input } from "../../../shared/ui/Input";
-import { Dropdown, DropdownItem } from "../../../shared/ui/Dropdown";
+import { CourseGridSkeleton } from "../../../shared/ui/Skeleton";
 
 export function TeacherCoursesPage() {
   const { auth } = useAuth();
   const [courses, setCourses] = React.useState([]);
+  const [stats, setStats] = React.useState({});
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
 
@@ -31,6 +36,11 @@ export function TeacherCoursesPage() {
     try {
       const data = await TeacherCoursesService.listByTeacher(auth.user.$id);
       setCourses(data);
+
+      // Fetch stats
+      const courseIds = data.map((c) => c.$id);
+      const statsData = await StatsService.getStatsForCourses(courseIds);
+      setStats(statsData);
     } catch (error) {
       console.error("Failed to load courses", error);
     } finally {
@@ -94,64 +104,144 @@ export function TeacherCoursesPage() {
         </Card>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredCourses.map((course) => (
-            <Card
-              key={course.$id}
-              className="group overflow-hidden transition-all hover:shadow-lg"
-            >
-              {/* Cover Image */}
-              <div className="relative h-48 w-full bg-[rgb(var(--bg-muted))]">
-                {course.coverFileId ? (
-                  // TODO: Resolve real image URL
-                  <div className="flex h-full items-center justify-center text-[rgb(var(--text-muted))]">
-                    Cover Image
-                  </div>
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-linear-to-br from-indigo-500/10 to-purple-500/10">
-                    <BookOpen className="h-10 w-10 text-indigo-500/30" />
-                  </div>
-                )}
-                <div className="absolute right-2 top-2">
+          {filteredCourses.map((course) => {
+            const coverUrl = course.coverFileId
+              ? FileService.getCourseCoverUrl(course.coverFileId)
+              : null;
+            const courseStats = stats[course.$id] || {};
+
+            return (
+              <Card
+                key={course.$id}
+                className="group relative flex h-[340px] flex-col overflow-hidden border-0 shadow-lg transition-transform hover:-translate-y-1 hover:shadow-xl"
+              >
+                {/* Background Image / Gradient */}
+                <div className="absolute inset-0 z-0 bg-[rgb(var(--bg-muted))]">
+                  {coverUrl ? (
+                    <img
+                      src={coverUrl}
+                      alt={course.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-80">
+                      <BookOpen className="h-12 w-12 text-white/50" />
+                    </div>
+                  )}
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/60 to-transparent" />
+                </div>
+
+                {/* Status Badge */}
+                <div className="absolute right-3 top-3 z-10">
                   <span
-                    className={`rounded-full px-2 py-1 text-xs font-bold shadow-xs backdrop-blur-md ${course.isPublished ? "bg-green-500/90 text-white" : "bg-gray-500/90 text-white"}`}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-md ${
+                      course.isPublished
+                        ? "bg-green-500/90"
+                        : "bg-black/50 border border-white/20"
+                    }`}
                   >
                     {course.isPublished ? "Publicado" : "Borrador"}
                   </span>
                 </div>
-              </div>
 
-              {/* Content */}
-              <div className="p-5">
-                <h3
-                  className="line-clamp-1 text-lg font-bold"
-                  title={course.title}
-                >
-                  {course.title}
-                </h3>
-                <p className="mt-1 text-xs font-semibold text-[rgb(var(--brand-primary))]">
-                  {/* Category would need lookup or duplicate field */}
-                  Categoría
-                </p>
-                <p className="mt-2 line-clamp-2 text-sm text-[rgb(var(--text-secondary))]">
-                  {course.subtitle || "Sin descripción corta"}
-                </p>
+                {/* Content Overlay */}
+                <div className="relative z-10 mt-auto flex flex-col p-5 text-white">
+                  <div className="mb-2">
+                    <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide">
+                      {course.category?.name || "Curso"}
+                    </span>
+                  </div>
 
-                <div className="mt-4 flex items-center justify-between border-t border-[rgb(var(--border-base))] pt-4">
-                  <span className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                    Actualizado:{" "}
-                    {new Date(course.$updatedAt).toLocaleDateString()}
-                  </span>
-                  <div className="flex gap-2">
-                    <Link to={`/app/teach/courses/${course.$id}`}>
-                      <Button size="sm" variant="secondary">
-                        Editar
-                      </Button>
-                    </Link>
+                  <h3
+                    className="mb-1 line-clamp-2 text-xl font-bold leading-tight text-white drop-shadow-sm"
+                    title={course.title}
+                  >
+                    {course.title}
+                  </h3>
+
+                  <p className="mb-4 line-clamp-2 text-xs font-medium text-gray-300">
+                    {course.subtitle || "Sin descripción corta"}
+                  </p>
+
+                  {/* Metadata Footer */}
+                  <div className="flex flex-col gap-3 border-t border-white/10 pt-3">
+                    {/* Stats Row */}
+                    <div className="flex items-center justify-between text-xs text-gray-300">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="flex items-center gap-1"
+                          title="Alumnos"
+                        >
+                          <Users className="h-3.5 w-3.5 text-blue-300" />
+                          <span className="font-semibold">
+                            {courseStats.totalStudents || 0}
+                          </span>
+                        </span>
+                        <span
+                          className="flex items-center gap-1"
+                          title="Rating"
+                        >
+                          <Star
+                            className="h-3.5 w-3.5 text-yellow-400"
+                            fill="currentColor"
+                          />
+                          <span className="font-semibold">
+                            {courseStats.averageRating || 0}
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {course.priceCents === 0 ? (
+                          <span className="font-bold text-emerald-300">
+                            Gratis
+                          </span>
+                        ) : (
+                          <span className="font-bold text-amber-300">
+                            {(course.priceCents / 100).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions Row */}
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                        <BarChart className="h-3 w-3" />
+                        <span className="capitalize">
+                          {course.level || "General"}
+                        </span>
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-white/70 hover:bg-white/10 hover:text-white"
+                          title="Vista previa"
+                          onClick={() =>
+                            window.open(`/app/courses/${course.$id}`, "_blank")
+                          }
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
+                        <Link to={`/app/teach/courses/${course.$id}`}>
+                          <Button
+                            size="sm"
+                            className="h-7 px-3 text-xs bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 border border-white/10"
+                          >
+                            Editar
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

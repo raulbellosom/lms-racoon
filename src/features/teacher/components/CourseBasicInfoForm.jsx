@@ -10,6 +10,56 @@ import { Textarea } from "../../../shared/ui/Textarea";
  * @param {Function} setFormData - State setter function
  * @param {Array} categories - List of category options
  */
+const CharCounter = ({ current, max }) => {
+  const percentage = Math.min((current / max) * 100, 100);
+  const isNear = percentage > 90;
+  const isOver = current > max;
+  const remaining = max - current;
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs font-medium transition-all">
+      <span
+        className={
+          isOver
+            ? "text-red-500 font-bold"
+            : isNear
+              ? "text-amber-500"
+              : "text-[rgb(var(--text-muted))]"
+        }
+      >
+        {remaining}
+      </span>
+      <div className="relative h-4 w-4">
+        <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+          {/* Background Circle */}
+          <path
+            className="text-[rgb(var(--bg-muted))]"
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          {/* Progress Circle */}
+          <path
+            className={
+              isOver
+                ? "text-red-500"
+                : isNear
+                  ? "text-amber-500"
+                  : "text-[rgb(var(--brand-primary))]"
+            }
+            strokeDasharray={`${percentage}, 100`}
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+};
+
 export function CourseBasicInfoForm({
   formData,
   setFormData,
@@ -32,45 +82,76 @@ export function CourseBasicInfoForm({
         <div className="space-y-4">
           {/* Title */}
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {t("teacher.courseTitle")} <span className="text-red-500">*</span>
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                {t("teacher.courseTitle")}{" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <CharCounter current={formData.title.length} max={120} />
+            </div>
             <Input
               placeholder={t("teacher.form.courseTitlePlaceholder")}
               value={formData.title}
               onChange={(e) => updateField("title", e.target.value)}
               className={
-                errors.title ? "border-red-500 focus:border-red-500" : ""
+                errors.title || formData.title.length > 120
+                  ? "border-red-500 focus:border-red-500"
+                  : ""
               }
             />
             {errors.title && (
               <p className="mt-1 text-xs text-red-500">{errors.title}</p>
             )}
+            {formData.title.length > 120 && (
+              <p className="mt-1 text-xs text-red-500">
+                El título no puede exceder los 120 caracteres.
+              </p>
+            )}
           </div>
 
           {/* Subtitle */}
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {t("teacher.courseSubtitle")}
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                {t("teacher.courseSubtitle")}
+              </label>
+              <CharCounter current={formData.subtitle.length} max={180} />
+            </div>
             <Input
               placeholder={t("teacher.form.subtitlePlaceholder")}
               value={formData.subtitle}
               onChange={(e) => updateField("subtitle", e.target.value)}
+              className={formData.subtitle.length > 180 ? "border-red-500" : ""}
             />
+            {formData.subtitle.length > 180 && (
+              <p className="mt-1 text-xs text-red-500">
+                El subtítulo no puede exceder los 180 caracteres.
+              </p>
+            )}
           </div>
 
           {/* Description */}
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {t("teacher.courseDescription")}
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                {t("teacher.courseDescription")}
+              </label>
+              <CharCounter current={formData.description.length} max={8000} />
+            </div>
             <Textarea
               placeholder={t("teacher.form.descriptionPlaceholder")}
               value={formData.description}
               onChange={(e) => updateField("description", e.target.value)}
               rows={6}
+              className={
+                formData.description.length > 8000 ? "border-red-500" : ""
+              }
             />
+            {formData.description.length > 8000 && (
+              <p className="mt-1 text-xs text-red-500">
+                La descripción es demasiado larga.
+              </p>
+            )}
           </div>
         </div>
       </Card>
