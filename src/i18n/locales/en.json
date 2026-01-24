@@ -7,7 +7,43 @@
     "catalog": "Catalog",
     "explore": "Explore",
     "users": "Users",
-    "search": "Search"
+    "search": "Search",
+    "profile": "My Profile"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information",
+    "personalInfo": "Personal Information",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell us a little about yourself...",
+    "noBio": "No biography.",
+    "changePhoto": "Change photo",
+    "security": "Account Security",
+    "securityDesc": "Manage your password and account security",
+    "resetPassword": "Reset Password",
+    "resetPasswordDesc": "An email will be sent with instructions to change your password",
+    "sendResetEmail": "Send Reset Email",
+    "resetCooldown": "Wait {{seconds}}s to resend",
+    "emailSent": "Recovery email sent",
+    "noEmail": "No registered email",
+    "sendingEmail": "Sending email...",
+    "errors": {
+      "nameRequired": "First and last name are required",
+      "invalidEmail": "Invalid email",
+      "phoneTooShort": "Phone must have at least 10 digits",
+      "updateFailed": "Error updating profile",
+      "uploadFailed": "Error uploading image",
+      "imageTooLarge": "Image must be less than 5MB",
+      "resetFailed": "Error sending email"
+    },
+    "success": {
+      "updated": "Profile updated successfully",
+      "photoUpdated": "Profile photo updated"
+    }
   },
   "auth": {
     "welcomeBack": "Welcome back!",
@@ -143,7 +179,7 @@
     "coverImage": "Cover image",
     "promoVideo": "Promotional video",
     "pricing": "Price",
-    "publish": "Publish",
+    "publishBtn": "Publish",
     "unpublish": "Unpublish",
     "saveDraft": "Save draft",
     "sections": "Sections",

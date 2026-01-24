@@ -66,6 +66,13 @@ export async function register({ email, password, name }) {
 }
 
 export async function login({ email, password }) {
+  // Fix: Delete any existing session to prevent "session is active" error
+  try {
+    await account.deleteSession("current");
+  } catch {
+    // No active session, safe to continue
+  }
+
   await account.createEmailPasswordSession(email, password);
   const user = await account.get();
 

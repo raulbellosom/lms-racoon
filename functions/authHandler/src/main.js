@@ -286,7 +286,7 @@ module.exports = async ({ req, res, log, error }) => {
   // ACTION: CREATE USER
   // =========================================================================
   if (action === "create_user") {
-    const { email, password, name, phone } = body;
+    const { email, password, name, phone, sendWelcomeEmail = true } = body;
 
     if (!email || !password || !name) {
       return res.json(
@@ -306,6 +306,124 @@ module.exports = async ({ req, res, log, error }) => {
       );
 
       log(`User created via function: ${user.$id} (${email})`);
+
+      // Send welcome email if enabled
+      if (sendWelcomeEmail) {
+        try {
+          const appUrl = process.env.APP_BASE_URL || "http://localhost:5173";
+          const loginLink = `${appUrl}/login`;
+
+          const transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_SMTP_HOST,
+            port: process.env.EMAIL_SMTP_PORT,
+            secure: process.env.EMAIL_SMTP_SECURE === "true",
+            auth: {
+              user: process.env.EMAIL_SMTP_USER,
+              pass: process.env.EMAIL_SMTP_PASS,
+            },
+          });
+
+          const welcomeHtml = `
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Bienvenido a Racoon LMS</title>
+          </head>
+          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px;">
+            <table role="presentation" style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+              <!-- Header with gradient -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                  <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                    🦝 Racoon LMS
+                  </h1>
+                  <p style="margin: 10px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px; font-weight: 500;">
+                    Sistema de Gestión de Aprendizaje
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <h2 style="margin: 0 0 20px 0; color: #1a202c; font-size: 24px; font-weight: 700;">
+                    ¡Bienvenido a Racoon LMS!
+                  </h2>
+                  
+                  <p style="margin: 0 0 16px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                    Hola <strong style="color: #2d3748;">${name}</strong>,
+                  </p>
+                  
+                  <p style="margin: 0 0 24px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                    Tu cuenta ha sido creada exitosamente. Ya puedes acceder a la plataforma y comenzar a aprender.
+                  </p>
+                  
+                  <!-- Account Info Box -->
+                  <div style="background: #f7fafc; border-left: 4px solid #667eea; padding: 16px; border-radius: 8px; margin: 0 0 24px 0;">
+                    <p style="margin: 0 0 8px 0; color: #2d3748; font-size: 14px; font-weight: 600;">
+                      Tus credenciales de acceso:
+                    </p>
+                    <p style="margin: 0 0 4px 0; color: #4a5568; font-size: 14px;">
+                      <strong>Email:</strong> ${email}
+                    </p>
+                    <p style="margin: 0; color: #4a5568; font-size: 14px;">
+                      <strong>Contraseña:</strong> La proporcionada por tu administrador
+                    </p>
+                  </div>
+                  
+                  <!-- CTA Button -->
+                  <table role="presentation" style="margin: 0 0 24px 0;">
+                    <tr>
+                      <td style="text-align: center;">
+                        <a href="${loginLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                          Iniciar Sesión
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Security notice -->
+                  <div style="background: #fff5f5; border-left: 4px solid #fc8181; padding: 16px; border-radius: 8px; margin: 0 0 24px 0;">
+                    <p style="margin: 0; color: #742a2a; font-size: 14px; line-height: 1.5;">
+                      <strong>⚠️ Recomendación:</strong> Te sugerimos cambiar tu contraseña después del primer inicio de sesión.
+                    </p>
+                  </div>
+                  
+                  <p style="margin: 0; color: #718096; font-size: 14px; line-height: 1.6;">
+                    Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background: #f7fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                  <p style="margin: 0 0 8px 0; color: #a0aec0; font-size: 13px;">
+                    © ${new Date().getFullYear()} Racoon LMS. Todos los derechos reservados.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+          `;
+
+          await transporter.sendMail({
+            from: `"${process.env.EMAIL_FROM_NAME || "Racoon LMS"}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+            to: email,
+            subject: "¡Bienvenido a Racoon LMS!",
+            html: welcomeHtml,
+          });
+
+          log(`Welcome email sent to ${email}`);
+        } catch (emailErr) {
+          // Don't fail user creation if email fails
+          error(`Failed to send welcome email: ${emailErr.message}`);
+        }
+      }
+
       return res.json({ success: true, userId: user.$id, user });
     } catch (err) {
       error(`Error in create_user: ${err.message}`);
@@ -313,6 +431,85 @@ module.exports = async ({ req, res, log, error }) => {
         { success: false, message: err.message, code: err.code || 500 },
         500,
       );
+    }
+  }
+
+  // =========================================================================
+  // ACTION: SEND WELCOME EMAIL (Standalone)
+  // =========================================================================
+  if (action === "send_welcome") {
+    const { email, name } = body;
+
+    if (!email || !name) {
+      return res.json(
+        { success: false, message: "Missing email or name" },
+        400,
+      );
+    }
+
+    try {
+      const appUrl = process.env.APP_BASE_URL || "http://localhost:5173";
+      const loginLink = `${appUrl}/login`;
+
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_SMTP_HOST,
+        port: process.env.EMAIL_SMTP_PORT,
+        secure: process.env.EMAIL_SMTP_SECURE === "true",
+        auth: {
+          user: process.env.EMAIL_SMTP_USER,
+          pass: process.env.EMAIL_SMTP_PASS,
+        },
+      });
+
+      const welcomeHtml = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bienvenido a Racoon LMS</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px;">
+        <table role="presentation" style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 700;">🦝 Racoon LMS</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 30px;">
+              <h2 style="margin: 0 0 20px 0; color: #1a202c; font-size: 24px;">¡Bienvenido!</h2>
+              <p style="margin: 0 0 16px 0; color: #4a5568; font-size: 16px;">
+                Hola <strong>${name}</strong>, tu cuenta está lista para usar.
+              </p>
+              <table role="presentation" style="margin: 24px 0;">
+                <tr>
+                  <td>
+                    <a href="${loginLink}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: 600;">
+                      Iniciar Sesión
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+      `;
+
+      await transporter.sendMail({
+        from: `"${process.env.EMAIL_FROM_NAME || "Racoon LMS"}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+        to: email,
+        subject: "¡Bienvenido a Racoon LMS!",
+        html: welcomeHtml,
+      });
+
+      log(`Welcome email sent to ${email}`);
+      return res.json({ success: true, message: "Welcome email sent" });
+    } catch (err) {
+      error(`Error in send_welcome: ${err.message}`);
+      return res.json({ success: false, message: "Failed to send email" }, 500);
     }
   }
 

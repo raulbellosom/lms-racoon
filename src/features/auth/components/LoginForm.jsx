@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Mail, KeyRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -98,12 +98,12 @@ export function LoginForm() {
 
       {/* Forgot password link */}
       <div className="flex justify-end">
-        <button
-          type="button"
+        <Link
+          to="/forgot-password"
           className="text-xs font-medium text-[rgb(var(--brand-primary))] transition hover:text-[rgb(var(--brand-secondary))]"
         >
           {t("auth.forgotPassword")}
-        </button>
+        </Link>
       </div>
 
       <Button

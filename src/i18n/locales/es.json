@@ -6,7 +6,43 @@
     "teacherPanel": "Panel de Instructor",
     "catalog": "Catálogo",
     "explore": "Explorar",
-    "search": "Buscar"
+    "search": "Buscar",
+    "profile": "Mi Perfil"
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "subtitle": "Gestiona tu información personal",
+    "personalInfo": "Información Personal",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Email",
+    "phone": "Teléfono",
+    "bio": "Biografía",
+    "bioPlaceholder": "Cuéntanos un poco sobre ti...",
+    "noBio": "Sin biografía.",
+    "changePhoto": "Cambiar foto",
+    "security": "Seguridad de la Cuenta",
+    "securityDesc": "Administra tu contraseña y seguridad de la cuenta",
+    "resetPassword": "Restablecer Contraseña",
+    "resetPasswordDesc": "Se enviará un correo con instrucciones para cambiar tu contraseña",
+    "sendResetEmail": "Enviar Correo de Restablecimiento",
+    "resetCooldown": "Espera {{seconds}}s para reenviar",
+    "emailSent": "Correo de recuperación enviado",
+    "noEmail": "No tienes un email registrado",
+    "sendingEmail": "Enviando correo...",
+    "errors": {
+      "nameRequired": "Nombre y Apellidos son requeridos",
+      "invalidEmail": "Email inválido",
+      "phoneTooShort": "El teléfono debe tener al menos 10 dígitos",
+      "updateFailed": "Error al actualizar el perfil",
+      "uploadFailed": "Error al subir la imagen",
+      "imageTooLarge": "La imagen debe ser menor a 5MB",
+      "resetFailed": "Error al enviar correo"
+    },
+    "success": {
+      "updated": "Perfil actualizado correctamente",
+      "photoUpdated": "Foto de perfil actualizada"
+    }
   },
   "auth": {
     "welcomeBack": "¡Bienvenido de nuevo!",
@@ -142,7 +178,7 @@
     "coverImage": "Imagen de portada",
     "promoVideo": "Video promocional",
     "pricing": "Precio",
-    "publish": "Publicar",
+    "publishBtn": "Publicar",
     "unpublish": "Despublicar",
     "saveDraft": "Guardar borrador",
     "sections": "Secciones",

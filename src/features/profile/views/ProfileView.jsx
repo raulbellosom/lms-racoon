@@ -6,7 +6,7 @@ import { Avatar } from "../../../shared/ui/Avatar";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { Input } from "../../../shared/ui/Input";
-import { Edit, Save, X, Camera, Mail } from "lucide-react";
+import { Edit, Save, X, Camera, Mail, Shield, KeyRound } from "lucide-react";
 import { ProfileService } from "../../../shared/data/profiles";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { functions } from "../../../shared/appwrite/client";
@@ -44,19 +44,19 @@ export function ProfileView() {
 
   const validate = () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      showToast("Nombre y Apellidos son requeridos", "error");
+      showToast(t("profile.errors.nameRequired"), "error");
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      showToast("Email inválido", "error");
+      showToast(t("profile.errors.invalidEmail"), "error");
       return false;
     }
 
     // Basic length check for phone, function handles formatting
     if (formData.phone && formData.phone.length < 10) {
-      showToast("El teléfono debe tener al menos 10 dígitos", "error");
+      showToast(t("profile.errors.phoneTooShort"), "error");
       return false;
     }
 
@@ -71,11 +71,11 @@ export function ProfileView() {
       // Use syncUpdate to handle Auth sync
       await ProfileService.syncUpdate(user.$id, formData);
       await refreshProfile(); // Reload profile in AuthContext
-      showToast("Perfil actualizado correctamente", "success");
+      showToast(t("profile.success.updated"), "success");
       setIsEditing(false);
     } catch (error) {
       console.error(error);
-      showToast(error.message || "Error al actualizar el perfil", "error");
+      showToast(error.message || t("profile.errors.updateFailed"), "error");
     } finally {
       setLoading(false);
     }
@@ -87,24 +87,19 @@ export function ProfileView() {
 
     // Optional: Validate file size/type
     if (file.size > 5 * 1024 * 1024) {
-      showToast("La imagen debe ser menor a 5MB", "error");
+      showToast(t("profile.errors.imageTooLarge"), "error");
       return;
     }
 
     setLoading(true);
     try {
       const fileDoc = await ProfileService.uploadAvatar(file);
-      // Update profile with new avatar ID (sync not strictly needed for just avatar but good for consistency,
-      // though avatar doesn't affect Auth. Using standard update for avatar to be faster/simpler or sync?
-      // Let's use standard update for avatar to avoid overhead unless we want to sync something else later.
-      // Actually, if we use syncUpdate it updates everything passed.
-      // For just avatar, we can use simple update or sync. Let's stick to simple update for avatar as it is independent.)
       await ProfileService.update(profile.$id, { avatarFileId: fileDoc.$id });
       await refreshProfile();
-      showToast("Foto de perfil actualizada", "success");
+      showToast(t("profile.success.photoUpdated"), "success");
     } catch (error) {
       console.error(error);
-      showToast("Error al subir la imagen", "error");
+      showToast(t("profile.errors.uploadFailed"), "error");
     } finally {
       setLoading(false);
       // Reset input
@@ -113,6 +108,7 @@ export function ProfileView() {
   };
 
   const [resetCooldown, setResetCooldown] = React.useState(0);
+  const [sendingReset, setSendingReset] = React.useState(false);
 
   const handleSendReset = async () => {
     const now = Date.now();
@@ -120,34 +116,34 @@ export function ProfileView() {
 
     if (now - resetCooldown < cooldownMs) {
       const remaining = Math.ceil((cooldownMs - (now - resetCooldown)) / 1000);
-      showToast(`Espera ${remaining}s para reenviar correo`, "error");
+      showToast(t("profile.resetCooldown", { seconds: remaining }), "error");
       return;
     }
 
     if (!user?.email) {
-      showToast("No tienes un email registrado", "error");
+      showToast(t("profile.noEmail"), "error");
       return;
     }
 
+    setSendingReset(true);
     try {
-      showToast("Enviando correo...", "info");
+      showToast(t("profile.sendingEmail"), "info");
       await functions.createExecution(
         APPWRITE.functions.authHandler,
         JSON.stringify({ action: "request_recovery", email: user.email }),
       );
       setResetCooldown(now);
-      showToast("Correo de recuperación enviado", "success");
+      showToast(t("profile.emailSent"), "success");
     } catch (error) {
       console.error(error);
-      showToast("Error al enviar correo", "error");
+      showToast(t("profile.errors.resetFailed"), "error");
+    } finally {
+      setSendingReset(false);
     }
   };
 
   return (
-    <PageLayout
-      title={t("nav.profile", "Mi Perfil")}
-      subtitle="Gestiona tu información personal"
-    >
+    <PageLayout title={t("profile.title")} subtitle={t("profile.subtitle")}>
       <div className="grid gap-6 xl:grid-cols-3">
         {/* Profile Card */}
         <Card className="p-6 xl:col-span-1">
@@ -164,7 +160,7 @@ export function ProfileView() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading}
                 className="absolute bottom-4 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] text-white shadow-md transition-transform hover:scale-110 disabled:opacity-50"
-                title="Cambiar foto"
+                title={t("profile.changePhoto")}
               >
                 <Camera className="h-4 w-4" />
               </button>
@@ -184,19 +180,7 @@ export function ProfileView() {
               {user?.email}
             </p>
             <div className="mt-4 rounded-full bg-[rgb(var(--bg-muted))] px-3 py-1 text-xs font-medium uppercase tracking-wide">
-              {profile?.role || "Student"}
-            </div>
-
-            <div className="mt-6 w-full border-t border-[rgb(var(--border-base))] pt-6">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleSendReset}
-                disabled={loading}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Reset Password
-              </Button>
+              {t(`roles.${profile?.role || "student"}`)}
             </div>
           </div>
         </Card>
@@ -205,7 +189,7 @@ export function ProfileView() {
         <Card className="p-6 xl:col-span-2">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
-              Información Personal
+              {t("profile.personalInfo")}
             </h3>
             {isEditing ? (
               <div className="flex gap-2">
@@ -215,10 +199,10 @@ export function ProfileView() {
                   onClick={() => setIsEditing(false)}
                   disabled={loading}
                 >
-                  <X className="mr-2 h-4 w-4" /> Cancelar
+                  <X className="mr-2 h-4 w-4" /> {t("common.cancel")}
                 </Button>
                 <Button size="sm" onClick={handleSave} disabled={loading}>
-                  <Save className="mr-2 h-4 w-4" /> Guardar
+                  <Save className="mr-2 h-4 w-4" /> {t("common.save")}
                 </Button>
               </div>
             ) : (
@@ -227,7 +211,7 @@ export function ProfileView() {
                 size="sm"
                 onClick={() => setIsEditing(true)}
               >
-                <Edit className="mr-2 h-4 w-4" /> Editar
+                <Edit className="mr-2 h-4 w-4" /> {t("common.edit")}
               </Button>
             )}
           </div>
@@ -237,7 +221,7 @@ export function ProfileView() {
             <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  Nombre
+                  {t("profile.firstName")}
                 </label>
                 {isEditing ? (
                   <Input
@@ -245,7 +229,7 @@ export function ProfileView() {
                     onChange={(e) =>
                       setFormData({ ...formData, firstName: e.target.value })
                     }
-                    placeholder="Tu nombre"
+                    placeholder={t("profile.firstName")}
                   />
                 ) : (
                   <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
@@ -255,7 +239,7 @@ export function ProfileView() {
               </div>
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  Apellidos
+                  {t("profile.lastName")}
                 </label>
                 {isEditing ? (
                   <Input
@@ -263,7 +247,7 @@ export function ProfileView() {
                     onChange={(e) =>
                       setFormData({ ...formData, lastName: e.target.value })
                     }
-                    placeholder="Tus apellidos"
+                    placeholder={t("profile.lastName")}
                   />
                 ) : (
                   <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
@@ -273,7 +257,7 @@ export function ProfileView() {
               </div>
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  Email
+                  {t("profile.email")}
                 </label>
                 {isEditing ? (
                   <Input
@@ -296,7 +280,7 @@ export function ProfileView() {
               </div>
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  Teléfono
+                  {t("profile.phone")}
                 </label>
                 {isEditing ? (
                   <Input
@@ -316,7 +300,7 @@ export function ProfileView() {
 
             <div>
               <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                Bio
+                {t("profile.bio")}
               </label>
               {isEditing ? (
                 <textarea
@@ -325,14 +309,58 @@ export function ProfileView() {
                   onChange={(e) =>
                     setFormData({ ...formData, bio: e.target.value })
                   }
-                  placeholder="Cuéntanos un poco sobre ti..."
+                  placeholder={t("profile.bioPlaceholder")}
                   rows={4}
                 />
               ) : (
                 <div className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
-                  {profile?.bio || "Sin biografía."}
+                  {profile?.bio || t("profile.noBio")}
                 </div>
               )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Security Card - Full width on xl */}
+        <Card className="p-6 xl:col-span-3">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-amber-500/20 to-orange-500/20 text-amber-500">
+              <Shield className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
+                {t("profile.security")}
+              </h3>
+              <p className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
+                {t("profile.securityDesc")}
+              </p>
+
+              {/* Reset Password Section */}
+              <div className="mt-6 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))]">
+                      <KeyRound className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-[rgb(var(--text-primary))]">
+                        {t("profile.resetPassword")}
+                      </h4>
+                      <p className="text-xs text-[rgb(var(--text-muted))]">
+                        {t("profile.resetPasswordDesc")}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleSendReset}
+                    disabled={sendingReset || loading}
+                    className="w-full sm:w-auto"
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    {t("profile.sendResetEmail")}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </Card>

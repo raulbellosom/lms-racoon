@@ -58,7 +58,7 @@ La API Key debe tener los siguientes scopes:
 
 ```json
 {
-  "node-appwrite": "^18.0.0",
+  "node-appwrite": "^17.0.0",
   "nodemailer": "^6.9.0"
 }
 ```
