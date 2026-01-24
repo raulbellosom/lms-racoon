@@ -383,26 +383,25 @@ export function AppLayout() {
       </div>
 
       {/* ========== Mobile Header ========== */}
-      {/* Safe area background for iOS PWA - covers the notch/Dynamic Island area */}
-      <div className="fixed top-0 left-0 right-0 z-40 h-safe-top bg-[rgb(var(--bg-surface))] md:hidden" />
-      <header className="fixed left-0 right-0 top-safe z-40 flex h-14 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 backdrop-blur-lg md:hidden">
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="rounded-lg p-2 text-[rgb(var(--text-secondary))] transition hover:bg-[rgb(var(--bg-muted))]"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center">
-            <img
-              src={appIcon}
-              alt="Racoon LMS"
-              className="h-full w-full object-contain"
-            />
+      <header className="fixed left-0 right-0 top-0 z-40 flex h-[calc(3.5rem+constant(safe-area-inset-top))] h-[calc(3.5rem+env(safe-area-inset-top))] items-start justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 pt-safe backdrop-blur-lg md:hidden">
+        <div className="flex h-14 w-full items-center justify-between">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="rounded-lg p-2 text-[rgb(var(--text-secondary))] transition hover:bg-[rgb(var(--bg-muted))]"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center">
+              <img
+                src={appIcon}
+                alt="Racoon LMS"
+                className="h-full w-full object-contain"
+              />
+            </div>
+            <span className="font-bold">Racoon LMS</span>
           </div>
-          <span className="font-bold">Racoon LMS</span>
         </div>
-        <div className="w-9" /> {/* Spacer for centering */}
       </header>
 
       {/* ========== Mobile Drawer ========== */}
