@@ -104,9 +104,9 @@ export function Drawer({
             exit="exit"
             className={cn(
               "absolute flex flex-col border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))]",
-              side === "left" && "border-r",
-              side === "right" && "border-l",
-              side === "bottom" && "border-t",
+              side === "left" && "border-r pt-safe",
+              side === "right" && "border-l pt-safe",
+              side === "bottom" && "border-t pb-safe",
               sidePositionClasses[side],
               className,
             )}

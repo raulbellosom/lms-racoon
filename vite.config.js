@@ -23,7 +23,7 @@ export default defineConfig({
       manifest: {
         name: "Racoon LMS",
         short_name: "Racoon LMS",
-        description: "Plataforma moderna de cursos (tipo Udemy) — mobile-first.",
+        description: "Plataforma moderna de cursos — mobile-first.",
         theme_color: "#e11d48",
         background_color: "#09090b",
         display: "standalone",
@@ -31,11 +31,36 @@ export default defineConfig({
         scope: "/",
         orientation: "portrait-primary",
         icons: [
-          { src: "/web/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon", purpose: "any" },
-          { src: "/web/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-          { src: "/web/icon-192-maskable.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-          { src: "/web/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-          { src: "/web/icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          {
+            src: "/web/favicon.ico",
+            sizes: "16x16 32x32 48x48",
+            type: "image/x-icon",
+            purpose: "any",
+          },
+          {
+            src: "/web/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/web/icon-192-maskable.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "/web/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/web/icon-512-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
         ],
         categories: ["education", "productivity"],
         shortcuts: [
