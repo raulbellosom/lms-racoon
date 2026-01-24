@@ -50,6 +50,7 @@ export async function register({ email, password, name }) {
         role: "student",
         avatarFileId: "",
         bio: "",
+        email: email, // Add email (required)
         phone: "",
         country: "MX",
         enabled: true,
@@ -105,6 +106,7 @@ export async function login({ email, password }) {
           role: "student",
           avatarFileId: "",
           bio: "",
+          email: user.email, // Add email (required)
           phone: "",
           country: "MX",
           enabled: true,

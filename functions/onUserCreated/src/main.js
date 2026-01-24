@@ -75,7 +75,7 @@ module.exports = async ({ req, res, log, error }) => {
       role: "student",
       avatarFileId: "",
       bio: "",
-      email: authUser.email || "",
+      email: authUser.email || `missing_${userId}@noemail.com`,
       phone: authUser.phone || "",
       country: "MX",
       enabled: true,
