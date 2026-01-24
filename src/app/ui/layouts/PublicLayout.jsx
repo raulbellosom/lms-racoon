@@ -21,7 +21,7 @@ export function PublicLayout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-dvh pt-safe">
+    <div className="min-h-dvh">
       {/* ========== Header ========== */}
       {/* ========== Header ========== */}
       <PublicNavbar />
@@ -29,7 +29,7 @@ export function PublicLayout() {
       {/* Mobile Drawer */}
 
       {/* ========== Main Content ========== */}
-      <main className="pt-16">
+      <main className="pt-[calc(4rem+var(--safe-top))]">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

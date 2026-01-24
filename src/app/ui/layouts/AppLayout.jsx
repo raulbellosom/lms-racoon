@@ -383,7 +383,9 @@ export function AppLayout() {
       </div>
 
       {/* ========== Mobile Header ========== */}
-      <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 pt-safe backdrop-blur-lg md:hidden">
+      {/* Safe area background for iOS PWA */}
+      <div className="fixed top-0 left-0 right-0 z-40 h-[var(--safe-top)] bg-[rgb(var(--bg-surface))/0.9] md:hidden" />
+      <header className="fixed left-0 right-0 top-safe z-40 flex h-14 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 backdrop-blur-lg md:hidden">
         <button
           onClick={() => setDrawerOpen(true)}
           className="rounded-lg p-2 text-[rgb(var(--text-secondary))] transition hover:bg-[rgb(var(--bg-muted))]"
