@@ -9,7 +9,10 @@ export const APPWRITE = {
     courses: pick("VITE_APPWRITE_COL_COURSES", "courses"),
     courseSections: pick("VITE_APPWRITE_COL_COURSE_SECTIONS", "courseSections"),
     lessons: pick("VITE_APPWRITE_COL_LESSONS", "lessons"),
-    lessonTimestamps: pick("VITE_APPWRITE_COL_LESSON_TIMESTAMPS", "lessonTimestamps"),
+    lessonTimestamps: pick(
+      "VITE_APPWRITE_COL_LESSON_TIMESTAMPS",
+      "lessonTimestamps",
+    ),
     enrollments: pick("VITE_APPWRITE_COL_ENROLLMENTS", "enrollments"),
     lessonProgress: pick("VITE_APPWRITE_COL_LESSON_PROGRESS", "lessonProgress"),
     courseStats: pick("VITE_APPWRITE_COL_COURSE_STATS", "courseStats"),
@@ -26,19 +29,26 @@ export const APPWRITE = {
     avatars: pick("VITE_APPWRITE_BUCKET_AVATARS", "avatars"),
     courseCovers: pick("VITE_APPWRITE_BUCKET_COURSE_COVERS", "courseCovers"),
     lessonVideos: pick("VITE_APPWRITE_BUCKET_LESSON_VIDEOS", "lessonVideos"),
-    lessonAttachments: pick("VITE_APPWRITE_BUCKET_LESSON_ATTACHMENTS", "lessonAttachments"),
+    lessonAttachments: pick(
+      "VITE_APPWRITE_BUCKET_LESSON_ATTACHMENTS",
+      "lessonAttachments",
+    ),
     submissionAttachments: pick(
       "VITE_APPWRITE_BUCKET_SUBMISSION_ATTACHMENTS",
-      "submissionAttachments"
+      "submissionAttachments",
     ),
   },
   functions: {
     onUserCreated: pick("VITE_APPWRITE_FN_ON_USER_CREATED", "onUserCreated"),
     recomputeCourseStats: pick(
       "VITE_APPWRITE_FN_RECOMPUTE_COURSE_STATS",
-      "recomputeCourseStats"
+      "recomputeCourseStats",
     ),
     enrollCourse: pick("VITE_APPWRITE_FN_ENROLL_COURSE", "enrollCourse"),
     updateProgress: pick("VITE_APPWRITE_FN_UPDATE_PROGRESS", "updateProgress"),
+    syncUserProfile: pick(
+      "VITE_APPWRITE_FN_SYNC_USER_PROFILE",
+      "syncUserProfile",
+    ),
   },
 };

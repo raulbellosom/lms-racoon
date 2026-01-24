@@ -56,7 +56,7 @@ function MobileNavItem({ to, icon: Icon, label }) {
       to={to}
       className={({ isActive }) =>
         [
-          "flex flex-col items-center gap-1 rounded-xl py-2 text-xs font-semibold transition-all",
+          "flex flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] font-semibold transition-all",
           isActive
             ? "text-[rgb(var(--brand-primary))]"
             : "text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-primary))]",
@@ -75,11 +75,11 @@ function MobileNavItem({ to, icon: Icon, label }) {
           >
             <Icon className="h-5 w-5" />
           </motion.div>
-          <span>{label}</span>
+          <span className="truncate max-w-[60px]">{label}</span>
           {isActive && (
             <motion.div
               layoutId="mobile-nav-indicator"
-              className="absolute -bottom-1 h-1 w-8 rounded-full bg-[rgb(var(--brand-primary))]"
+              className="absolute -bottom-1 h-0.5 w-6 rounded-full bg-[rgb(var(--brand-primary))]"
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
           )}
@@ -248,10 +248,31 @@ export function AppLayout() {
         {/* User info */}
         <DrawerSection>
           <div className="rounded-xl bg-[rgb(var(--bg-muted))] p-4">
-            <div className="text-sm font-bold">{displayName}</div>
-            <div className="mt-0.5 text-xs text-[rgb(var(--text-secondary))]">
-              {role.charAt(0).toUpperCase() + role.slice(1)}
+            <div className="flex items-center gap-3 mb-3">
+              <Avatar
+                name={displayName}
+                src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
+                size="md"
+                ring
+              />
+              <div>
+                <div className="text-sm font-bold">{displayName}</div>
+                <div className="mt-0.5 text-xs text-[rgb(var(--text-secondary))]">
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </div>
+              </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => {
+                navigate("/app/profile");
+                setDrawerOpen(false);
+              }}
+            >
+              <User className="mr-2 h-4 w-4" /> {t("nav.profile", "Mi Perfil")}
+            </Button>
           </div>
         </DrawerSection>
 
@@ -294,7 +315,7 @@ export function AppLayout() {
       </Drawer>
 
       {/* ========== Mobile Main ========== */}
-      <main className="min-h-dvh pt-14 pb-20 md:hidden">
+      <main className="min-h-dvh pt-14 pb-16 md:hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -310,19 +331,21 @@ export function AppLayout() {
 
       {/* ========== Mobile Bottom Nav ========== */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.95] backdrop-blur-lg md:hidden">
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
+        <div className="grid grid-cols-5 items-center px-1 py-1.5 pb-safe">
           {navItems.slice(0, 4).map((item) => (
-            <div key={item.to} className="relative flex-1">
+            <div key={item.to} className="flex justify-center">
               <MobileNavItem {...item} />
             </div>
           ))}
-          <div className="relative flex-1">
+          <div className="flex justify-center">
             <button
               onClick={onLogout}
-              className="flex w-full flex-col items-center gap-1 rounded-xl py-2 text-xs font-semibold text-[rgb(var(--text-muted))] transition-all hover:text-[rgb(var(--text-primary))]"
+              className="flex flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] font-semibold text-[rgb(var(--text-muted))] transition-all hover:text-[rgb(var(--text-primary))]"
             >
               <LogOut className="h-5 w-5" />
-              <span>{t("common.logout")}</span>
+              <span className="truncate max-w-[60px]">
+                {t("common.logout")}
+              </span>
             </button>
           </div>
         </div>

@@ -31,24 +31,49 @@ export function ProfileView() {
         lastName: profile.lastName || "",
         phone: profile.phone || "",
         bio: profile.bio || "",
+        email: user?.email || "", // From auth user
       });
     }
-  }, [profile]);
+  }, [profile, user]);
 
   const displayName = profile?.firstName
     ? `${profile.firstName} ${profile.lastName || ""}`.trim()
     : user?.name || t("student.welcome");
 
+  const validate = () => {
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      showToast("Nombre y Apellidos son requeridos", "error");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      showToast("Email inválido", "error");
+      return false;
+    }
+
+    // Basic length check for phone, function handles formatting
+    if (formData.phone && formData.phone.length < 10) {
+      showToast("El teléfono debe tener al menos 10 dígitos", "error");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSave = async () => {
+    if (!validate()) return;
+
     setLoading(true);
     try {
-      await ProfileService.update(profile.$id, formData);
+      // Use syncUpdate to handle Auth sync
+      await ProfileService.syncUpdate(user.$id, formData);
       await refreshProfile(); // Reload profile in AuthContext
       showToast("Perfil actualizado correctamente", "success");
       setIsEditing(false);
     } catch (error) {
       console.error(error);
-      showToast("Error al actualizar el perfil", "error");
+      showToast(error.message || "Error al actualizar el perfil", "error");
     } finally {
       setLoading(false);
     }
@@ -67,7 +92,11 @@ export function ProfileView() {
     setLoading(true);
     try {
       const fileDoc = await ProfileService.uploadAvatar(file);
-      // Update profile with new avatar ID
+      // Update profile with new avatar ID (sync not strictly needed for just avatar but good for consistency,
+      // though avatar doesn't affect Auth. Using standard update for avatar to be faster/simpler or sync?
+      // Let's use standard update for avatar to avoid overhead unless we want to sync something else later.
+      // Actually, if we use syncUpdate it updates everything passed.
+      // For just avatar, we can use simple update or sync. Let's stick to simple update for avatar as it is independent.)
       await ProfileService.update(profile.$id, { avatarFileId: fileDoc.$id });
       await refreshProfile();
       showToast("Foto de perfil actualizada", "success");
@@ -200,15 +229,24 @@ export function ProfileView() {
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
                   Email
                 </label>
-                <div className="mt-1 flex h-10 items-center text-sm font-medium text-[rgb(var(--text-secondary))] opacity-60">
-                  {/* Email is read-only unless admin (but even admin shouldn't edit own email here easily) */}
-                  {user?.email || "-"}
-                  {profile?.role === "admin" && (
-                    <span className="ml-2 text-[10px] text-amber-500">
-                      (Admin)
-                    </span>
-                  )}
-                </div>
+                {isEditing ? (
+                  <Input
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    placeholder="tucorreo@ejemplo.com"
+                  />
+                ) : (
+                  <div className="mt-1 flex h-10 items-center text-sm font-medium text-[rgb(var(--text-secondary))] opacity-60">
+                    {user?.email || "-"}
+                    {profile?.role === "admin" && (
+                      <span className="ml-2 text-[10px] text-amber-500">
+                        (Admin)
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
@@ -220,7 +258,7 @@ export function ProfileView() {
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
-                    placeholder="+1 234 567 890"
+                    placeholder="+52 123 456 7890"
                   />
                 ) : (
                   <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">

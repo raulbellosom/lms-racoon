@@ -9,7 +9,7 @@ const sdk = require("node-appwrite");
  *
  * Qué hace:
  * 1) Actualiza el documento `profiles/{userId}` (firstName, lastName, phone, bio, country, avatarFileId)
- * 2) Sincroniza el `name` del usuario de Auth: `${firstName} ${lastName}` (trim)
+ * 2) Sincroniza `name`, `email` y `phone` en Appwrite Auth.
  *
  * Seguridad:
  * - Si NO hay APPWRITE_FUNCTION_USER_ID, solo permite operar si envías `SERVICE_CALL_SECRET`
@@ -71,7 +71,11 @@ module.exports = async ({ req, res, log, error }) => {
   }
 
   // Determine userId (prefer authenticated invocation)
-  const authedUserId = process.env.APPWRITE_FUNCTION_USER_ID;
+  // Appwrite injects this env var for authenticated executions
+  // Also check headers as fallback (sometimes required in certain runtime versions)
+  const authedUserId =
+    process.env.APPWRITE_FUNCTION_USER_ID || req.headers["x-appwrite-user-id"];
+
   let userId = authedUserId;
 
   if (!userId) {
@@ -101,12 +105,13 @@ module.exports = async ({ req, res, log, error }) => {
   }
 
   const fullName = buildFullName(firstName, lastName);
-  const now = new Date().toISOString();
+  const email = safeStr(body.email, 100);
+  const phone = formatPhone(body.phone);
 
   const patch = {
     firstName,
     lastName,
-    phone: formatPhone(body.phone),
+    phone,
     bio: safeStr(body.bio, 500),
     country: safeStr(body.country || "MX", 2),
     avatarFileId: safeStr(body.avatarFileId, 36),
@@ -116,17 +121,47 @@ module.exports = async ({ req, res, log, error }) => {
     // 1) Update profile document
     await db.updateDocument(databaseId, profilesCollectionId, userId, patch);
 
-    // 2) Sync auth name
+    // 2) Sync auth name, email, phone
     const authUser = await users.get(userId);
+    const updates = [];
+
+    // Sync Name
     if (fullName && fullName !== authUser.name) {
       await users.updateName(userId, fullName);
+      updates.push("name");
+    }
+
+    // Sync Email
+    // Only update if provided and different
+    if (email && email.toLowerCase() !== authUser.email.toLowerCase()) {
+      // Basic regex check before calling API
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(email)) {
+        await users.updateEmail(userId, email);
+        updates.push("email");
+      } else {
+        log(`Invalid email format skipped: ${email}`);
+      }
+    }
+
+    // Sync Phone
+    // Only update if provided, different, and valid E.164
+    if (phone && phone !== authUser.phone) {
+      // E.164 check: + followed by 10-15 digits
+      const e164Regex = /^\+[1-9]\d{1,14}$/;
+      if (e164Regex.test(phone)) {
+        await users.updatePhone(userId, phone);
+        updates.push("phone");
+      } else {
+        log(`Invalid E.164 phone skipped: ${phone}`);
+      }
     }
 
     return res.json({
       success: true,
       userId,
-      fullName,
-      updated: Object.keys(patch),
+      updatedProfile: Object.keys(patch),
+      syncedAuth: updates,
     });
   } catch (err) {
     error("syncUserProfile failed: " + err.message);

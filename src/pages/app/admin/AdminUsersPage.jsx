@@ -13,13 +13,28 @@ import {
   DropdownItem,
   DropdownDivider,
 } from "../../../shared/ui/Dropdown";
-import { MoreVertical, Shield, User, GraduationCap } from "lucide-react";
+import { Modal, ModalFooter } from "../../../shared/ui/Modal";
+import { Input } from "../../../shared/ui/Input";
+import { Button } from "../../../shared/ui/Button";
+import {
+  MoreVertical,
+  Shield,
+  User,
+  GraduationCap,
+  Edit,
+  Loader2,
+} from "lucide-react";
 
 export function AdminUsersPage() {
   const { t } = useTranslation();
   const [users, setUsers] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const { showToast } = useToast();
+
+  // Edit Mode State
+  const [editingUser, setEditingUser] = React.useState(null);
+  const [saving, setSaving] = React.useState(false);
+  const [formData, setFormData] = React.useState({});
 
   React.useEffect(() => {
     loadUsers();
@@ -50,6 +65,69 @@ export function AdminUsersPage() {
     } catch (error) {
       console.error("Failed to update role", error);
       showToast("Error al actualizar rol", "error");
+    }
+  };
+
+  const handleEditClick = (user) => {
+    setEditingUser(user);
+    setFormData({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: "", // We don't have the email in profile doc usually unless synced.
+      // If profiles.email exists, use it. But in previous step ProfileView.jsx we allowed editing it.
+      // Ideally we should have email in profile doc if we want to show it here easily.
+      // However, the 'users' list from DB might not have email if it's not in the schema or synced yet.
+      // If the user hasn't been synced, this might be empty.
+      // Let's assume we want to allow setting it.
+      // For now, let's leave valid email blank if not present, enforcing user to enter it if they want to change it.
+      // Actually, if we want to SHOW the current email, we need to fetch it or rely on it being in the doc.
+      // The cloud function syncs it to the doc (if my memory of syncUserProfile is correct, I added it to patch? No, I added phone/bios to patch,
+      // let me check the function code again...
+      // Wait, in syncUserProfile I added phone to patch, but email?
+      // I checked the function code: "const email = safeStr(body.email, 100);" and "Updates ... email ... in Appwrite Auth".
+      // But did I add email to the Document Patch?
+      // "const patch = { firstName, lastName, phone, bio, ... }" -> I did NOT add email to the profile document in the function.
+      // So the profile document does NOT store the email.
+      // This means Admin Table won't show email unless I fetch it from Auth API (which I can't do easily from client).
+      // So, for now, Admin can only SET a new email, but not see the old one easily unless I add 'email' field to profiles collection.
+      // The user requirement said "validar el input de email... y ya los demas valores de profiles pues se actualizan en la tabla de profiles ... asi como lo tenemos en la base de datos".
+      // The DB schema in documentation/appwrite_db_racoon_lms.md does NOT have an email field in profiles.
+      // So I cannot show the current email here comfortably. I will add a note or just leave it empty.
+
+      phone: user.phone || "",
+      bio: user.bio || "",
+    });
+  };
+
+  const handleSaveUser = async () => {
+    if (!formData.firstName || !formData.lastName) {
+      showToast("Nombre y Apellidos requeridos", "error");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updatedData = await ProfileService.syncUpdate(
+        editingUser.$id,
+        formData,
+      );
+
+      // Update local list
+      setUsers(
+        users.map((u) =>
+          u.$id === editingUser.$id
+            ? { ...u, ...formData } // Optimistic / simple merge
+            : u,
+        ),
+      );
+
+      showToast("Usuario actualizado correctamente", "success");
+      setEditingUser(null);
+    } catch (error) {
+      console.error(error);
+      showToast("Error al actualizar usuario", "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -166,9 +244,18 @@ export function AdminUsersPage() {
                         }
                       >
                         <div className="px-2 py-1.5 text-xs font-semibold text-[rgb(var(--text-muted))]">
+                          Acciones
+                        </div>
+                        <DropdownItem
+                          icon={Edit}
+                          onClick={() => handleEditClick(user)}
+                        >
+                          Editar Detalles
+                        </DropdownItem>
+                        <DropdownDivider />
+                        <div className="px-2 py-1.5 text-xs font-semibold text-[rgb(var(--text-muted))]">
                           Cambiar Rol
                         </div>
-                        <DropdownDivider />
                         <DropdownItem
                           icon={User}
                           onClick={() => handleRoleChange(user.$id, "student")}
@@ -200,6 +287,105 @@ export function AdminUsersPage() {
           </table>
         </div>
       </Card>
+
+      {/* Edit User Modal */}
+      <Modal
+        open={!!editingUser}
+        onClose={() => !saving && setEditingUser(null)}
+        title="Editar Usuario"
+        description="Actualiza la información personal del usuario."
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                Nombre
+              </label>
+              <Input
+                value={formData.firstName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstName: e.target.value })
+                }
+                disabled={saving}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                Apellidos
+              </label>
+              <Input
+                value={formData.lastName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
+                disabled={saving}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              Email (Login)
+            </label>
+            <Input
+              type="email"
+              placeholder="nuevo@email.com (Dejar vacío para no cambiar)"
+              value={formData.email || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              disabled={saving}
+            />
+            <p className="mt-1 text-xs text-[rgb(var(--text-secondary))]">
+              Si cambias el email, el usuario deberá usar el nuevo para iniciar
+              sesión.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              Teléfono
+            </label>
+            <Input
+              placeholder="+52 123 456 7890"
+              value={formData.phone || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
+              disabled={saving}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              Biografía
+            </label>
+            <textarea
+              className="w-full rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
+              rows={3}
+              value={formData.bio || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, bio: e.target.value })
+              }
+              disabled={saving}
+            />
+          </div>
+        </div>
+
+        <ModalFooter>
+          <Button
+            variant="secondary"
+            onClick={() => setEditingUser(null)}
+            disabled={saving}
+          >
+            Cancelar
+          </Button>
+          <Button onClick={handleSaveUser} disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Guardar Cambios
+          </Button>
+        </ModalFooter>
+      </Modal>
     </PageLayout>
   );
 }

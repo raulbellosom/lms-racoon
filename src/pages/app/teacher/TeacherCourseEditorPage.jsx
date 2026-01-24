@@ -13,6 +13,7 @@ import {
   FileText,
   GripVertical,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
@@ -23,7 +24,7 @@ import { db } from "../../../shared/appwrite/client"; // For categories
 import { Card } from "../../../shared/ui/Card";
 import { Input } from "../../../shared/ui/Input";
 import { Button } from "../../../shared/ui/Button";
-import { Textarea } from "../../../shared/ui/Textarea"; // Make sure this exists or use standard textarea
+import { Textarea } from "../../../shared/ui/Textarea";
 import { Badge } from "../../../shared/ui/Badge";
 
 // Simple Tab Button Component
@@ -69,6 +70,7 @@ export function TeacherCourseEditorPage() {
     level: "beginner",
     priceCents: 0,
     language: "es",
+    coverFileId: "",
   });
 
   React.useEffect(() => {
@@ -196,6 +198,7 @@ export function TeacherCourseEditorPage() {
         level: data.level,
         priceCents: data.priceCents || 0,
         language: data.language || "es",
+        coverFileId: data.coverFileId || "",
       });
     } catch (error) {
       console.error("Failed to load course", error);
@@ -231,6 +234,15 @@ export function TeacherCourseEditorPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // TODO: Implement file upload service for course covers
+    // For now, this is a placeholder/mock
+    alert("La subida de portadas se implementará pronto.");
   };
 
   if (loading) {
@@ -305,59 +317,79 @@ export function TeacherCourseEditorPage() {
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {/* === DETAILS TAB === */}
         {tab === "details" && (
-          <Card className="p-6">
-            <h3 className="mb-6 text-lg font-bold">Información Básica</h3>
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Left Column: Main Info */}
+            <div className="md:col-span-2 space-y-6">
+              <Card className="p-6">
+                <h3 className="mb-4 text-lg font-bold">Información General</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                      Título del Curso <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      placeholder="Ej: Curso Maestro de React"
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
+                    />
+                  </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Col 1 */}
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                    Título del Curso <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    placeholder="Ej: Introducción a React..."
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                  />
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                      Subtítulo Promocional
+                    </label>
+                    <Input
+                      placeholder="Una frase corta que atrape..."
+                      value={formData.subtitle}
+                      onChange={(e) =>
+                        setFormData({ ...formData, subtitle: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                      Descripción Completa
+                    </label>
+                    <Textarea
+                      placeholder="Describe detalladamente qué aprenderán los estudiantes..."
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={6}
+                    />
+                  </div>
                 </div>
+              </Card>
 
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                    Subtítulo Corto
-                  </label>
-                  <Input
-                    placeholder="Resumen en una línea..."
-                    value={formData.subtitle}
-                    onChange={(e) =>
-                      setFormData({ ...formData, subtitle: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                    Categoría <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    className="w-full h-10 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
-                    value={formData.categoryId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, categoryId: e.target.value })
-                    }
-                  >
-                    <option value="">Selecciona una categoría</option>
-                    {categories.map((cat) => (
-                      <option key={cat.$id} value={cat.$id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+              <Card className="p-6">
+                <h3 className="mb-4 text-lg font-bold">Clasificación</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                      Categoría <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      className="w-full h-10 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
+                      value={formData.categoryId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, categoryId: e.target.value })
+                      }
+                    >
+                      <option value="">Selecciona una categoría</option>
+                      {categories.map((cat) => (
+                        <option key={cat.$id} value={cat.$id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
                       Nivel
@@ -390,43 +422,84 @@ export function TeacherCourseEditorPage() {
                     </select>
                   </div>
                 </div>
-              </div>
+              </Card>
+            </div>
 
-              {/* Col 2 */}
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                    Descripción
-                  </label>
-                  <Textarea
-                    placeholder="Describe lo que aprenderán los estudiantes..."
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
+            {/* Right Column: Media & Settings */}
+            <div className="space-y-6">
+              <Card className="p-6">
+                <h3 className="mb-4 text-lg font-bold">Portada</h3>
+                <div
+                  className="relative flex aspect-video w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8]"
+                  onClick={() =>
+                    document.getElementById("cover-upload").click()
+                  }
+                >
+                  {formData.coverFileId ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 rounded-xl">
+                      <span className="text-xs">
+                        Image ID: {formData.coverFileId}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-[rgb(var(--text-muted))]">
+                      <ImageIcon className="mx-auto h-8 w-8 mb-2" />
+                      <span className="text-xs font-medium">Subir Imagen</span>
+                    </div>
+                  )}
+                  <input
+                    id="cover-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
                   />
                 </div>
+                <p className="mt-2 text-[10px] text-[rgb(var(--text-secondary))] text-center">
+                  Recomendado: 1280x720 (JPG, PNG)
+                </p>
+              </Card>
 
-                {/* Price (Mock for now, field exists in schema) */}
-                {/* Cover Image Placeholder */}
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                    Portada (Próximamente)
-                  </label>
-                  <div className="flex h-32 w-full items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-sm text-[rgb(var(--text-muted))]">
-                    Arrastra una imagen o clic para subir
+              <Card className="p-6">
+                <h3 className="mb-4 text-lg font-bold">Precio</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                      Precio (Centavos)
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="Ej: 99900 (para $999.00)"
+                      value={formData.priceCents}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          priceCents: parseInt(e.target.value) || 0,
+                        })
+                      }
+                    />
+                    <p className="mt-1 text-xs text-[rgb(var(--text-secondary))]">
+                      Equivale a: ${(formData.priceCents / 100).toFixed(2)}{" "}
+                      {formData.currency || "MXN"}
+                    </p>
                   </div>
                 </div>
+              </Card>
+
+              {/* Action Bar */}
+              <div className="sticky bottom-4 z-10">
+                <Button
+                  size="lg"
+                  className="w-full shadow-lg"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {saving ? "Guardando..." : "Guardar Cambios"}
+                </Button>
               </div>
             </div>
-
-            <div className="mt-8 flex justify-end">
-              <Button size="lg" onClick={handleSave} disabled={saving}>
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? "Guardando..." : "Guardar Cambios"}
-              </Button>
-            </div>
-          </Card>
+          </div>
         )}
 
         {/* === CURRICULUM TAB === */}
