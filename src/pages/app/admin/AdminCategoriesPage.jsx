@@ -23,6 +23,9 @@ import {
 import { Modal, ModalFooter } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
 
+import { Pagination } from "../../../shared/ui/Pagination";
+import { DataHeader } from "../../../shared/ui/DataHeader";
+
 export function AdminCategoriesPage() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -154,24 +157,20 @@ export function AdminCategoriesPage() {
     }
   };
 
-  const totalPages = Math.ceil(total / limit);
-
   return (
     <PageLayout
       title="Categorías"
       subtitle="Administra las categorías de cursos"
     >
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <Input
-          placeholder="Buscar categorías..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+      <DataHeader
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Buscar categorías..."
+      >
         <Button onClick={handleOpenCreate}>
           <Plus className="mr-2 h-4 w-4" /> Nueva Categoría
         </Button>
-      </div>
+      </DataHeader>
 
       <Card>
         {/* Header */}
@@ -247,35 +246,14 @@ export function AdminCategoriesPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {total > 0 && (
-          <div className="flex items-center justify-between border-t border-[rgb(var(--border-base))] px-6 py-4">
-            <div className="text-sm text-[rgb(var(--text-secondary))]">
-              Mostrando {categories.length} de {total} resultados
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-              >
-                Anterior
-              </Button>
-              <div className="flex items-center px-2 text-sm font-bold">
-                Página {page} de {totalPages || 1}
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages || loading}
-              >
-                Siguiente
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          currentPage={page}
+          totalPages={Math.ceil(total / limit)} // Calculate totalPages here for the component
+          onPageChange={setPage}
+          totalItems={total}
+          itemsPerPage={limit}
+          disabled={loading}
+        />
       </Card>
 
       <Modal

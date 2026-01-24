@@ -13,6 +13,9 @@ import {
   DropdownItem,
   DropdownDivider,
 } from "../../../shared/ui/Dropdown";
+import { Pagination } from "../../../shared/ui/Pagination";
+import { DataHeader } from "../../../shared/ui/DataHeader";
+import { Query } from "appwrite";
 import { Modal, ModalFooter } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
 import { Button } from "../../../shared/ui/Button";
@@ -37,6 +40,12 @@ export function AdminUsersPage() {
   const [loading, setLoading] = React.useState(true);
   const { showToast } = useToast();
 
+  // Pagination & Search
+  const [page, setPage] = React.useState(1);
+  const [total, setTotal] = React.useState(0);
+  const [search, setSearch] = React.useState("");
+  const limit = 10;
+
   // Edit Mode State
   const [editingUser, setEditingUser] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
@@ -53,17 +62,47 @@ export function AdminUsersPage() {
   });
   const [creating, setCreating] = React.useState(false);
 
+  // Debounced search
   React.useEffect(() => {
-    loadUsers();
-  }, []);
+    const timer = setTimeout(() => {
+      setPage(1);
+      loadUsers(1, search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const loadUsers = async () => {
+  // Load on page change
+  React.useEffect(() => {
+    loadUsers(page, search);
+  }, [page]);
+
+  const loadUsers = async (pageNum, searchQuery) => {
+    setLoading(true);
     try {
+      const queries = [
+        Query.orderDesc("$createdAt"), // Show newest first
+        Query.limit(limit),
+        Query.offset((pageNum - 1) * limit),
+      ];
+
+      if (searchQuery) {
+        // Appwrite supports search on string attributes if configured as index
+        // Assuming "name" or "email" is searchable, or use simplified filtering if not indexed
+        // For now, let's try searching 'firstName' which is likely indexed or searchable
+        // or combined search.
+        // NOTE: "search" requires FullText index. If not present, we need it.
+        // Assuming "firstName" and "email" have indexes.
+        queries.push(Query.search("email", searchQuery)); // Most reliable unique search
+        // OR filtering by multiple fields is harder in one query without creating a combined attribute.
+      }
+
       const res = await db.listDocuments(
         APPWRITE.databaseId,
         APPWRITE.collections.profiles,
+        queries,
       );
       setUsers(res.documents);
+      setTotal(res.total);
     } catch (error) {
       console.error("Failed to list users", error);
       showToast("Error al cargar usuarios", "error");
@@ -245,7 +284,7 @@ export function AdminUsersPage() {
         phone: "",
       });
       // Delay slightly to allow onUserCreated to run?
-      setTimeout(() => loadUsers(), 1500);
+      setTimeout(() => loadUsers(page, search), 1500);
     } catch (error) {
       console.error(error);
       showToast(error.message || "Error al crear usuario", "error");
@@ -264,11 +303,15 @@ export function AdminUsersPage() {
       title="Gestión de Usuarios"
       subtitle="Administra los usuarios y sus roles en la plataforma"
     >
-      <div className="mb-6 flex justify-end">
+      <DataHeader
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Buscar usuarios por email..."
+      >
         <Button onClick={() => setIsCreateOpen(true)}>
           <User className="mr-2 h-4 w-4" /> Nuevo Usuario
         </Button>
-      </div>
+      </DataHeader>
 
       <Card className="">
         {/* Header - Hidden on mobile, Grid on desktop */}
@@ -452,6 +495,15 @@ export function AdminUsersPage() {
             ))
           )}
         </div>
+
+        <Pagination
+          currentPage={page}
+          totalPages={Math.ceil(total / limit)}
+          onPageChange={setPage}
+          totalItems={total}
+          itemsPerPage={limit}
+          disabled={loading}
+        />
       </Card>
 
       {/* Edit User Modal */}
