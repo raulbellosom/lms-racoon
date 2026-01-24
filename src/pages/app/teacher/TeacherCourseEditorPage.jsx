@@ -13,6 +13,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
+import { useToast } from "../../../app/providers/ToastProvider";
 import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
 import { SectionService } from "../../../shared/data/sections-teacher";
 import { LessonService } from "../../../shared/data/lessons-teacher";
@@ -65,6 +66,7 @@ export function TeacherCourseEditorPage() {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const isNew = courseId === "new";
 
   const [course, setCourse] = React.useState(null);
@@ -100,6 +102,8 @@ export function TeacherCourseEditorPage() {
     language: "es",
     coverFileId: "",
   });
+
+  const [errors, setErrors] = React.useState({});
 
   React.useEffect(() => {
     loadCategories();
@@ -171,13 +175,18 @@ export function TeacherCourseEditorPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.categoryId) {
-      alert(
-        `${t("teacher.form.titleRequired")}. ${t("teacher.form.categoryRequired")}`,
-      );
+    const newErrors = {};
+    if (!formData.title) newErrors.title = t("teacher.form.titleRequired");
+    if (!formData.categoryId)
+      newErrors.categoryId = t("teacher.form.categoryRequired");
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showToast(t("teacher.errors.validationFailed"), "error");
       return;
     }
 
+    setErrors({});
     setSaving(true);
     try {
       if (isNew) {
@@ -187,13 +196,15 @@ export function TeacherCourseEditorPage() {
         });
         navigate(`/app/teach/courses/${newCourse.$id}`, { replace: true });
         setCourse(newCourse);
+        showToast(t("teacher.courseCreated"), "success");
       } else {
         const updated = await TeacherCoursesService.update(courseId, formData);
         setCourse(updated);
+        showToast(t("teacher.courseUpdated"), "success");
       }
     } catch (error) {
       console.error("Save failed", error);
-      alert(t("teacher.errors.saveFailed"));
+      showToast(t("teacher.errors.saveFailed"), "error");
     } finally {
       setSaving(false);
     }
@@ -233,7 +244,7 @@ export function TeacherCourseEditorPage() {
       setSectionModalOpen(false);
     } catch (e) {
       console.error(e);
-      alert(t("teacher.errors.saveFailed"));
+      showToast(t("teacher.errors.saveFailed"), "error");
     }
   };
 
@@ -244,7 +255,7 @@ export function TeacherCourseEditorPage() {
       setSections(sections.filter((s) => s.$id !== section.$id));
     } catch (e) {
       console.error(e);
-      alert(t("teacher.errors.deleteFailed"));
+      showToast(t("teacher.errors.deleteFailed"), "error");
     }
   };
 
@@ -300,7 +311,7 @@ export function TeacherCourseEditorPage() {
       });
     } catch (e) {
       console.error(e);
-      alert(t("teacher.errors.deleteFailed"));
+      showToast(t("teacher.errors.deleteFailed"), "error");
     }
   };
 
@@ -317,7 +328,7 @@ export function TeacherCourseEditorPage() {
       setCourse(updated);
     } catch (e) {
       console.error(e);
-      alert(t("teacher.errors.statusChangeFailed"));
+      showToast(t("teacher.errors.statusChangeFailed"), "error");
     }
   };
 
@@ -432,6 +443,7 @@ export function TeacherCourseEditorPage() {
                 formData={formData}
                 setFormData={setFormData}
                 categories={categories}
+                errors={errors}
               />
             </div>
 

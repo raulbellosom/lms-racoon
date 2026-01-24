@@ -20,6 +20,7 @@ import { TeachHomePage } from "../../pages/app/teacher/TeachHomePage";
 import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
 import { TeacherCourseEditorPage } from "../../pages/app/teacher/TeacherCourseEditorPage";
 import { AdminUsersPage } from "../../pages/app/admin/AdminUsersPage";
+import { AdminCategoriesPage } from "../../pages/app/admin/AdminCategoriesPage";
 
 import {
   requireAuthLoader,
@@ -82,7 +83,10 @@ export const router = createBrowserRouter([
           {
             path: "admin",
             loader: requireRoleLoader(["admin"]),
-            children: [{ path: "users", element: <AdminUsersPage /> }],
+            children: [
+              { path: "users", element: <AdminUsersPage /> },
+              { path: "categories", element: <AdminCategoriesPage /> },
+            ],
           },
         ],
       },

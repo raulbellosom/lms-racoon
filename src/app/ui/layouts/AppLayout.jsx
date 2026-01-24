@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  Tag,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../resources/icon.svg";
@@ -186,6 +187,11 @@ export function AppLayout() {
             to: "/app/admin/users",
             icon: Users,
             label: t("nav.users", "Usuarios"),
+          },
+          {
+            to: "/app/admin/categories",
+            icon: Tag,
+            label: t("nav.categories", "Categorías"),
           },
         ]
       : []),

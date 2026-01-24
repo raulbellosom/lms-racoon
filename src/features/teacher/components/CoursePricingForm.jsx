@@ -27,9 +27,7 @@ export function CoursePricingForm({ formData, setFormData }) {
             type="checkbox"
             checked={isFree}
             onChange={(e) => {
-              if (e.target.checked) {
-                updateField("priceCents", 0);
-              }
+              updateField("priceCents", e.target.checked ? 0 : 25000);
             }}
             className="h-4 w-4 rounded border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] text-[rgb(var(--brand-primary))] focus:ring-[rgb(var(--brand-primary))]"
           />

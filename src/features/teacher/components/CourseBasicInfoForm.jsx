@@ -14,6 +14,7 @@ export function CourseBasicInfoForm({
   formData,
   setFormData,
   categories = [],
+  errors = {},
 }) {
   const { t } = useTranslation();
 
@@ -38,7 +39,13 @@ export function CourseBasicInfoForm({
               placeholder={t("teacher.form.courseTitlePlaceholder")}
               value={formData.title}
               onChange={(e) => updateField("title", e.target.value)}
+              className={
+                errors.title ? "border-red-500 focus:border-red-500" : ""
+              }
             />
+            {errors.title && (
+              <p className="mt-1 text-xs text-red-500">{errors.title}</p>
+            )}
           </div>
 
           {/* Subtitle */}
@@ -80,7 +87,9 @@ export function CourseBasicInfoForm({
               {t("teacher.category")} <span className="text-red-500">*</span>
             </label>
             <select
-              className="w-full h-10 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
+              className={`w-full h-10 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))] ${
+                errors.categoryId ? "border-red-500 focus:ring-red-500" : ""
+              }`}
               value={formData.categoryId}
               onChange={(e) => updateField("categoryId", e.target.value)}
             >
@@ -91,6 +100,9 @@ export function CourseBasicInfoForm({
                 </option>
               ))}
             </select>
+            {errors.categoryId && (
+              <p className="mt-1 text-xs text-red-500">{errors.categoryId}</p>
+            )}
           </div>
 
           {/* Level */}
