@@ -5,14 +5,14 @@ import { useTranslation } from "react-i18next";
 import { cn } from "./cn";
 
 const languages = [
-  { code: "es", name: "Español", flag: "🇲🇽" },
-  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "es", name: "Español", region: "MX" },
+  { code: "en", name: "English", region: "US" },
 ];
 
 /**
  * Language selector dropdown
  */
-export function LanguageSelector({ className }) {
+export function LanguageSelector({ className, side = "top" }) {
   const { i18n } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const dropdownRef = React.useRef(null);
@@ -36,29 +36,34 @@ export function LanguageSelector({ className }) {
     setOpen(false);
   };
 
+  const sideOffset = side === "top" ? "bottom-full mb-2" : "top-full mt-2";
+
   return (
     <div ref={dropdownRef} className={cn("relative", className)}>
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          "flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition",
+          "flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition w-full",
           "text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]",
           open && "bg-[rgb(var(--bg-muted))]",
         )}
         title="Cambiar idioma"
       >
-        <Globe className="h-4 w-4" />
-        <span className="hidden sm:inline">{currentLang.flag}</span>
+        <Globe className="h-4 w-4 shrink-0" />
+        <span className="shrink-0">{currentLang.region}</span>
       </button>
 
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+            initial={{ opacity: 0, scale: 0.95, y: side === "top" ? 5 : -5 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -5 }}
+            exit={{ opacity: 0, scale: 0.95, y: side === "top" ? 5 : -5 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 z-50 mt-2 min-w-[160px] rounded-xl border border-[rgb(var(--border-base)/0.5)] bg-[rgb(var(--bg-surface))] p-1.5 shadow-xl"
+            className={cn(
+              "absolute right-0 z-50 min-w-[140px] rounded-xl border border-[rgb(var(--border-base)/0.5)] bg-[rgb(var(--bg-surface))] p-1.5 shadow-xl",
+              sideOffset,
+            )}
           >
             {languages.map((lang) => (
               <button
@@ -72,7 +77,16 @@ export function LanguageSelector({ className }) {
                 )}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="text-base">{lang.flag}</span>
+                  <span
+                    className={cn(
+                      "text-xs font-bold uppercase",
+                      lang.code === i18n.language
+                        ? "text-[rgb(var(--brand-primary))]"
+                        : "text-[rgb(var(--text-secondary))]",
+                    )}
+                  >
+                    {lang.region}
+                  </span>
                   <span className="font-medium">{lang.name}</span>
                 </div>
                 {lang.code === i18n.language && <Check className="h-4 w-4" />}

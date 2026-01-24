@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "../../../../shared/ui/Button";
 import { ThemeToggleButton } from "../../../../shared/theme/ThemeProvider";
+import { LanguageSelector } from "../../../../shared/ui/LanguageSelector";
 import appIcon from "../../../../resources/icon.svg";
 
 export function PublicNavbar() {
@@ -39,6 +40,7 @@ export function PublicNavbar() {
               {t("nav.explore", "Explorar")}
             </Link>
             <div className="h-4 w-px bg-[rgb(var(--border-base))]" />
+            <LanguageSelector side="bottom" />
             <ThemeToggleButton />
             <div className="flex items-center gap-3">
               <Link to="/auth/login">
@@ -53,7 +55,8 @@ export function PublicNavbar() {
           </nav>
 
           {/* Mobile Menu Button */}
-          <div className="flex items-center gap-4 md:hidden">
+          <div className="flex items-center gap-2 md:hidden">
+            <LanguageSelector className="min-w-0" side="bottom" />
             <ThemeToggleButton />
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -105,7 +108,7 @@ export function PublicNavbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-lg font-medium text-[rgb(var(--text-secondary))]"
                 >
-                  {t("nav.explore", "Explorar Cursos")}
+                  {t("landing.exploreCourses", "Explorar Cursos")}
                 </Link>
               </div>
               <div className="h-px w-full bg-[rgb(var(--border-base))]" />

@@ -8,6 +8,7 @@ import {
   LogOut,
   Settings,
   SquarePen,
+  School,
   Menu,
   X,
   Monitor,
@@ -35,6 +36,8 @@ import {
   ThemeSelector,
   ThemeToggleButton,
 } from "../../../shared/theme/ThemeProvider";
+import { ThemeSelect } from "../../../shared/theme/ThemeSelect";
+import { LanguageSelector } from "../../../shared/ui/LanguageSelector";
 import { ProfileService } from "../../../shared/data/profiles";
 
 /**
@@ -56,46 +59,33 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }) {
       }
       title={collapsed ? label : undefined}
     >
-      {/* Icon Area - ALWAYS w-20 (5rem) and centered.
-          The parent 'aside' is w-20 when collapsed.
-          So this fills the width exactly. 
-          When expanded, it stays w-20 on the left.
-      */}
-      <div className="flex h-12 w-20 shrink-0 items-center justify-center">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
-            // Active background logic moved to icon container for that "pill" look if desired,
-            // or just kept minimal. Let's keep the user's style preference:
-            // The previous code put bg on the whole row.
-            // If we want the icon to stay fixed but the row has background...
-            // If the row has background, the width change of the row might look weird if not careful.
-            // Let's stick to: Row has hover effect? Or Icon has hover effect?
-            // User images show a "pill" style indicator or icon highlight?
-            // Re-reading user images: Image 1 shows simple icons. Image 2 shows "Active" state with purple highlight on the icon itself presumably?
-            // Use NavLink isActive boolean to style this inner div.
-            ""
-          }`}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
+      {({ isActive }) => (
+        <>
+          {/* Icon Area - ALWAYS w-20 (5rem) and centered. */}
+          <div className="flex h-12 w-20 shrink-0 items-center justify-center">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
+                isActive
+                  ? "bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))]"
+                  : "group-hover:bg-[rgb(var(--bg-muted))]"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+          </div>
 
-      {/* Active Indicator Background (Absolute Positioned for smooth width transition?)
-          Actually, simple background on the NavLink works if we handle the text properly.
-          But to keep "Icon fixed", the padding must not shift.
-          The strictly fixed w-20 div ensures the icon is always at X=2.5rem center.
-      */}
-
-      {/* Text - Smooth reveal */}
-      <div
-        className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${
-          collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
-        }`}
-      >
-        <span className="overflow-hidden whitespace-nowrap text-sm font-semibold transition-opacity duration-300">
-          {label}
-        </span>
-      </div>
+          {/* Text - Smooth reveal */}
+          <div
+            className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${
+              collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
+            }`}
+          >
+            <span className="overflow-hidden whitespace-nowrap text-sm font-semibold transition-opacity duration-300">
+              {label}
+            </span>
+          </div>
+        </>
+      )}
     </NavLink>
   );
 }
@@ -180,10 +170,16 @@ export function AppLayout() {
     { to: "/app/my-courses", icon: BookOpen, label: t("nav.myCourses") },
     { to: "/app/progress", icon: LineChart, label: t("nav.progress") },
     ...(role !== "student"
-      ? [{ to: "/app/teach", icon: SquarePen, label: t("nav.teacherPanel") }]
+      ? [{ to: "/app/teach", icon: School, label: t("nav.teacherPanel") }]
       : []),
     ...(role === "admin"
-      ? [{ to: "/app/admin/users", icon: Users, label: "Usuarios" }]
+      ? [
+          {
+            to: "/app/admin/users",
+            icon: Users,
+            label: t("nav.users", "Usuarios"),
+          },
+        ]
       : []),
   ];
 
@@ -230,16 +226,17 @@ export function AppLayout() {
           {/* Theme Toggle Area */}
           <div className="py-4">
             {collapsed ? (
-              <div className="flex justify-center w-20">
-                {/* Compact Theme Toggle when collapsed */}
+              <div className="flex flex-col gap-3 items-center w-20">
+                <LanguageSelector className="w-10 overflow-hidden" />
                 <ThemeToggleButton />
               </div>
             ) : (
-              <div className="px-6 fade-in duration-300">
-                <div className="mb-2 text-xs font-bold text-[rgb(var(--text-secondary))] uppercase tracking-wider">
-                  {t("common.theme")}
+              <div className="px-4 fade-in duration-300">
+                <div className="flex items-center justify-between gap-2">
+                  <LanguageSelector className="flex-1" />
+                  <div className="h-6 w-px bg-[rgb(var(--border-base))]" />
+                  <ThemeSelect className="flex-1" />
                 </div>
-                <ThemeSelector className="w-full" />
               </div>
             )}
           </div>
@@ -251,9 +248,9 @@ export function AppLayout() {
               side="top"
               className="w-60"
               trigger={
-                <button className="group flex w-full items-center text-left transition-colors hover:bg-[rgb(var(--bg-muted))] overflow-hidden">
+                <button className="group flex w-full items-center text-left transition-colors hover:bg-[rgb(var(--bg-muted))] overflow-hidden py-1">
                   {/* Fixed Icon Area: Avatar */}
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center">
+                  <div className="flex h-16 w-20 shrink-0 items-center justify-center">
                     <Avatar
                       name={displayName}
                       src={ProfileService.getAvatarUrl(
@@ -266,11 +263,11 @@ export function AppLayout() {
                   </div>
                   {/* Animated Text Area */}
                   <div
-                    className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${
+                    className={`grid transition-[grid-template-columns] duration-300 ease-in-out min-w-0 ${
                       collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
                     }`}
                   >
-                    <div className="overflow-hidden pr-4">
+                    <div className="overflow-hidden pr-4 min-w-0">
                       <div className="truncate text-sm font-bold text-[rgb(var(--text-primary))]">
                         {displayName}
                       </div>
@@ -287,7 +284,7 @@ export function AppLayout() {
                   {displayName}
                 </div>
                 <div className="text-xs text-[rgb(var(--text-secondary))]">
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                  {t(`roles.${role}`, role)}
                 </div>
               </div>
               <DropdownDivider />
@@ -386,7 +383,7 @@ export function AppLayout() {
               <div>
                 <div className="text-sm font-bold">{displayName}</div>
                 <div className="mt-0.5 text-xs text-[rgb(var(--text-secondary))]">
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                  {t(`roles.${role}`, role)}
                 </div>
               </div>
             </div>
@@ -417,9 +414,13 @@ export function AppLayout() {
           </div>
         </DrawerSection>
 
-        {/* Theme */}
-        <DrawerSection title={t("common.theme")}>
-          <ThemeSelector className="w-full justify-end" />
+        {/* Theme and Language */}
+        <DrawerSection title={t("common.settings")}>
+          <div className="flex items-center gap-2">
+            <LanguageSelector className="flex-1" />
+            <div className="h-6 w-px bg-[rgb(var(--border-base))]" />
+            <ThemeSelect className="flex-1" />
+          </div>
         </DrawerSection>
 
         {/* Actions */}

@@ -1,11 +1,12 @@
 {
   "nav": {
     "home": "Home",
-    "myCourses": "My courses",
+    "myCourses": "My Courses",
     "progress": "Progress",
-    "teacherPanel": "Teacher panel",
+    "teacherPanel": "Instructor Panel",
     "catalog": "Catalog",
-    "explore": "Explore"
+    "explore": "Explore",
+    "users": "Users"
   },
   "auth": {
     "welcomeBack": "Welcome back!",
@@ -202,13 +203,23 @@
     "minutes": "min",
     "hours": "h",
     "retry": "Retry",
-    "help": "Help"
+    "help": "Help",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
   },
   "pwa": {
     "installTitle": "Install the app",
     "installDesc": "Add Racoon LMS to your home screen for a better experience.",
     "install": "Install",
     "notNow": "Not now"
+  },
+  "roles": {
+    "student": "Student",
+    "teacher": "Instructor",
+    "admin": "Administrator"
   },
   "toast": {
     "successTitle": "Done!",

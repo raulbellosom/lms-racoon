@@ -3,7 +3,7 @@
     "home": "Inicio",
     "myCourses": "Mis cursos",
     "progress": "Progreso",
-    "teacherPanel": "Panel maestro",
+    "teacherPanel": "Panel de Instructor",
     "catalog": "Catálogo",
     "explore": "Explorar"
   },
@@ -202,7 +202,17 @@
     "minutes": "min",
     "hours": "h",
     "retry": "Reintentar",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "themes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    }
+  },
+  "roles": {
+    "student": "Estudiante",
+    "teacher": "Instructor",
+    "admin": "Administrador"
   },
   "pwa": {
     "installTitle": "Instala la app",
