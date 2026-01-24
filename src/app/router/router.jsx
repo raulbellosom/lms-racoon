@@ -36,6 +36,10 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <LoadingScreen />,
     children: [
+      // Password reset routes - accessible to BOTH logged-in and guest users
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
+      { path: "/reset-password", element: <ResetPasswordPage /> },
+
       {
         element: <PublicLayout />,
         loader: requireGuestLoader,
@@ -47,8 +51,6 @@ export const router = createBrowserRouter([
           { path: "/courses/:courseId", element: <CourseDetailView /> },
           { path: "/auth/login", element: <LoginView /> },
           { path: "/auth/register", element: <RegisterView /> },
-          { path: "/forgot-password", element: <ForgotPasswordPage /> },
-          { path: "/reset-password", element: <ResetPasswordPage /> },
         ],
       },
       {
