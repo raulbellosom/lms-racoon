@@ -51,5 +51,9 @@ export const APPWRITE = {
       "syncUserProfile",
     ),
     authHandler: pick("VITE_APPWRITE_FN_AUTH_HANDLER", "authHandler"),
+    onReviewCreated: pick(
+      "VITE_APPWRITE_FN_ON_REVIEW_CREATED",
+      "onReviewCreated",
+    ),
   },
 };
