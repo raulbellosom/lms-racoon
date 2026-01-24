@@ -14,8 +14,11 @@ import {
   User,
   Users,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import appIcon from "../../../resources/icon.svg";
 
 import { Button } from "../../../shared/ui/Button";
 import { Drawer, DrawerSection } from "../../../shared/ui/Drawer";
@@ -27,25 +30,72 @@ import {
 import { Avatar } from "../../../shared/ui/Avatar";
 import { useAuth } from "../../providers/AuthProvider";
 import { logout } from "../../../shared/services/auth";
-import { useTheme, ThemeSelector } from "../../../shared/theme/ThemeProvider";
+import {
+  useTheme,
+  ThemeSelector,
+  ThemeToggleButton,
+} from "../../../shared/theme/ThemeProvider";
 import { ProfileService } from "../../../shared/data/profiles";
 
-function NavItem({ to, icon: Icon, label, onClick }) {
+/**
+ * NavItem with precise fixed-width icon aligned.
+ * Structure: [Fixed 5rem Icon Area] [Animated Text Area]
+ */
+function NavItem({ to, icon: Icon, label, onClick, collapsed }) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
         [
-          "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all",
+          "group flex items-center overflow-hidden transition-all relative select-none",
           isActive
-            ? "bg-[rgb(var(--brand-primary))] text-white shadow-md"
-            : "text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]",
+            ? "text-[rgb(var(--brand-primary))]"
+            : "text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text-primary))]",
         ].join(" ")
       }
+      title={collapsed ? label : undefined}
     >
-      <Icon className="h-5 w-5" />
-      <span className="truncate">{label}</span>
+      {/* Icon Area - ALWAYS w-20 (5rem) and centered.
+          The parent 'aside' is w-20 when collapsed.
+          So this fills the width exactly. 
+          When expanded, it stays w-20 on the left.
+      */}
+      <div className="flex h-12 w-20 shrink-0 items-center justify-center">
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
+            // Active background logic moved to icon container for that "pill" look if desired,
+            // or just kept minimal. Let's keep the user's style preference:
+            // The previous code put bg on the whole row.
+            // If we want the icon to stay fixed but the row has background...
+            // If the row has background, the width change of the row might look weird if not careful.
+            // Let's stick to: Row has hover effect? Or Icon has hover effect?
+            // User images show a "pill" style indicator or icon highlight?
+            // Re-reading user images: Image 1 shows simple icons. Image 2 shows "Active" state with purple highlight on the icon itself presumably?
+            // Use NavLink isActive boolean to style this inner div.
+            ""
+          }`}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+
+      {/* Active Indicator Background (Absolute Positioned for smooth width transition?)
+          Actually, simple background on the NavLink works if we handle the text properly.
+          But to keep "Icon fixed", the padding must not shift.
+          The strictly fixed w-20 div ensures the icon is always at X=2.5rem center.
+      */}
+
+      {/* Text - Smooth reveal */}
+      <div
+        className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${
+          collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
+        }`}
+      >
+        <span className="overflow-hidden whitespace-nowrap text-sm font-semibold transition-opacity duration-300">
+          {label}
+        </span>
+      </div>
     </NavLink>
   );
 }
@@ -96,6 +146,17 @@ export function AppLayout() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
+  // Sidebar state
+  const [collapsed, setCollapsed] = React.useState(() => {
+    return localStorage.getItem("sidebar-collapsed") === "true";
+  });
+
+  const toggleSidebar = () => {
+    const newState = !collapsed;
+    setCollapsed(newState);
+    localStorage.setItem("sidebar-collapsed", String(newState));
+  };
+
   const role = auth.profile?.role || "student";
   const displayName =
     (auth.profile?.firstName && auth.profile?.lastName
@@ -129,85 +190,148 @@ export function AppLayout() {
   return (
     <div className="min-h-dvh bg-[rgb(var(--bg-base))]">
       {/* ========== Desktop Sidebar ========== */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] md:flex">
-        {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b border-[rgb(var(--border-base))] px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-[rgb(var(--brand-primary))] to-[rgb(var(--brand-accent))]">
-            <span className="text-lg font-black text-white">R</span>
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] transition-all duration-300 ease-in-out md:flex ${
+          collapsed ? "w-20" : "w-72"
+        }`}
+      >
+        {/* Logo Area */}
+        {/* Uses consistent flex layout matches NavItem: [w-20 Icon] [Animated Text] */}
+        <div className="flex h-20 items-center overflow-hidden border-b border-[rgb(var(--border-base))]">
+          <div className="flex h-full w-20 shrink-0 items-center justify-center">
+            <div className="flex h-10 w-10 items-center justify-center">
+              <img
+                src={appIcon}
+                alt="Racoon LMS"
+                className="h-full w-full object-contain"
+              />
+            </div>
           </div>
-          <span className="text-lg font-extrabold tracking-tight">
-            Racoon LMS
-          </span>
+          <div
+            className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${
+              collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
+            }`}
+          >
+            <span className="overflow-hidden whitespace-nowrap text-lg font-extrabold tracking-tight text-[rgb(var(--text-primary))]">
+              Racoon LMS
+            </span>
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+        <nav className="flex-1 space-y-2 overflow-x-hidden overflow-y-auto pt-6 scrollbar-thin">
           {navItems.map((item) => (
-            <NavItem key={item.to} {...item} />
+            <NavItem key={item.to} {...item} collapsed={collapsed} />
           ))}
         </nav>
 
-        {/* Theme & User actions */}
-        <div className="border-t border-[rgb(var(--border-base))] p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[rgb(var(--text-secondary))]">
-              {t("common.theme")}
-            </span>
-            <ThemeSelector />
+        {/* Footer Area */}
+        <div className="border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))/0.3]">
+          {/* Theme Toggle Area */}
+          <div className="py-4">
+            {collapsed ? (
+              <div className="flex justify-center w-20">
+                {/* Compact Theme Toggle when collapsed */}
+                <ThemeToggleButton />
+              </div>
+            ) : (
+              <div className="px-6 fade-in duration-300">
+                <div className="mb-2 text-xs font-bold text-[rgb(var(--text-secondary))] uppercase tracking-wider">
+                  {t("common.theme")}
+                </div>
+                <ThemeSelector className="w-full" />
+              </div>
+            )}
           </div>
 
-          <Dropdown
-            align="left"
-            side="top"
-            className="w-56"
-            trigger={
-              <div className="flex w-full items-center gap-3 rounded-xl bg-[rgb(var(--bg-muted))] p-2 transition hover:bg-[rgb(var(--bg-muted))/0.8]">
-                <Avatar
-                  name={displayName}
-                  src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
-                  size="sm"
-                  ring
-                />
-                <div className="flex-1 overflow-hidden text-left">
-                  <div className="truncate text-sm font-bold text-[rgb(var(--text-primary))]">
-                    {displayName}
+          {/* User Profile */}
+          <div className="border-t border-[rgb(var(--border-base))]">
+            <Dropdown
+              align="left"
+              side="top"
+              className="w-60"
+              trigger={
+                <button className="group flex w-full items-center text-left transition-colors hover:bg-[rgb(var(--bg-muted))] overflow-hidden">
+                  {/* Fixed Icon Area: Avatar */}
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center">
+                    <Avatar
+                      name={displayName}
+                      src={ProfileService.getAvatarUrl(
+                        auth.profile?.avatarFileId,
+                      )}
+                      size="md"
+                      ring
+                      className="transition-transform group-hover:scale-105"
+                    />
                   </div>
-                  <div className="truncate text-xs text-[rgb(var(--text-secondary))]">
-                    {auth.user?.email}
+                  {/* Animated Text Area */}
+                  <div
+                    className={`grid transition-[grid-template-columns] duration-300 ease-in-out ${
+                      collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
+                    }`}
+                  >
+                    <div className="overflow-hidden pr-4">
+                      <div className="truncate text-sm font-bold text-[rgb(var(--text-primary))]">
+                        {displayName}
+                      </div>
+                      <div className="truncate text-xs text-[rgb(var(--text-secondary))]">
+                        {auth.user?.email}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <ChevronDown className="h-4 w-4 text-[rgb(var(--text-muted))]" />
-              </div>
-            }
-          >
-            <div className="px-3 py-2">
-              <div className="text-xs font-bold text-[rgb(var(--text-primary))]">
-                {displayName}
-              </div>
-              <div className="text-xs text-[rgb(var(--text-secondary))]">
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-              </div>
-            </div>
-            <DropdownDivider />
-            <DropdownItem icon={User} onClick={() => navigate("/app/profile")}>
-              {t("nav.profile", "Mi Perfil")}
-            </DropdownItem>
-            <DropdownItem
-              icon={Settings}
-              onClick={() => navigate("/app/settings")}
+                </button>
+              }
             >
-              {t("common.settings")}
-            </DropdownItem>
-            <DropdownDivider />
-            <DropdownItem icon={LogOut} onClick={onLogout} danger>
-              {t("common.logout")}
-            </DropdownItem>
-          </Dropdown>
+              <div className="px-3 py-2">
+                <div className="text-xs font-bold text-[rgb(var(--text-primary))]">
+                  {displayName}
+                </div>
+                <div className="text-xs text-[rgb(var(--text-secondary))]">
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </div>
+              </div>
+              <DropdownDivider />
+              <DropdownItem
+                icon={User}
+                onClick={() => navigate("/app/profile")}
+              >
+                {t("nav.profile", "Mi Perfil")}
+              </DropdownItem>
+              <DropdownItem
+                icon={Settings}
+                onClick={() => navigate("/app/settings")}
+              >
+                {t("common.settings")}
+              </DropdownItem>
+              <DropdownDivider />
+              <DropdownItem icon={LogOut} onClick={onLogout} danger>
+                {t("common.logout")}
+              </DropdownItem>
+            </Dropdown>
+          </div>
+
+          {/* Collapse Toggle - Floating or Fixed? 
+               User requested a toggle. A centered button at the bottom of the column is good.
+           */}
+          <div
+            className="flex h-12 items-center justify-center border-t border-[rgb(var(--border-base))] hover:bg-[rgb(var(--bg-muted))] transition-colors cursor-pointer"
+            onClick={toggleSidebar}
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4 text-[rgb(var(--text-secondary))]" />
+            ) : (
+              <ChevronLeft className="h-4 w-4 text-[rgb(var(--text-secondary))]" />
+            )}
+          </div>
         </div>
       </aside>
 
       {/* ========== Desktop Main ========== */}
-      <main className="hidden min-h-dvh md:block md:pl-72">
+      <main
+        className={`hidden min-h-dvh transition-all duration-300 ease-in-out md:block ${
+          collapsed ? "md:pl-20" : "md:pl-72"
+        }`}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -230,8 +354,12 @@ export function AppLayout() {
           <Menu className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-[rgb(var(--brand-primary))] to-[rgb(var(--brand-accent))]">
-            <span className="text-xs font-bold text-white">R</span>
+          <div className="flex h-7 w-7 items-center justify-center">
+            <img
+              src={appIcon}
+              alt="Racoon LMS"
+              className="h-full w-full object-contain"
+            />
           </div>
           <span className="font-bold">Racoon LMS</span>
         </div>
@@ -291,9 +419,7 @@ export function AppLayout() {
 
         {/* Theme */}
         <DrawerSection title={t("common.theme")}>
-          <div className="flex justify-end">
-            <ThemeSelector className="w-full" />
-          </div>
+          <ThemeSelector className="w-full justify-end" />
         </DrawerSection>
 
         {/* Actions */}

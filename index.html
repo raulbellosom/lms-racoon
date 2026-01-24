@@ -1,17 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es-MX">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Racoon LMS - Plataforma moderna de cursos, mobile-first, PWA." />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Racoon LMS - Plataforma de Aprendizaje Moderna</title>
+
+    <!-- SEO & Metadata 2026 -->
+    <meta
+      name="description"
+      content="Racoon LMS es la plataforma de cursos definitiva. Aprende a tu ritmo con una experiencia mobile-first, soporte PWA y herramientas avanzadas para estudiantes y profesores."
+    />
+    <meta
+      name="keywords"
+      content="LMS, cursos online, educación, plataforma educativa, PWA, mobile-first, aprendizaje, react"
+    />
+    <meta name="author" content="Racoon Devs" />
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#e11d48" />
-    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="/web/favicon.ico" type="image/x-icon" sizes="any" />
-    <title>Racoon LMS</title>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://racoon-lms.com/" />
+    <meta
+      property="og:title"
+      content="Racoon LMS - Plataforma de Aprendizaje Moderna"
+    />
+    <meta
+      property="og:description"
+      content="Descubre una nueva forma de aprender con Racoon LMS. Cursos interactivos, seguimiento de progreso y experiencia nativa en cualquier dispositivo."
+    />
+    <meta property="og:image" content="/src/resources/icon.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://racoon-lms.com/" />
+    <meta
+      property="twitter:title"
+      content="Racoon LMS - Plataforma de Aprendizaje Moderna"
+    />
+    <meta
+      property="twitter:description"
+      content="Descubre una nueva forma de aprender con Racoon LMS. Cursos interactivos, seguimiento de progreso y experiencia nativa en cualquier dispositivo."
+    />
+    <meta property="twitter:image" content="/src/resources/icon.png" />
+
+    <!-- PWA & Icons -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/src/resources/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/web/favicon.ico" />
+    <link rel="apple-touch-icon" href="/web/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="application-name" content="Racoon LMS" />
+
+    <!-- Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
-  <body class="bg-app text-app">
+  <body
+    class="bg-app text-app antialiased selection:bg-brand-primary selection:text-white"
+  >
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <noscript
+      >Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript
+    >
   </body>
 </html>

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import appIcon from "../../resources/icon.svg";
 
 /**
  * Premium loading screen with animated logo
@@ -6,7 +7,7 @@ import { motion } from "framer-motion";
  */
 export function LoadingScreen({ message = "" }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgb(var(--bg-base))]">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-[rgb(var(--bg-base))]">
       {/* Background glow effect */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(var(--brand-primary)/0.15),transparent_70%)]" />
@@ -45,9 +46,13 @@ export function LoadingScreen({ message = "" }) {
               repeat: Infinity,
               ease: "easeOut",
             }}
-            className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[rgb(var(--brand-primary))] to-[rgb(var(--brand-accent))]"
+            className="flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-[rgb(var(--brand-primary))] to-[rgb(var(--brand-accent))]"
           >
-            <span className="text-3xl font-black text-white">R</span>
+            <img
+              src={appIcon}
+              alt="Racoon LMS"
+              className="h-12 w-12 object-contain"
+            />
           </motion.div>
         </motion.div>
 

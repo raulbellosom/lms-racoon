@@ -115,9 +115,9 @@ export function ProfileView() {
       title={t("nav.profile", "Mi Perfil")}
       subtitle="Gestiona tu información personal"
     >
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 xl:grid-cols-3">
         {/* Profile Card */}
-        <Card className="p-6 md:col-span-1">
+        <Card className="p-6 xl:col-span-1">
           <div className="flex flex-col items-center text-center">
             <div className="relative group">
               <Avatar
@@ -157,7 +157,7 @@ export function ProfileView() {
         </Card>
 
         {/* Details Card */}
-        <Card className="p-6 md:col-span-2">
+        <Card className="p-6 xl:col-span-2">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
               Información Personal
@@ -188,7 +188,8 @@ export function ProfileView() {
           </div>
 
           <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Grid Change: 1 col for default/tablet, 2 cols for very large screens */}
+            <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
               <div>
                 <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
                   Nombre
@@ -238,10 +239,10 @@ export function ProfileView() {
                     placeholder="tucorreo@ejemplo.com"
                   />
                 ) : (
-                  <div className="mt-1 flex h-10 items-center text-sm font-medium text-[rgb(var(--text-secondary))] opacity-60">
+                  <div className="mt-1 flex min-h-10 items-center text-sm font-medium text-[rgb(var(--text-secondary))] opacity-60">
                     {user?.email || "-"}
                     {profile?.role === "admin" && (
-                      <span className="ml-2 text-[10px] text-amber-500">
+                      <span className="ml-2 shrink-0 text-[10px] text-amber-500">
                         (Admin)
                       </span>
                     )}

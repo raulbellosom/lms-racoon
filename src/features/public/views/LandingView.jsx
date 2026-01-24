@@ -3,6 +3,7 @@ import {
   FeaturesGrid,
   FeaturedCourses,
   CTASection,
+  PublicNavbar,
 } from "../components/Landing";
 
 /**
@@ -10,7 +11,8 @@ import {
  */
 export function LandingView() {
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh pt-16">
+      <PublicNavbar />
       <HeroSection />
       <FeaturesGrid />
       <FeaturedCourses />
