@@ -5,7 +5,8 @@
     "progress": "Progreso",
     "teacherPanel": "Panel de Instructor",
     "catalog": "Catálogo",
-    "explore": "Explorar"
+    "explore": "Explorar",
+    "search": "Buscar"
   },
   "auth": {
     "welcomeBack": "¡Bienvenido de nuevo!",

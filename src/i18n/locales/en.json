@@ -6,7 +6,8 @@
     "teacherPanel": "Instructor Panel",
     "catalog": "Catalog",
     "explore": "Explore",
-    "users": "Users"
+    "users": "Users",
+    "search": "Search"
   },
   "auth": {
     "welcomeBack": "Welcome back!",

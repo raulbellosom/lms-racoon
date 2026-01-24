@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { PlayCircle, BookOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PageLayout } from "../../../shared/ui/PageLayout";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { Card } from "../../../shared/ui/Card";
@@ -37,21 +38,10 @@ export function MyCoursesView() {
   }, [auth.user?.$id]);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <h1 className="text-2xl font-extrabold tracking-tight">
-          {t("nav.myCourses")}
-        </h1>
-        <p className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
-          {t("student.continueLearning")}
-        </p>
-      </motion.div>
-
+    <PageLayout
+      title={t("nav.myCourses")}
+      subtitle={t("student.continueLearning")}
+    >
       {/* Course list */}
       <div className="mt-6 space-y-4">
         {loading ? (
@@ -132,6 +122,6 @@ export function MyCoursesView() {
           ))
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, UserPlus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "../../../../shared/ui/Button";
@@ -45,11 +45,15 @@ export function PublicNavbar() {
             <div className="flex items-center gap-3">
               <Link to="/auth/login">
                 <Button variant="ghost" size="sm">
+                  <LogIn className="mr-2 h-4 w-4" />
                   {t("auth.login", "Iniciar Sesión")}
                 </Button>
               </Link>
               <Link to="/auth/register">
-                <Button size="sm">{t("auth.register", "Crear cuenta")}</Button>
+                <Button size="sm">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  {t("auth.register", "Crear cuenta")}
+                </Button>
               </Link>
             </div>
           </nav>
@@ -115,6 +119,7 @@ export function PublicNavbar() {
               <div className="flex flex-col gap-3">
                 <Link to="/auth/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="secondary" className="w-full" size="lg">
+                    <LogIn className="mr-2 h-5 w-5" />
                     {t("auth.login", "Iniciar Sesión")}
                   </Button>
                 </Link>
@@ -123,6 +128,7 @@ export function PublicNavbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Button className="w-full" size="lg">
+                    <UserPlus className="mr-2 h-5 w-5" />
                     {t("auth.register", "Crear Cuenta")}
                   </Button>
                 </Link>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Download } from "lucide-react";
+import { Download, X } from "lucide-react";
 
 export function PWAInstallPrompt() {
   const [deferred, setDeferred] = React.useState(null);
@@ -12,7 +12,8 @@ export function PWAInstallPrompt() {
       setVisible(true);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+    return () =>
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
   }, []);
 
   if (!visible || !deferred) return null;
@@ -40,12 +41,20 @@ export function PWAInstallPrompt() {
               Accede más rápido como app (PWA).
             </div>
           </div>
-          <button
-            onClick={install}
-            className="rounded-xl bg-[rgb(var(--brand-primary))] px-3 py-2 text-xs font-semibold text-white hover:bg-[rgb(var(--brand-accent))]"
-          >
-            Instalar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={install}
+              className="rounded-xl bg-[rgb(var(--brand-primary))] px-3 py-2 text-xs font-semibold text-white hover:bg-[rgb(var(--brand-accent))]"
+            >
+              Instalar
+            </button>
+            <button
+              onClick={() => setVisible(false)}
+              className="group rounded-lg p-2 text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))]"
+            >
+              <X className="h-4 w-4 transition-transform group-hover:scale-110" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

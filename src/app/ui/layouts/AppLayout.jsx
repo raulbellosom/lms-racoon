@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../resources/icon.svg";
@@ -171,6 +172,7 @@ export function AppLayout() {
 
   const navItems = [
     { to: "/app/home", icon: Home, label: t("nav.home") },
+    { to: "/catalog", icon: Search, label: t("nav.explore") },
     { to: "/app/my-courses", icon: BookOpen, label: t("nav.myCourses") },
     { to: "/app/progress", icon: LineChart, label: t("nav.progress") },
     ...(role !== "student"
@@ -258,73 +260,6 @@ export function AppLayout() {
             )}
           </div>
 
-          {/* User Profile */}
-          <div className="border-t border-[rgb(var(--border-base))]">
-            <Dropdown
-              align="left"
-              side="top"
-              sideOffset={4}
-              className="w-60 min-w-[240px]"
-              trigger={
-                <button className="group flex w-full items-center text-left transition-colors hover:bg-[rgb(var(--bg-muted))] overflow-hidden py-1">
-                  {/* Fixed Icon Area: Avatar */}
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center">
-                    <Avatar
-                      name={displayName}
-                      src={ProfileService.getAvatarUrl(
-                        auth.profile?.avatarFileId,
-                      )}
-                      size="md"
-                      ring
-                      className="transition-transform group-hover:scale-105"
-                    />
-                  </div>
-                  {/* Animated Text Area */}
-                  <div
-                    className={`grid transition-[grid-template-columns] duration-300 ease-in-out min-w-0 ${
-                      collapsed ? "grid-cols-[0fr]" : "grid-cols-[1fr]"
-                    }`}
-                  >
-                    <div className="overflow-hidden pr-4 min-w-0">
-                      <div className="truncate text-sm font-bold text-[rgb(var(--text-primary))]">
-                        {displayName}
-                      </div>
-                      <div className="truncate text-xs text-[rgb(var(--text-secondary))]">
-                        {auth.user?.email}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              }
-            >
-              <div className="px-3 py-2">
-                <div className="text-xs font-bold text-[rgb(var(--text-primary))]">
-                  {displayName}
-                </div>
-                <div className="text-xs text-[rgb(var(--text-secondary))]">
-                  {t(`roles.${role}`, role)}
-                </div>
-              </div>
-              <DropdownDivider />
-              <DropdownItem
-                icon={User}
-                onClick={() => navigate("/app/profile")}
-              >
-                {t("nav.profile", "Mi Perfil")}
-              </DropdownItem>
-              <DropdownItem
-                icon={Settings}
-                onClick={() => navigate("/app/settings")}
-              >
-                {t("common.settings")}
-              </DropdownItem>
-              <DropdownDivider />
-              <DropdownItem icon={LogOut} onClick={onLogout} danger>
-                {t("common.logout")}
-              </DropdownItem>
-            </Dropdown>
-          </div>
-
           {/* Collapse Toggle - Floating or Fixed? 
                User requested a toggle. A centered button at the bottom of the column is good.
            */}
@@ -341,9 +276,78 @@ export function AppLayout() {
         </div>
       </aside>
 
+      {/* ========== Desktop Top Navbar ========== */}
+      <header
+        className={`fixed top-0 right-0 z-20 hidden h-16 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-6 transition-all duration-300 ease-in-out md:flex ${
+          collapsed ? "left-16" : "left-72"
+        }`}
+      >
+        {/* Search Bar */}
+        <div className="flex w-96 items-center gap-2 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-base))] px-3 py-2 transition-colors hover:border-[rgb(var(--text-secondary))] focus-within:border-[rgb(var(--brand-primary))] focus-within:ring-1 focus-within:ring-[rgb(var(--brand-primary))]">
+          <Search className="h-4 w-4 text-[rgb(var(--text-secondary))]" />
+          <input
+            type="text"
+            placeholder={t("common.searchCourses", "Buscar cursos...")}
+            className="flex-1 border-none bg-transparent text-sm placeholder-[rgb(var(--text-secondary))] outline-none focus:outline-none focus:ring-0"
+          />
+        </div>
+
+        {/* Right Actions: User Profile */}
+        <div className="flex items-center gap-4">
+          <Dropdown
+            align="end"
+            side="bottom"
+            sideOffset={8}
+            className="w-60 min-w-[240px]"
+            trigger={
+              <button className="group flex items-center gap-3 transition-colors">
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-bold text-[rgb(var(--text-primary))]">
+                    {displayName}
+                  </span>
+                  <span className="text-xs text-[rgb(var(--text-secondary))]">
+                    {auth.user?.email}
+                  </span>
+                </div>
+                <Avatar
+                  name={displayName}
+                  src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
+                  size="md"
+                  ring
+                  className="transition-transform group-hover:scale-105"
+                />
+              </button>
+            }
+          >
+            <div className="px-3 py-2">
+              <div className="text-xs font-bold text-[rgb(var(--text-primary))]">
+                {displayName}
+              </div>
+              <div className="text-xs text-[rgb(var(--text-secondary))]">
+                {t(`roles.${role}`, role)}
+              </div>
+            </div>
+            <DropdownDivider />
+            <DropdownItem icon={User} onClick={() => navigate("/app/profile")}>
+              {t("nav.profile", "Mi Perfil")}
+            </DropdownItem>
+            <DropdownItem
+              icon={Settings}
+              onClick={() => navigate("/app/settings")}
+            >
+              {t("common.settings")}
+            </DropdownItem>
+            <DropdownDivider />
+            <DropdownItem icon={LogOut} onClick={onLogout} danger>
+              {t("common.logout")}
+            </DropdownItem>
+          </Dropdown>
+        </div>
+      </header>
+
       {/* ========== Desktop Main ========== */}
       <main
-        className={`hidden min-h-dvh transition-all duration-300 ease-in-out md:block ${
+        className={`hidden min-h-dvh pt-16 pb-12 transition-all duration-300 ease-in-out md:block ${
           collapsed ? "md:pl-16" : "md:pl-72"
         }`}
       >
@@ -359,6 +363,22 @@ export function AppLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* ========== Desktop Footer "Powered By" ========== */}
+      <div
+        className={`fixed bottom-0 right-0 z-20 hidden h-12 items-center justify-end px-4 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-base))] transition-all duration-300 ease-in-out md:flex ${
+          collapsed ? "left-16" : "left-72"
+        }`}
+      >
+        <a
+          href="https://racoondevs.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] font-medium text-[rgb(var(--text-secondary))] opacity-60 transition-opacity hover:opacity-100"
+        >
+          Powered by RacoonDevs
+        </a>
+      </div>
 
       {/* ========== Mobile Header ========== */}
       <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 backdrop-blur-lg md:hidden">
@@ -484,23 +504,12 @@ export function AppLayout() {
 
       {/* ========== Mobile Bottom Nav ========== */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.95] backdrop-blur-lg md:hidden">
-        <div className="grid grid-cols-5 items-center px-1 py-1.5 pb-safe">
+        <div className="grid grid-cols-4 items-center px-1 py-1.5 pb-safe">
           {navItems.slice(0, 4).map((item) => (
             <div key={item.to} className="flex justify-center">
               <MobileNavItem {...item} />
             </div>
           ))}
-          <div className="flex justify-center">
-            <button
-              onClick={onLogout}
-              className="flex flex-col items-center gap-0.5 rounded-xl py-1 text-[10px] font-semibold text-[rgb(var(--text-muted))] transition-all hover:text-[rgb(var(--text-primary))]"
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="truncate max-w-[60px]">
-                {t("common.logout")}
-              </span>
-            </button>
-          </div>
         </div>
       </nav>
     </div>

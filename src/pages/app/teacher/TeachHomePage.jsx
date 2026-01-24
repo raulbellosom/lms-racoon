@@ -4,6 +4,7 @@ import { Plus, BookOpen, Users, DollarSign, ArrowRight } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
+import { PageLayout } from "../../../shared/ui/PageLayout";
 
 function StatCard({ icon: Icon, label, value, colorClass }) {
   return (
@@ -34,18 +35,10 @@ export function TeachHomePage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-[rgb(var(--text-primary))]">
-            Panel de Profesor
-          </h1>
-          <p className="mt-1 text-[rgb(var(--text-secondary))]">
-            Bienvenido, {auth.profile?.firstName || "Maestro"}. Gestiona tus
-            cursos y estudiantes.
-          </p>
-        </div>
+    <PageLayout
+      title="Panel de Profesor"
+      subtitle={`Bienvenido, ${auth.profile?.firstName || "Maestro"}. Gestiona tus cursos y estudiantes.`}
+      actions={
         <Link to="/app/teach/courses/new">
           <Button
             size="lg"
@@ -54,8 +47,8 @@ export function TeachHomePage() {
             <Plus className="mr-2 h-5 w-5" /> Crear Nuevo Curso
           </Button>
         </Link>
-      </div>
-
+      }
+    >
       {/* Stats Grid */}
       <div className="grid gap-6 sm:grid-cols-3">
         <StatCard
@@ -126,6 +119,6 @@ export function TeachHomePage() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
