@@ -84,6 +84,7 @@
 | language         | string   |       ❌ | "es"    | min=0 max=6         | es, en-US, etc                   |
 | level            | enum     |       ✅ | —       | —                   |                                  |
 | coverFileId      | string   |       ❌ | ""      | min=0 max=36        | bucket `courseCovers`            |
+| bannerFileId     | string   |       ❌ | ""      | min=0 max=36        | bucket `courseCovers`            |
 | promoVideoFileId | string   |       ❌ | ""      | min=0 max=36        | bucket `lessonVideos` (opcional) |
 | priceCents       | integer  |       ❌ | 0       | min=0 max=200000000 |                                  |
 | currency         | string   |       ❌ | "MXN"   | min=0 max=3         |                                  |

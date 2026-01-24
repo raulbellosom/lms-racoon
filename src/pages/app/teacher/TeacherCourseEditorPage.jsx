@@ -531,7 +531,7 @@ export function TeacherCourseEditorPage() {
               />
 
               {/* Save Button */}
-              <div className="sticky bottom-4 z-10">
+              <div className="sticky bottom-24 z-10 lg:static">
                 <Button
                   size="lg"
                   className="w-full shadow-lg"

@@ -154,8 +154,11 @@ export function TeacherCoursesPage() {
                   </div>
 
                   <h3
-                    className="mb-1 line-clamp-2 text-xl font-bold leading-tight text-white drop-shadow-sm"
+                    className="mb-1 line-clamp-2 text-xl font-bold leading-tight text-white drop-shadow-sm hover:text-indigo-300 transition-colors cursor-pointer"
                     title={course.title}
+                    onClick={() =>
+                      window.open(`/app/courses/${course.$id}`, "_blank")
+                    }
                   >
                     {course.title}
                   </h3>
