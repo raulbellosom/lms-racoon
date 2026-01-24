@@ -1,41 +1,47 @@
 import React from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { Loader2, ArrowLeft, KeyRound, CheckCircle } from "lucide-react";
+import { Loader2, KeyRound, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { functions } from "../../shared/appwrite/client";
 import { APPWRITE } from "../../shared/appwrite/ids";
-import { Input } from "../../shared/ui/Input";
 import { Button } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
+import { LanguageSelector } from "../../shared/ui/LanguageSelector";
 import { useToast } from "../../app/providers/ToastProvider";
+import { authStore } from "../../app/stores/authStore";
+import { PasswordInput } from "../../features/auth/components/PasswordInput";
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const userId = searchParams.get("userId");
   const token = searchParams.get("token");
+  const { showToast } = useToast();
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm();
-
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
-  const { showToast } = useToast();
-  const password = watch("password");
+
+  // Check if user is logged in
+  const isLoggedIn = authStore.getState().session;
 
   React.useEffect(() => {
     if (!userId || !token) {
-      showToast("Enlace inválido o incompleto", "error");
-      // navigate("/login"); // Optional: redirect immediately or let them see the error
+      showToast(t("auth.resetPassword.invalidLinkMessage"), "error");
     }
-  }, [userId, token, showToast]);
+  }, [userId, token, showToast, t]);
 
-  const onSubmit = async (data) => {
-    if (!userId || !token) return;
+  const isValid = () => {
+    if (!password || password.length < 8) return false;
+    if (password !== confirmPassword) return false;
+    return true;
+  };
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    if (!userId || !token || !isValid()) return;
 
     setIsLoading(true);
     try {
@@ -45,7 +51,7 @@ export function ResetPasswordPage() {
           action: "update_password",
           userId,
           token,
-          newPassword: data.password,
+          newPassword: password,
         }),
         false,
       );
@@ -53,19 +59,22 @@ export function ResetPasswordPage() {
       const response = JSON.parse(execution.responseBody);
       if (response.success) {
         setIsSuccess(true);
-        showToast("Contraseña actualizada correctamente", "success");
+        showToast(t("auth.resetPassword.success"), "success");
+
+        // Redirect based on login status
         setTimeout(() => {
-          navigate("/auth/login");
+          if (isLoggedIn) {
+            navigate("/app/home");
+          } else {
+            navigate("/auth/login");
+          }
         }, 3000);
       } else {
-        showToast(
-          response.message || "Error al actualizar contraseña",
-          "error",
-        );
+        showToast(response.message || t("auth.errors.registerFailed"), "error");
       }
     } catch (error) {
       console.error(error);
-      showToast("Error de conexión", "error");
+      showToast(t("auth.errors.loginFailed"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -74,15 +83,21 @@ export function ResetPasswordPage() {
   if (!userId || !token) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[rgb(var(--bg-main))] p-4">
+        {/* Language selector */}
+        <div className="fixed right-4 top-4">
+          <LanguageSelector side="bottom" align="end" />
+        </div>
+
         <Card className="w-full max-w-md p-8 text-center">
-          <h2 className="text-xl font-bold text-red-500">Enlace Inválido</h2>
+          <h2 className="text-xl font-bold text-red-500">
+            {t("auth.resetPassword.invalidLink")}
+          </h2>
           <p className="mt-2 text-[rgb(var(--text-secondary))]">
-            El enlace que has utilizado no contiene la información necesaria.
-            Por favor solicita uno nuevo.
+            {t("auth.resetPassword.invalidLinkMessage")}
           </p>
           <div className="mt-6">
             <Link to="/forgot-password">
-              <Button>Solicitar Nuevo Enlace</Button>
+              <Button>{t("auth.resetPassword.requestNewLink")}</Button>
             </Link>
           </div>
         </Card>
@@ -92,6 +107,11 @@ export function ResetPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[rgb(var(--bg-main))] p-4">
+      {/* Language selector */}
+      <div className="fixed right-4 top-4">
+        <LanguageSelector side="bottom" align="end" />
+      </div>
+
       <Card className="w-full max-w-md p-8">
         {isSuccess ? (
           <div className="text-center">
@@ -99,15 +119,28 @@ export function ResetPasswordPage() {
               <CheckCircle className="h-8 w-8" />
             </div>
             <h2 className="mb-2 text-2xl font-bold text-[rgb(var(--text-primary))]">
-              ¡Contraseña Actualizada!
+              {t("auth.resetPassword.success")}
             </h2>
             <p className="mb-6 text-[rgb(var(--text-secondary))]">
-              Tu contraseña ha sido cambiada exitosamente. Serás redirigido al
-              login en unos segundos...
+              {t("auth.resetPassword.successMessage")}
+              <br />
+              <span className="text-sm italic">
+                {t("auth.resetPassword.redirecting")}
+              </span>
             </p>
-            <Link to="/auth/login">
-              <Button className="w-full">Ir al Login ahora</Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link to="/app/home">
+                <Button className="w-full">
+                  {t("auth.resetPassword.goToDashboard")}
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/auth/login">
+                <Button className="w-full">
+                  {t("auth.resetPassword.goToLogin")}
+                </Button>
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -116,64 +149,46 @@ export function ResetPasswordPage() {
                 <KeyRound className="h-6 w-6" />
               </div>
               <h1 className="text-2xl font-bold text-[rgb(var(--text-primary))]">
-                Nueva Contraseña
+                {t("auth.resetPassword.title")}
               </h1>
               <p className="mt-2 text-sm text-[rgb(var(--text-secondary))]">
-                Ingresa tu nueva contraseña para la cuenta.
+                {t("auth.resetPassword.subtitle")}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[rgb(var(--text-secondary))]">
-                  Nueva Contraseña
-                </label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  {...register("password", {
-                    required: "La contraseña es requerida",
-                    minLength: {
-                      value: 8,
-                      message: "Mínimo 8 caracteres",
-                    },
-                  })}
-                />
-                {errors.password && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
+            <form onSubmit={onSubmit} className="space-y-4">
+              <PasswordInput
+                label={t("auth.resetPassword.newPassword")}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                showStrength={true}
+                error={
+                  password && password.length < 8
+                    ? t("auth.errors.passwordMin")
+                    : undefined
+                }
+              />
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[rgb(var(--text-secondary))]">
-                  Confirmar Contraseña
-                </label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  {...register("confirmPassword", {
-                    required: "Confirma tu contraseña",
-                    validate: (val) =>
-                      val === password || "Las contraseñas no coinciden",
-                  })}
-                />
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors.confirmPassword.message}
-                  </p>
-                )}
-              </div>
+              <PasswordInput
+                label={t("auth.resetPassword.confirmPassword")}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                isConfirm={true}
+                confirmValue={password}
+              />
 
-              <Button className="w-full" type="submit" disabled={isLoading}>
+              <Button
+                className="w-full"
+                type="submit"
+                disabled={isLoading || !isValid()}
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Actualizando...
+                    {t("auth.resetPassword.updating")}
                   </>
                 ) : (
-                  "Actualizar Contraseña"
+                  t("auth.resetPassword.submit")
                 )}
               </Button>
             </form>

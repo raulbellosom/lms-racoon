@@ -75,6 +75,31 @@
       "required": "This field is required",
       "loginFailed": "Invalid credentials",
       "registerFailed": "Failed to create account"
+    },
+    "passwordStrength": {
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong",
+      "veryStrong": "Very strong"
+    },
+    "passwordsMatch": "Passwords match",
+    "passwordsDontMatch": "Passwords do not match",
+    "resetPassword": {
+      "title": "New Password",
+      "subtitle": "Enter your new password for your account",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "submit": "Update Password",
+      "updating": "Updating...",
+      "success": "Password Updated!",
+      "successMessage": "Your password has been changed successfully.",
+      "goToLogin": "Go to Login",
+      "goToDashboard": "Go to Dashboard",
+      "invalidLink": "Invalid Link",
+      "invalidLinkMessage": "The link you used does not contain the required information. Please request a new one.",
+      "requestNewLink": "Request New Link",
+      "redirecting": "Redirecting in a few seconds..."
     }
   },
   "landing": {

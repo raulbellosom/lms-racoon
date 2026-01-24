@@ -74,6 +74,31 @@
       "required": "Este campo es requerido",
       "loginFailed": "Credenciales incorrectas",
       "registerFailed": "Error al crear la cuenta"
+    },
+    "passwordStrength": {
+      "weak": "Débil",
+      "fair": "Regular",
+      "good": "Buena",
+      "strong": "Fuerte",
+      "veryStrong": "Muy fuerte"
+    },
+    "passwordsMatch": "Las contraseñas coinciden",
+    "passwordsDontMatch": "Las contraseñas no coinciden",
+    "resetPassword": {
+      "title": "Nueva Contraseña",
+      "subtitle": "Ingresa tu nueva contraseña para tu cuenta",
+      "newPassword": "Nueva Contraseña",
+      "confirmPassword": "Confirmar Contraseña",
+      "submit": "Actualizar Contraseña",
+      "updating": "Actualizando...",
+      "success": "¡Contraseña Actualizada!",
+      "successMessage": "Tu contraseña ha sido cambiada exitosamente.",
+      "goToLogin": "Ir al Login",
+      "goToDashboard": "Ir al Dashboard",
+      "invalidLink": "Enlace Inválido",
+      "invalidLinkMessage": "El enlace que has utilizado no contiene la información necesaria. Por favor solicita uno nuevo.",
+      "requestNewLink": "Solicitar Nuevo Enlace",
+      "redirecting": "Redirigiendo en unos segundos..."
     }
   },
   "landing": {

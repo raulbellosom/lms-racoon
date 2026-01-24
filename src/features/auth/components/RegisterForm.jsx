@@ -1,11 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, KeyRound, User2 } from "lucide-react";
+import { Mail, User2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 
 import { Button } from "../../../shared/ui/Button";
 import { AuthInput } from "./AuthInput";
+import { PasswordInput } from "./PasswordInput";
 import { register } from "../../../shared/services/auth";
 import { authStore } from "../../../app/stores/authStore";
 import { useToast } from "../../../app/providers/ToastProvider";
@@ -22,8 +23,59 @@ export function RegisterForm() {
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
   const [errors, setErrors] = React.useState({});
   const [busy, setBusy] = React.useState(false);
+
+  // Real-time validation
+  const validateField = (field, value) => {
+    const newErrors = { ...errors };
+
+    switch (field) {
+      case "firstName":
+        if (!value.trim()) {
+          newErrors.firstName = t("auth.errors.required");
+        } else {
+          delete newErrors.firstName;
+        }
+        break;
+      case "email":
+        if (!value) {
+          newErrors.email = t("auth.errors.required");
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          newErrors.email = t("auth.errors.invalidEmail");
+        } else {
+          delete newErrors.email;
+        }
+        break;
+      case "password":
+        if (!value) {
+          newErrors.password = t("auth.errors.required");
+        } else if (value.length < 8) {
+          newErrors.password = t("auth.errors.passwordMin");
+        } else {
+          delete newErrors.password;
+        }
+        // Re-validate confirm if password changes
+        if (confirmPassword && value !== confirmPassword) {
+          newErrors.confirmPassword = t("auth.errors.passwordMatch");
+        } else if (confirmPassword && value === confirmPassword) {
+          delete newErrors.confirmPassword;
+        }
+        break;
+      case "confirmPassword":
+        if (!value) {
+          newErrors.confirmPassword = t("auth.errors.required");
+        } else if (value !== password) {
+          newErrors.confirmPassword = t("auth.errors.passwordMatch");
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+    }
+
+    setErrors(newErrors);
+  };
 
   const validate = () => {
     const newErrors = {};
@@ -42,6 +94,12 @@ export function RegisterForm() {
       newErrors.password = t("auth.errors.required");
     } else if (password.length < 8) {
       newErrors.password = t("auth.errors.passwordMin");
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = t("auth.errors.required");
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = t("auth.errors.passwordMatch");
     }
 
     setErrors(newErrors);
@@ -79,6 +137,11 @@ export function RegisterForm() {
     }
   };
 
+  const passwordsMatch =
+    password && confirmPassword && password === confirmPassword;
+  const isFormValid =
+    firstName.trim() && email && password.length >= 8 && passwordsMatch;
+
   return (
     <motion.form
       onSubmit={onSubmit}
@@ -94,7 +157,10 @@ export function RegisterForm() {
           label={t("auth.firstName")}
           type="text"
           value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
+          onChange={(e) => {
+            setFirstName(e.target.value);
+            validateField("firstName", e.target.value);
+          }}
           error={errors.firstName}
           placeholder="Juan"
           autoComplete="given-name"
@@ -115,28 +181,43 @@ export function RegisterForm() {
         label={t("auth.email")}
         type="email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          validateField("email", e.target.value);
+        }}
         error={errors.email}
         placeholder="tu@email.com"
         autoComplete="email"
       />
 
-      <AuthInput
-        icon={KeyRound}
+      <PasswordInput
         label={t("auth.password")}
-        type="password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => {
+          setPassword(e.target.value);
+          validateField("password", e.target.value);
+        }}
         error={errors.password}
-        hint={t("auth.errors.passwordMin")}
-        placeholder="••••••••"
+        showStrength={true}
+        autoComplete="new-password"
+      />
+
+      <PasswordInput
+        label={t("auth.confirmPassword")}
+        value={confirmPassword}
+        onChange={(e) => {
+          setConfirmPassword(e.target.value);
+          validateField("confirmPassword", e.target.value);
+        }}
+        isConfirm={true}
+        confirmValue={password}
         autoComplete="new-password"
       />
 
       <Button
         type="submit"
         className="w-full btn-shimmer"
-        disabled={busy}
+        disabled={busy || !isFormValid}
         size="lg"
       >
         {busy ? t("common.loading") : t("auth.registerButton")}
