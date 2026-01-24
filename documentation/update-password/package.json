@@ -1,0 +1,16 @@
+{
+  "name": "update-password",
+  "version": "1.0.0",
+  "description": "Actualiza la contraseña de un usuario usando token personalizado",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "node-appwrite": "^13.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  }
+}

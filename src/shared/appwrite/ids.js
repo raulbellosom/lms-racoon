@@ -50,5 +50,6 @@ export const APPWRITE = {
       "VITE_APPWRITE_FN_SYNC_USER_PROFILE",
       "syncUserProfile",
     ),
+    authHandler: pick("VITE_APPWRITE_FN_AUTH_HANDLER", "authHandler"),
   },
 };

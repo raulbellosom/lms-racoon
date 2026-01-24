@@ -199,8 +199,10 @@ export function RouteErrorBoundary() {
   );
 }
 
+import { NotFound } from "./NotFound";
+
 export function NotFoundPage() {
-  return <ErrorPage code={404} showBackButton showHomeButton />;
+  return <NotFound />;
 }
 
 export function ForbiddenPage() {

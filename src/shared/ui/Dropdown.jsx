@@ -120,7 +120,7 @@ export function Dropdown({
               [align === "left" ? "marginLeft" : "marginRight"]: sideOffset,
             }}
             className={cn(
-              "absolute z-50 min-w-[180px] rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-1 shadow-lg",
+              "absolute z-50 min-w-[240px] max-w-[90vw] rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-1 shadow-lg",
               align === "left" ? "left-0" : "right-0",
               side === "bottom" ? "top-full mt-2" : "bottom-full mb-2",
               className,

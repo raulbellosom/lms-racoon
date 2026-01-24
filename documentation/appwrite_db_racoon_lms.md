@@ -37,7 +37,9 @@
 | avatarFileId | string  |       ❌ | ""      | min=0 max=36  | bucket `avatars`          |
 | bio          | string  |       ❌ | ""      | min=0 max=500 |                           |
 | phone        | string  |       ❌ | ""      | min=0 max=20  | formato E.164 recomendado |
+| email        | email   |       ✅ | —       | min=0 max=100 | Sync with Auth            |
 | country      | string  |       ❌ | "MX"    | min=0 max=2   | ISO-2                     |
+| suspended    | boolean |       ❌ | false   | —             | Block login               |
 | enabled      | boolean |       ❌ | true    | —             | borrado lógico            |
 
 **Enum values**
@@ -46,9 +48,11 @@
 
 **Indexes**
 
+- `uq_email` — unique — `email`
 - `idx_role_asc` — key — `role` (asc)
 - `idx_name_fulltext` — fulltext — `firstName`, `lastName`
 - `idx_enabled_asc` — key — `enabled` (asc)
+- `idx_email_fulltext` — fulltext — `email`
 
 ---
 
@@ -388,10 +392,27 @@
 
 ---
 
+### 17) `password_reset_tokens`
+
+| Attribute | Type     | Required | Default | Constraints  | Notes                |
+| --------- | -------- | -------: | ------- | ------------ | -------------------- |
+| userId    | string   |       ✅ | —       | min=1 max=36 | Auth user ID         |
+| token     | string   |       ✅ | —       | min=1 max=64 | Secure random string |
+| email     | string   |       ✅ | —       | min=3 max=80 | Backup/Verification  |
+| expireAt  | datetime |       ✅ | —       | —            |                      |
+| used      | boolean  |       ❌ | false   | —            |                      |
+
+**Indexes**
+
+- `uniq_token` — unique — `token`
+- `idx_userId` — key — `userId` (asc)
+
+---
+
 ## Buckets
 
 - `avatars` — foto de perfil
 - `courseCovers` — portadas de cursos
 - `lessonVideos` — videos por lección
-- `lessonAttachments` — PDFs/ZIPs/etc
+- `lessonAttachments` — PDF/ZIP/etc
 - `submissionAttachments` — entregas del alumno

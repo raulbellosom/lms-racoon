@@ -29,7 +29,7 @@ export function PublicLayout() {
       {/* Mobile Drawer */}
 
       {/* ========== Main Content ========== */}
-      <main className="pt-2">
+      <main className="pt-16">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

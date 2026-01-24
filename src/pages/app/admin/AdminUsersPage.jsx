@@ -5,7 +5,7 @@ import { Card } from "../../../shared/ui/Card";
 import { Avatar } from "../../../shared/ui/Avatar";
 import { Badge } from "../../../shared/ui/Badge";
 import { APPWRITE } from "../../../shared/appwrite/ids";
-import { db } from "../../../shared/appwrite/client";
+import { db, functions } from "../../../shared/appwrite/client";
 import { ProfileService } from "../../../shared/data/profiles";
 import { useToast } from "../../../app/providers/ToastProvider";
 import {
@@ -23,6 +23,12 @@ import {
   GraduationCap,
   Edit,
   Loader2,
+  Copy,
+  Ban,
+  CheckCircle,
+  Lock,
+  Unlock,
+  Mail,
 } from "lucide-react";
 
 export function AdminUsersPage() {
@@ -35,6 +41,17 @@ export function AdminUsersPage() {
   const [editingUser, setEditingUser] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
   const [formData, setFormData] = React.useState({});
+
+  // Create Mode State
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [createData, setCreateData] = React.useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    phone: "",
+  });
+  const [creating, setCreating] = React.useState(false);
 
   React.useEffect(() => {
     loadUsers();
@@ -68,32 +85,83 @@ export function AdminUsersPage() {
     }
   };
 
+  const handleToggleStatus = async (user) => {
+    const newStatus = !user.enabled;
+    try {
+      // Logic for "logical" delete/disable in profiles collection
+      await ProfileService.update(user.$id, { enabled: newStatus });
+      setUsers(
+        users.map((u) =>
+          u.$id === user.$id ? { ...u, enabled: newStatus } : u,
+        ),
+      );
+      showToast(
+        `Usuario ${newStatus ? "habilitado" : "deshabilitado (borrado lógico)"}`,
+        newStatus ? "success" : "warning",
+      );
+    } catch (error) {
+      console.error("Failed to toggle status", error);
+      showToast("Error al cambiar estado", "error");
+    }
+  };
+
+  const handleToggleSuspend = async (user) => {
+    const newSuspendStatus = !user.suspended;
+    try {
+      await ProfileService.update(user.$id, { suspended: newSuspendStatus });
+      setUsers(
+        users.map((u) =>
+          u.$id === user.$id ? { ...u, suspended: newSuspendStatus } : u,
+        ),
+      );
+      showToast(
+        `Acceso ${newSuspendStatus ? "suspendido" : "restaurado"}`,
+        newSuspendStatus ? "warning" : "success",
+      );
+    } catch (error) {
+      console.error("Failed to toggle suspend", error);
+      showToast("Error al cambiar estado de suspensión", "error");
+    }
+  };
+
+  const [resetCooldowns, setResetCooldowns] = React.useState({});
+
+  const handleSendPasswordReset = async (user) => {
+    const now = Date.now();
+    const lastSent = resetCooldowns[user.$id] || 0;
+    const cooldownMs = 3 * 60 * 1000; // 3 minutes
+
+    if (now - lastSent < cooldownMs) {
+      const remaining = Math.ceil((cooldownMs - (now - lastSent)) / 1000);
+      showToast(`Espera ${remaining}s para reenviar correo`, "error");
+      return;
+    }
+
+    if (!user.email) {
+      showToast("El usuario no tiene email registrado", "error");
+      return;
+    }
+
+    try {
+      showToast("Enviando correo...", "info");
+      await functions.createExecution(
+        APPWRITE.functions.authHandler,
+        JSON.stringify({ action: "request_recovery", email: user.email }),
+      );
+      setResetCooldowns((prev) => ({ ...prev, [user.$id]: now }));
+      showToast("Correo de recuperación enviado", "success");
+    } catch (error) {
+      console.error("Failed to send reset email", error);
+      showToast("Error al enviar correo", "error");
+    }
+  };
+
   const handleEditClick = (user) => {
     setEditingUser(user);
     setFormData({
       firstName: user.firstName || "",
       lastName: user.lastName || "",
-      email: "", // We don't have the email in profile doc usually unless synced.
-      // If profiles.email exists, use it. But in previous step ProfileView.jsx we allowed editing it.
-      // Ideally we should have email in profile doc if we want to show it here easily.
-      // However, the 'users' list from DB might not have email if it's not in the schema or synced yet.
-      // If the user hasn't been synced, this might be empty.
-      // Let's assume we want to allow setting it.
-      // For now, let's leave valid email blank if not present, enforcing user to enter it if they want to change it.
-      // Actually, if we want to SHOW the current email, we need to fetch it or rely on it being in the doc.
-      // The cloud function syncs it to the doc (if my memory of syncUserProfile is correct, I added it to patch? No, I added phone/bios to patch,
-      // let me check the function code again...
-      // Wait, in syncUserProfile I added phone to patch, but email?
-      // I checked the function code: "const email = safeStr(body.email, 100);" and "Updates ... email ... in Appwrite Auth".
-      // But did I add email to the Document Patch?
-      // "const patch = { firstName, lastName, phone, bio, ... }" -> I did NOT add email to the profile document in the function.
-      // So the profile document does NOT store the email.
-      // This means Admin Table won't show email unless I fetch it from Auth API (which I can't do easily from client).
-      // So, for now, Admin can only SET a new email, but not see the old one easily unless I add 'email' field to profiles collection.
-      // The user requirement said "validar el input de email... y ya los demas valores de profiles pues se actualizan en la tabla de profiles ... asi como lo tenemos en la base de datos".
-      // The DB schema in documentation/appwrite_db_racoon_lms.md does NOT have an email field in profiles.
-      // So I cannot show the current email here comfortably. I will add a note or just leave it empty.
-
+      email: user.email || "",
       phone: user.phone || "",
       bio: user.bio || "",
     });
@@ -107,16 +175,15 @@ export function AdminUsersPage() {
 
     setSaving(true);
     try {
-      const updatedData = await ProfileService.syncUpdate(
-        editingUser.$id,
-        formData,
-      );
+      // Uses the syncUserProfile functionality via backend logic or client wrapper
+      // If ProfileService.syncUpdate relies on the Cloud Function, it will update Auth too.
+      await ProfileService.syncUpdate(editingUser.$id, formData);
 
-      // Update local list
+      // Reload or optimistically update
       setUsers(
         users.map((u) =>
           u.$id === editingUser.$id
-            ? { ...u, ...formData } // Optimistic / simple merge
+            ? { ...u, ...formData } // Optimistic merge
             : u,
         ),
       );
@@ -131,15 +198,65 @@ export function AdminUsersPage() {
     }
   };
 
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case "admin":
-        return Shield;
-      case "teacher":
-        return GraduationCap;
-      default:
-        return User;
+  const handleCreateUser = async () => {
+    if (
+      !createData.firstName ||
+      !createData.lastName ||
+      !createData.email ||
+      !createData.password
+    ) {
+      showToast("Faltan campos obligatorios", "error");
+      return;
     }
+
+    if (createData.password.length < 8) {
+      showToast("La contraseña debe tener al menos 8 caracteres", "error");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const payload = {
+        action: "create_user",
+        email: createData.email,
+        password: createData.password,
+        name: `${createData.firstName} ${createData.lastName}`,
+        phone: createData.phone || undefined,
+      };
+
+      const execution = await functions.createExecution(
+        APPWRITE.functions.authHandler,
+        JSON.stringify(payload),
+      );
+
+      const response = JSON.parse(execution.responseBody);
+
+      if (!response.success) {
+        throw new Error(response.message || "Error al crear usuario");
+      }
+
+      showToast("Usuario creado correctamente", "success");
+      setIsCreateOpen(false);
+      setCreateData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        phone: "",
+      });
+      // Delay slightly to allow onUserCreated to run?
+      setTimeout(() => loadUsers(), 1500);
+    } catch (error) {
+      console.error(error);
+      showToast(error.message || "Error al crear usuario", "error");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const copyId = (id) => {
+    navigator.clipboard.writeText(id);
+    showToast("ID copiado al portapapeles", "success");
   };
 
   return (
@@ -147,144 +264,193 @@ export function AdminUsersPage() {
       title="Gestión de Usuarios"
       subtitle="Administra los usuarios y sus roles en la plataforma"
     >
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))]">
-                <th className="px-6 py-4 font-bold text-[rgb(var(--text-primary))]">
-                  Usuario
-                </th>
-                <th className="px-6 py-4 font-bold text-[rgb(var(--text-primary))]">
-                  Rol Actual
-                </th>
-                <th className="px-6 py-4 font-bold text-[rgb(var(--text-primary))]">
-                  ID
-                </th>
-                <th className="px-6 py-4 font-bold text-[rgb(var(--text-primary))]">
-                  Fecha Registro
-                </th>
-                <th className="px-6 py-4 font-bold text-[rgb(var(--text-primary))] text-right">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="p-8 text-center text-[rgb(var(--text-secondary))]"
+      <div className="mb-6 flex justify-end">
+        <Button onClick={() => setIsCreateOpen(true)}>
+          <User className="mr-2 h-4 w-4" /> Nuevo Usuario
+        </Button>
+      </div>
+
+      <Card className="">
+        {/* Header - Hidden on mobile, Grid on desktop */}
+        <div className="hidden rounded-t-xl border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] px-6 py-4 font-bold text-[rgb(var(--text-primary))] md:grid md:grid-cols-12 md:gap-4">
+          <div className="md:col-span-4 lg:col-span-3">Usuario</div>
+          <div className="md:col-span-3 lg:col-span-3">Contacto</div>
+          <div className="md:col-span-2 lg:col-span-2">Rol</div>
+          <div className="md:col-span-2 lg:col-span-2">Fecha Registro</div>
+          <div className="text-right md:col-span-1 lg:col-span-2">Acciones</div>
+        </div>
+
+        {/* List */}
+        <div className="divide-y divide-[rgb(var(--border-base))]">
+          {loading ? (
+            <div className="p-8 text-center text-[rgb(var(--text-secondary))]">
+              Cargando usuarios...
+            </div>
+          ) : users.length === 0 ? (
+            <div className="p-8 text-center text-[rgb(var(--text-secondary))]">
+              No se encontraron usuarios.
+            </div>
+          ) : (
+            users.map((user) => (
+              <div
+                key={user.$id}
+                className={`flex flex-col gap-4 p-4 transition-colors hover:bg-[rgb(var(--bg-surface-hover))] last:rounded-b-xl md:grid md:grid-cols-12 md:items-center md:gap-4 md:px-6 ${
+                  !user.enabled
+                    ? "opacity-50 bg-red-900/10 grayscale"
+                    : user.suspended
+                      ? "bg-amber-500/10"
+                      : ""
+                }`}
+              >
+                {/* User Info */}
+                <div className="flex items-center gap-3 md:col-span-4 lg:col-span-3">
+                  <Avatar
+                    name={
+                      user.firstName
+                        ? `${user.firstName} ${user.lastName || ""}`
+                        : "User"
+                    }
+                    src={ProfileService.getAvatarUrl(user.avatarFileId)}
+                    size="md" // Slightly larger on mobile
+                    className="md:h-10 md:w-10"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-bold text-[rgb(var(--text-primary))]">
+                      {user.firstName} {user.lastName}
+                    </div>
+                    <div className="truncate text-xs text-[rgb(var(--text-secondary))]">
+                      ID: {user.$id}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="flex flex-col justify-center text-sm md:col-span-3 lg:col-span-3">
+                  <div className="truncate text-[rgb(var(--text-primary))]">
+                    {user.email || (
+                      <span className="text-[rgb(var(--text-muted))] italic">
+                        No email
+                      </span>
+                    )}
+                  </div>
+                  <div className="truncate text-xs text-[rgb(var(--text-secondary))]">
+                    {user.phone || (
+                      <span className="text-[rgb(var(--text-muted))] italic">
+                        No teléfono
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Role */}
+                <div className="flex items-center justify-between md:col-span-2 md:block lg:col-span-2">
+                  <span className="text-sm font-semibold text-[rgb(var(--text-secondary))] md:hidden">
+                    Rol:
+                  </span>
+                  <Badge
+                    variant={
+                      user.role === "admin"
+                        ? "default"
+                        : user.role === "teacher"
+                          ? "warning"
+                          : "secondary"
+                    }
                   >
-                    Cargando usuarios...
-                  </td>
-                </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="p-8 text-center text-[rgb(var(--text-secondary))]"
+                    {user.role}
+                  </Badge>
+                </div>
+
+                {/* Date */}
+                <div className="flex items-center justify-between md:col-span-2 md:block lg:col-span-2">
+                  <span className="text-sm font-semibold text-[rgb(var(--text-secondary))] md:hidden">
+                    Registrado:
+                  </span>
+                  <div className="text-sm text-[rgb(var(--text-secondary))]">
+                    {new Date(user.$createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-2 flex justify-end gap-2 border-t border-[rgb(var(--border-base))] pt-2 md:col-span-1 md:mt-0 md:border-0 md:pt-0 lg:col-span-2">
+                  <Dropdown
+                    align="end"
+                    trigger={
+                      <button className="rounded-full p-2 text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]">
+                        <MoreVertical className="h-5 w-5" />
+                      </button>
+                    }
                   >
-                    No se encontraron usuarios.
-                  </td>
-                </tr>
-              ) : (
-                users.map((user) => (
-                  <tr
-                    key={user.$id}
-                    className="border-b border-[rgb(var(--border-base))] hover:bg-[rgb(var(--bg-surface-hover))]"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar
-                          name={
-                            user.firstName
-                              ? `${user.firstName} ${user.lastName || ""}`
-                              : "User"
-                          }
-                          src={ProfileService.getAvatarUrl(user.avatarFileId)}
-                          size="sm"
-                        />
-                        <div>
-                          <div className="font-bold text-[rgb(var(--text-primary))]">
-                            {user.firstName} {user.lastName}
-                          </div>
-                          <div className="text-xs text-[rgb(var(--text-secondary))]">
-                            {user.role}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge
-                        variant={
-                          user.role === "admin"
-                            ? "default"
-                            : user.role === "teacher"
-                              ? "warning"
-                              : "secondary"
-                        }
-                      >
-                        {user.role}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-[rgb(var(--text-secondary))]">
-                      {user.$id}
-                    </td>
-                    <td className="px-6 py-4 text-[rgb(var(--text-secondary))]">
-                      {new Date(user.$createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Dropdown
-                        align="end"
-                        trigger={
-                          <button className="rounded-full p-2 text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]">
-                            <MoreVertical className="h-4 w-4" />
-                          </button>
-                        }
-                      >
-                        <div className="px-2 py-1.5 text-xs font-semibold text-[rgb(var(--text-muted))]">
-                          Acciones
-                        </div>
-                        <DropdownItem
-                          icon={Edit}
-                          onClick={() => handleEditClick(user)}
-                        >
-                          Editar Detalles
-                        </DropdownItem>
-                        <DropdownDivider />
-                        <div className="px-2 py-1.5 text-xs font-semibold text-[rgb(var(--text-muted))]">
-                          Cambiar Rol
-                        </div>
-                        <DropdownItem
-                          icon={User}
-                          onClick={() => handleRoleChange(user.$id, "student")}
-                          disabled={user.role === "student"}
-                        >
-                          Estudiante
-                        </DropdownItem>
-                        <DropdownItem
-                          icon={GraduationCap}
-                          onClick={() => handleRoleChange(user.$id, "teacher")}
-                          disabled={user.role === "teacher"}
-                        >
-                          Profesor
-                        </DropdownItem>
-                        <DropdownItem
-                          icon={Shield}
-                          onClick={() => handleRoleChange(user.$id, "admin")}
-                          danger
-                          disabled={user.role === "admin"}
-                        >
-                          Administrador
-                        </DropdownItem>
-                      </Dropdown>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-[rgb(var(--text-muted))]">
+                      Acciones
+                    </div>
+                    <DropdownItem
+                      icon={Edit}
+                      onClick={() => handleEditClick(user)}
+                    >
+                      Editar Detalles
+                    </DropdownItem>
+                    <DropdownItem icon={Copy} onClick={() => copyId(user.$id)}>
+                      Copiar ID
+                    </DropdownItem>
+
+                    <DropdownItem
+                      icon={Mail}
+                      onClick={() => handleSendPasswordReset(user)}
+                    >
+                      Enviar Reset Password
+                    </DropdownItem>
+
+                    <DropdownItem
+                      icon={user.suspended ? Unlock : Lock}
+                      onClick={() => handleToggleSuspend(user)}
+                      danger={!user.suspended}
+                    >
+                      {user.suspended
+                        ? "Quitar Suspensión"
+                        : "Suspender Acceso"}
+                    </DropdownItem>
+
+                    <DropdownDivider />
+
+                    <DropdownItem
+                      icon={user.enabled ? Ban : CheckCircle}
+                      onClick={() => handleToggleStatus(user)}
+                      danger={user.enabled}
+                    >
+                      {user.enabled ? "Deshabilitar (Borrar)" : "Habilitar"}
+                    </DropdownItem>
+
+                    <DropdownDivider />
+                    <div className="px-2 py-1.5 text-xs font-semibold text-[rgb(var(--text-muted))]">
+                      Cambiar Rol
+                    </div>
+                    <DropdownItem
+                      icon={User}
+                      onClick={() => handleRoleChange(user.$id, "student")}
+                      disabled={user.role === "student"}
+                    >
+                      Estudiante
+                    </DropdownItem>
+                    <DropdownItem
+                      icon={GraduationCap}
+                      onClick={() => handleRoleChange(user.$id, "teacher")}
+                      disabled={user.role === "teacher"}
+                    >
+                      Profesor
+                    </DropdownItem>
+                    <DropdownItem
+                      icon={Shield}
+                      onClick={() => handleRoleChange(user.$id, "admin")}
+                      danger
+                      disabled={user.role === "admin"}
+                    >
+                      Administrador
+                    </DropdownItem>
+                  </Dropdown>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
 
@@ -383,6 +549,100 @@ export function AdminUsersPage() {
           <Button onClick={handleSaveUser} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Guardar Cambios
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Create User Modal */}
+      <Modal
+        open={isCreateOpen}
+        onClose={() => !creating && setIsCreateOpen(false)}
+        title="Nuevo Usuario"
+        description="Registra un nuevo usuario en la plataforma."
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                Nombre *
+              </label>
+              <Input
+                value={createData.firstName}
+                onChange={(e) =>
+                  setCreateData({ ...createData, firstName: e.target.value })
+                }
+                disabled={creating}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                Apellidos *
+              </label>
+              <Input
+                value={createData.lastName}
+                onChange={(e) =>
+                  setCreateData({ ...createData, lastName: e.target.value })
+                }
+                disabled={creating}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              Email *
+            </label>
+            <Input
+              type="email"
+              value={createData.email}
+              onChange={(e) =>
+                setCreateData({ ...createData, email: e.target.value })
+              }
+              disabled={creating}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              Contraseña *
+            </label>
+            <Input
+              type="password"
+              value={createData.password}
+              onChange={(e) =>
+                setCreateData({ ...createData, password: e.target.value })
+              }
+              disabled={creating}
+              placeholder="Mínimo 8 caracteres"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              Teléfono
+            </label>
+            <Input
+              placeholder="+52 123 456 7890"
+              value={createData.phone}
+              onChange={(e) =>
+                setCreateData({ ...createData, phone: e.target.value })
+              }
+              disabled={creating}
+            />
+          </div>
+        </div>
+
+        <ModalFooter>
+          <Button
+            variant="secondary"
+            onClick={() => setIsCreateOpen(false)}
+            disabled={creating}
+          >
+            Cancelar
+          </Button>
+          <Button onClick={handleCreateUser} disabled={creating}>
+            {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Crear Usuario
           </Button>
         </ModalFooter>
       </Modal>

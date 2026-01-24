@@ -136,7 +136,7 @@ function MobileNavItem({ to, icon: Icon, label }) {
 
 export function AppLayout() {
   const { t } = useTranslation();
-  const { auth } = useAuth();
+  const { auth, authStore } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -161,7 +161,9 @@ export function AppLayout() {
     t("student.welcome");
 
   const onLogout = async () => {
+    // Always clear local state to ensure UI updates even if server session is gone (401)
     await logout().catch(() => {});
+    authStore.clear();
     navigate("/");
   };
 
@@ -172,7 +174,7 @@ export function AppLayout() {
 
   const navItems = [
     { to: "/app/home", icon: Home, label: t("nav.home") },
-    { to: "/catalog", icon: Search, label: t("nav.explore") },
+    { to: "/app/explore", icon: Search, label: t("nav.explore") },
     { to: "/app/my-courses", icon: BookOpen, label: t("nav.myCourses") },
     { to: "/app/progress", icon: LineChart, label: t("nav.progress") },
     ...(role !== "student"

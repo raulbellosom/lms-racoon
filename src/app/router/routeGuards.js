@@ -31,3 +31,15 @@ export function requireRoleLoader(allowedRoles = []) {
     return null;
   };
 }
+
+export async function requireGuestLoader() {
+  const state = authStore.getState();
+  if (!state.isHydrated) {
+    await authStore.hydrate();
+  }
+  // Si hay sesión, redirigir al home de la app
+  if (authStore.getState().session) {
+    throw redirect("/app/home");
+  }
+  return null;
+}

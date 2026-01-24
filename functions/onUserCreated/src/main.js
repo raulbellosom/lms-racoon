@@ -75,9 +75,11 @@ module.exports = async ({ req, res, log, error }) => {
       role: "student",
       avatarFileId: "",
       bio: "",
+      email: authUser.email || "",
       phone: authUser.phone || "",
       country: "MX",
       enabled: true,
+      suspended: false,
     };
 
     // Create if not exists, else update (idempotent)

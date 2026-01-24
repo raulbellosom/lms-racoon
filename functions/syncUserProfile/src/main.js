@@ -71,8 +71,6 @@ module.exports = async ({ req, res, log, error }) => {
   }
 
   // Determine userId (prefer authenticated invocation)
-  // Appwrite injects this env var for authenticated executions
-  // Also check headers as fallback (sometimes required in certain runtime versions)
   const authedUserId =
     process.env.APPWRITE_FUNCTION_USER_ID || req.headers["x-appwrite-user-id"];
 
@@ -96,30 +94,51 @@ module.exports = async ({ req, res, log, error }) => {
 
   const firstName = safeStr(body.firstName, 40);
   const lastName = safeStr(body.lastName, 40);
-
-  if (!firstName || !lastName) {
-    return res.json(
-      { success: false, message: "firstName and lastName are required" },
-      400,
-    );
-  }
-
   const fullName = buildFullName(firstName, lastName);
+
+  // Important: Check keys existence to decide if we update
   const email = safeStr(body.email, 100);
   const phone = formatPhone(body.phone);
 
-  const patch = {
-    firstName,
-    lastName,
-    phone,
-    bio: safeStr(body.bio, 500),
-    country: safeStr(body.country || "MX", 2),
-    avatarFileId: safeStr(body.avatarFileId, 36),
-  };
+  // Build patch object dynamically
+  const patch = {};
+  if (firstName || body.firstName === "") patch.firstName = firstName;
+  if (lastName || body.lastName === "") patch.lastName = lastName;
+
+  // Be careful with email/phone uniqueness constraints
+  // Only add if explicitly provided in body
+  if (body.email !== undefined) patch.email = email;
+  if (body.phone !== undefined) patch.phone = phone;
+
+  if (body.bio !== undefined) patch.bio = safeStr(body.bio, 500);
+  if (body.country !== undefined) patch.country = safeStr(body.country, 2);
+  if (body.avatarFileId !== undefined)
+    patch.avatarFileId = safeStr(body.avatarFileId, 36);
+  if (body.suspended !== undefined) patch.suspended = Boolean(body.suspended);
+  if (body.enabled !== undefined) patch.enabled = Boolean(body.enabled);
+
+  if (Object.keys(patch).length === 0) {
+    return res.json({ success: true, message: "No changes detected" });
+  }
 
   try {
+    log(
+      `Updating profile ${userId}. Patch keys: ${Object.keys(patch).join(", ")}`,
+    );
+
     // 1) Update profile document
-    await db.updateDocument(databaseId, profilesCollectionId, userId, patch);
+    try {
+      await db.updateDocument(databaseId, profilesCollectionId, userId, patch);
+    } catch (dbErr) {
+      log(`DB Update failed for ${userId}: ${dbErr.message}`);
+      // If "Missing required attribute", it means specific attributes are required in the schema
+      // but were missing in the document OR possibly in the patch if creating?
+      // Actually, updateDocument checks if the resulting document is valid.
+      // It might be that the existing document MUST have 'email' but it's currently empty/null,
+      // and we are trying to update OTHER fields, triggering the validation error?
+      // Or we are sending 'email': '' (empty string) but the attribute is Required.
+      throw dbErr;
+    }
 
     // 2) Sync auth name, email, phone
     const authUser = await users.get(userId);
@@ -132,28 +151,20 @@ module.exports = async ({ req, res, log, error }) => {
     }
 
     // Sync Email
-    // Only update if provided and different
     if (email && email.toLowerCase() !== authUser.email.toLowerCase()) {
-      // Basic regex check before calling API
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (emailRegex.test(email)) {
         await users.updateEmail(userId, email);
         updates.push("email");
-      } else {
-        log(`Invalid email format skipped: ${email}`);
       }
     }
 
     // Sync Phone
-    // Only update if provided, different, and valid E.164
     if (phone && phone !== authUser.phone) {
-      // E.164 check: + followed by 10-15 digits
       const e164Regex = /^\+[1-9]\d{1,14}$/;
       if (e164Regex.test(phone)) {
         await users.updatePhone(userId, phone);
         updates.push("phone");
-      } else {
-        log(`Invalid E.164 phone skipped: ${phone}`);
       }
     }
 
@@ -165,8 +176,9 @@ module.exports = async ({ req, res, log, error }) => {
     });
   } catch (err) {
     error("syncUserProfile failed: " + err.message);
+    // Return detailed error for debugging
     return res.json(
-      { success: false, message: err.message, code: err.code },
+      { success: false, message: err.message, code: err.code || 500 },
       500,
     );
   }

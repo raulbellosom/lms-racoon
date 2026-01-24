@@ -6,9 +6,11 @@ import { Avatar } from "../../../shared/ui/Avatar";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { Input } from "../../../shared/ui/Input";
-import { Edit, Save, X, Camera } from "lucide-react";
+import { Edit, Save, X, Camera, Mail } from "lucide-react";
 import { ProfileService } from "../../../shared/data/profiles";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { functions } from "../../../shared/appwrite/client";
+import { APPWRITE } from "../../../shared/appwrite/ids";
 
 export function ProfileView() {
   const { t } = useTranslation();
@@ -110,6 +112,37 @@ export function ProfileView() {
     }
   };
 
+  const [resetCooldown, setResetCooldown] = React.useState(0);
+
+  const handleSendReset = async () => {
+    const now = Date.now();
+    const cooldownMs = 3 * 60 * 1000; // 3 minutes
+
+    if (now - resetCooldown < cooldownMs) {
+      const remaining = Math.ceil((cooldownMs - (now - resetCooldown)) / 1000);
+      showToast(`Espera ${remaining}s para reenviar correo`, "error");
+      return;
+    }
+
+    if (!user?.email) {
+      showToast("No tienes un email registrado", "error");
+      return;
+    }
+
+    try {
+      showToast("Enviando correo...", "info");
+      await functions.createExecution(
+        APPWRITE.functions.authHandler,
+        JSON.stringify({ action: "request_recovery", email: user.email }),
+      );
+      setResetCooldown(now);
+      showToast("Correo de recuperación enviado", "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Error al enviar correo", "error");
+    }
+  };
+
   return (
     <PageLayout
       title={t("nav.profile", "Mi Perfil")}
@@ -152,6 +185,18 @@ export function ProfileView() {
             </p>
             <div className="mt-4 rounded-full bg-[rgb(var(--bg-muted))] px-3 py-1 text-xs font-medium uppercase tracking-wide">
               {profile?.role || "Student"}
+            </div>
+
+            <div className="mt-6 w-full border-t border-[rgb(var(--border-base))] pt-6">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleSendReset}
+                disabled={loading}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Reset Password
+              </Button>
             </div>
           </div>
         </Card>

@@ -44,6 +44,13 @@ async function hydrate() {
     try {
       const user = await account.get();
       const profile = await getProfileById(user.$id).catch(() => null);
+
+      if (profile?.suspended) {
+        // Enforce logout if suspended
+        clear();
+        return;
+      }
+
       setState({ user, profile });
     } catch {
       clear();
@@ -76,6 +83,13 @@ function clear() {
 async function refresh() {
   const user = await account.get();
   const profile = await getProfileById(user.$id).catch(() => null);
+
+  if (profile?.suspended) {
+    clear();
+    // Redirect logic usually handled by router usage of auth state
+    throw new Error("Account suspended");
+  }
+
   setState({ user, profile });
   persist();
   return { user, profile };

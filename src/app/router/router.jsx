@@ -12,6 +12,7 @@ import {
   StudentHomeView,
   MyCoursesView,
   ProgressView,
+  ExploreCoursesView,
 } from "../../features/student";
 import { LearnPage } from "../../pages/app/student/LearnPage";
 import { ProfileView, SettingsView } from "../../features/profile";
@@ -20,7 +21,14 @@ import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
 import { TeacherCourseEditorPage } from "../../pages/app/teacher/TeacherCourseEditorPage";
 import { AdminUsersPage } from "../../pages/app/admin/AdminUsersPage";
 
-import { requireAuthLoader, requireRoleLoader } from "./routeGuards";
+import {
+  requireAuthLoader,
+  requireRoleLoader,
+  requireGuestLoader,
+} from "./routeGuards";
+
+import { ForgotPasswordPage } from "../../pages/public/ForgotPasswordPage";
+import { ResetPasswordPage } from "../../pages/public/ResetPasswordPage";
 
 export const router = createBrowserRouter([
   {
@@ -30,6 +38,7 @@ export const router = createBrowserRouter([
     children: [
       {
         element: <PublicLayout />,
+        loader: requireGuestLoader,
         children: [
           { index: true, element: <LandingView /> },
           { path: "/catalog", element: <CatalogView /> },
@@ -38,6 +47,8 @@ export const router = createBrowserRouter([
           { path: "/courses/:courseId", element: <CourseDetailView /> },
           { path: "/auth/login", element: <LoginView /> },
           { path: "/auth/register", element: <RegisterView /> },
+          { path: "/forgot-password", element: <ForgotPasswordPage /> },
+          { path: "/reset-password", element: <ResetPasswordPage /> },
         ],
       },
       {
@@ -47,6 +58,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, loader: () => redirect("/app/home") },
           { path: "home", element: <StudentHomeView /> },
+          { path: "explore", element: <ExploreCoursesView /> },
           { path: "my-courses", element: <MyCoursesView /> },
           { path: "progress", element: <ProgressView /> },
           { path: "learn/:courseId/:lessonId?", element: <LearnPage /> },
