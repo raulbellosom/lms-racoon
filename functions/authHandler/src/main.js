@@ -59,6 +59,23 @@ module.exports = async ({ req, res, log, error }) => {
 
   const { action } = body;
 
+  // Detect Appwrite Event Trigger (users.*.create)
+  const event = req.headers["x-appwrite-event"];
+  const isUserCreateEvent =
+    event && event.includes("users") && event.includes("create");
+
+  // If triggered by event or explicit action
+  if (isUserCreateEvent) {
+    // Extract user data from event payload
+    const { email, name, $id } = body;
+    if (email && name) {
+      log(`Event trigger: sending welcome to ${email}`);
+      // Reuse the existing logic by forcefully setting action (internal hack) or calling the logic directly
+      // Let's call the logic directly to be cleaner
+      return await sendWelcomeEmail({ email, name, log, error, res });
+    }
+  }
+
   // =========================================================================
   // ACTION: REQUEST RECOVERY
   // =========================================================================
@@ -470,21 +487,41 @@ module.exports = async ({ req, res, log, error }) => {
       );
     }
 
-    try {
-      const appUrl = process.env.APP_BASE_URL || "http://localhost:5173";
-      const loginLink = `${appUrl}/login`;
+    return await sendWelcomeEmail({ email, name, log, error, res });
+  }
 
-      const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_SMTP_HOST,
-        port: process.env.EMAIL_SMTP_PORT,
-        secure: process.env.EMAIL_SMTP_SECURE === "true",
-        auth: {
-          user: process.env.EMAIL_SMTP_USER,
-          pass: process.env.EMAIL_SMTP_PASS,
-        },
-      });
+  // Unknown Action
+  return res.json(
+    { success: false, message: `Unknown action: ${action}` },
+    400,
+  );
+};
 
-      const welcomeHtml = `
+// =========================================================================
+// HELPER: SEND WELCOME EMAIL
+// =========================================================================
+async function sendWelcomeEmail({ email, name, log, error, res }) {
+  try {
+    const appUrl = process.env.APP_BASE_URL || "http://localhost:5173";
+    const loginLink = `${appUrl}/login`;
+
+    // Validate config presence
+    if (!process.env.EMAIL_SMTP_HOST || !process.env.EMAIL_SMTP_USER) {
+      log("SMTP Config missing, skipping email.");
+      return res ? res.json({ success: false, message: "SMTP missing" }) : null;
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_SMTP_HOST,
+      port: process.env.EMAIL_SMTP_PORT,
+      secure: process.env.EMAIL_SMTP_SECURE === "true",
+      auth: {
+        user: process.env.EMAIL_SMTP_USER,
+        pass: process.env.EMAIL_SMTP_PASS,
+      },
+    });
+
+    const welcomeHtml = `
       <!DOCTYPE html>
       <html lang="es">
       <head>
@@ -514,31 +551,28 @@ module.exports = async ({ req, res, log, error }) => {
                   </td>
                 </tr>
               </table>
+              <p style="margin: 0; color: #718096; font-size: 14px;">
+                  Si tienes alguna pregunta, estamos aquí para ayudarte.
+              </p>
             </td>
           </tr>
         </table>
       </body>
       </html>
-      `;
+    `;
 
-      await transporter.sendMail({
-        from: `"${process.env.EMAIL_FROM_NAME || "Racoon LMS"}" <${process.env.EMAIL_FROM_ADDRESS}>`,
-        to: email,
-        subject: "¡Bienvenido a Racoon LMS!",
-        html: welcomeHtml,
-      });
+    await transporter.sendMail({
+      from: `"${process.env.EMAIL_FROM_NAME || "Racoon LMS"}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+      to: email,
+      subject: "¡Bienvenido a Racoon LMS!",
+      html: welcomeHtml,
+    });
 
-      log(`Welcome email sent to ${email}`);
-      return res.json({ success: true, message: "Welcome email sent" });
-    } catch (err) {
-      error(`Error in send_welcome: ${err.message}`);
+    log(`Welcome email sent to ${email}`);
+    if (res) return res.json({ success: true, message: "Welcome email sent" });
+  } catch (err) {
+    error(`Error in sendWelcomeEmail: ${err.message}`);
+    if (res)
       return res.json({ success: false, message: "Failed to send email" }, 500);
-    }
   }
-
-  // Unknown Action
-  return res.json(
-    { success: false, message: `Unknown action: ${action}` },
-    400,
-  );
-};
+}
