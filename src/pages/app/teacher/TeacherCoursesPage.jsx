@@ -77,14 +77,7 @@ export function TeacherCoursesPage() {
 
       {/* List */}
       {loading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card
-              key={i}
-              className="h-64 animate-pulse bg-[rgb(var(--bg-muted))]"
-            />
-          ))}
-        </div>
+        <CourseGridSkeleton count={6} />
       ) : filteredCourses.length === 0 ? (
         <Card className="flex min-h-[400px] flex-col items-center justify-center p-8 text-center">
           <div className="mb-4 rounded-full bg-[rgb(var(--bg-muted))] p-6">

@@ -106,3 +106,28 @@ export function CourseGridSkeleton({ count = 6, className }) {
     </div>
   );
 }
+
+/**
+ * Table skeleton
+ */
+export function TableSkeleton({ rows = 5, columns = 4, className }) {
+  return (
+    <div className={cn("space-y-4", className)}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-4 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4"
+        >
+          {Array.from({ length: columns }).map((_, j) => (
+            <div key={j} className={j === 0 ? "flex-1" : "flex-initial"}>
+              <Skeleton
+                width={j === 0 ? "60%" : "100px"}
+                className={j > 1 ? "hidden md:block" : ""}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}

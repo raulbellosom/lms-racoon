@@ -25,6 +25,7 @@ import { Input } from "../../../shared/ui/Input";
 
 import { Pagination } from "../../../shared/ui/Pagination";
 import { DataHeader } from "../../../shared/ui/DataHeader";
+import { TableSkeleton } from "../../../shared/ui/Skeleton";
 
 export function AdminCategoriesPage() {
   const { t } = useTranslation();
@@ -184,9 +185,8 @@ export function AdminCategoriesPage() {
         {/* List */}
         <div className="divide-y divide-[rgb(var(--border-base))]">
           {loading ? (
-            <div className="p-8 text-center text-[rgb(var(--text-secondary))]">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin mb-2" />
-              Cargando...
+            <div className="p-4">
+              <TableSkeleton rows={10} columns={4} />
             </div>
           ) : categories.length === 0 ? (
             <div className="p-8 text-center text-[rgb(var(--text-secondary))]">

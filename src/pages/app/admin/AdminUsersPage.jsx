@@ -15,6 +15,7 @@ import {
 } from "../../../shared/ui/Dropdown";
 import { Pagination } from "../../../shared/ui/Pagination";
 import { DataHeader } from "../../../shared/ui/DataHeader";
+import { TableSkeleton } from "../../../shared/ui/Skeleton";
 import { Query } from "appwrite";
 import { Modal, ModalFooter } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
@@ -326,8 +327,8 @@ export function AdminUsersPage() {
         {/* List */}
         <div className="divide-y divide-[rgb(var(--border-base))]">
           {loading ? (
-            <div className="p-8 text-center text-[rgb(var(--text-secondary))]">
-              Cargando usuarios...
+            <div className="p-4">
+              <TableSkeleton rows={10} columns={5} />
             </div>
           ) : users.length === 0 ? (
             <div className="p-8 text-center text-[rgb(var(--text-secondary))]">

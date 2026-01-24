@@ -34,7 +34,6 @@ export const TeacherCoursesService = {
       enabled: true,
       isPublished: false,
       publishedAt: null,
-      created: new Date().toISOString(), // Metadata if needed, but Appwrite creates $createdAt
     });
   },
 

@@ -34,15 +34,38 @@ export function CourseMediaUploader({
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      alert(t("teacher.errors.uploadFailed"));
+    // Validate file type (allow images and common mobile formats)
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/heic",
+      "image/heif",
+    ];
+    const validExtensions = [
+      "jpg",
+      "jpeg",
+      "png",
+      "webp",
+      "gif",
+      "heic",
+      "heif",
+    ];
+    const extension = file.name.split(".").pop().toLowerCase();
+
+    const isValidType =
+      file.type.startsWith("image/") || validTypes.includes(file.type);
+    const isValidExtension = validExtensions.includes(extension);
+
+    if (!isValidType && !isValidExtension) {
+      alert(t("teacher.errors.uploadFailed") + " (Formato no soportado)");
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert(`${t("teacher.errors.uploadFailed")} (max 5MB)`);
+    // Validate file size (max 8MB - increased for high res mobile photos)
+    if (file.size > 8 * 1024 * 1024) {
+      alert(`${t("teacher.errors.uploadFailed")} (max 8MB)`);
       return;
     }
 
