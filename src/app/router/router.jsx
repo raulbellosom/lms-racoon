@@ -67,7 +67,6 @@ export const router = createBrowserRouter([
 
           {
             path: "teach",
-            element: <TeachHomePage />,
             loader: requireRoleLoader(["teacher", "admin"]),
             children: [
               { index: true, element: <TeachHomePage /> },

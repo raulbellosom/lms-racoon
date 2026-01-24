@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   BookText,
   Layers3,
@@ -7,40 +8,54 @@ import {
   ChevronLeft,
   Save,
   Eye,
-  Plus,
-  Trash2,
-  Video,
-  FileText,
-  GripVertical,
-  X,
-  Image as ImageIcon,
+  HelpCircle,
+  ClipboardList,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
 import { SectionService } from "../../../shared/data/sections-teacher";
 import { LessonService } from "../../../shared/data/lessons-teacher";
 import { APPWRITE } from "../../../shared/appwrite/ids";
-import { db } from "../../../shared/appwrite/client"; // For categories
+import { db } from "../../../shared/appwrite/client";
 import { Card } from "../../../shared/ui/Card";
-import { Input } from "../../../shared/ui/Input";
 import { Button } from "../../../shared/ui/Button";
-import { Textarea } from "../../../shared/ui/Textarea";
 import { Badge } from "../../../shared/ui/Badge";
+import { Modal } from "../../../shared/ui/Modal";
+import { Input } from "../../../shared/ui/Input";
 
-// Simple Tab Button Component
-function TabButton({ active, icon: Icon, children, onClick }) {
+// Modular components
+import {
+  CourseBasicInfoForm,
+  CourseMediaUploader,
+  CoursePricingForm,
+  CurriculumEditor,
+  LessonEditorModal,
+} from "../../../features/teacher";
+
+// Tab Button Component
+function TabButton({
+  active,
+  icon: Icon,
+  children,
+  onClick,
+  disabled = false,
+}) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={[
-        "inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all",
+        "inline-flex items-center gap-1.5 sm:gap-2 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold transition-all whitespace-nowrap",
         active
           ? "bg-[rgb(var(--brand-primary))/0.1] text-[rgb(var(--brand-primary))]"
           : "text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))]",
+        disabled ? "opacity-50 cursor-not-allowed" : "",
       ].join(" ")}
     >
       <Icon className="h-4 w-4" />
-      {children}
+      <span className="hidden sm:inline">{children}</span>
     </button>
   );
 }
@@ -49,17 +64,29 @@ export function TeacherCourseEditorPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
+  const { t } = useTranslation();
   const isNew = courseId === "new";
 
   const [course, setCourse] = React.useState(null);
   const [loading, setLoading] = React.useState(!isNew);
   const [saving, setSaving] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
   const [tab, setTab] = React.useState("details");
   const [categories, setCategories] = React.useState([]);
 
   // Curriculum State
   const [sections, setSections] = React.useState([]);
   const [lessonsBySection, setLessonsBySection] = React.useState({});
+
+  // Section Modal State
+  const [sectionModalOpen, setSectionModalOpen] = React.useState(false);
+  const [editingSection, setEditingSection] = React.useState(null);
+  const [sectionTitle, setSectionTitle] = React.useState("");
+
+  // Lesson Modal State
+  const [lessonModalOpen, setLessonModalOpen] = React.useState(false);
+  const [editingLesson, setEditingLesson] = React.useState(null);
+  const [lessonSection, setLessonSection] = React.useState(null);
 
   // Form State
   const [formData, setFormData] = React.useState({
@@ -69,6 +96,7 @@ export function TeacherCourseEditorPage() {
     categoryId: "",
     level: "beginner",
     priceCents: 0,
+    currency: "MXN",
     language: "es",
     coverFileId: "",
   });
@@ -106,75 +134,8 @@ export function TeacherCourseEditorPage() {
     }
   };
 
-  const handleAddSection = async () => {
-    const title = prompt("Título de la nueva sección:");
-    if (!title) return;
-
-    try {
-      const newSec = await SectionService.create({
-        courseId,
-        title,
-        order: sections.length,
-      });
-      setSections([...sections, newSec]);
-      setLessonsBySection({ ...lessonsBySection, [newSec.$id]: [] });
-    } catch (e) {
-      console.error(e);
-      alert("Error al crear sección");
-    }
-  };
-
-  const handleDeleteSection = async (sectionId) => {
-    if (!confirm("¿Eliminar sección y sus lecciones?")) return;
-    try {
-      await SectionService.delete(sectionId);
-      setSections(sections.filter((s) => s.$id !== sectionId));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleAddLesson = async (sectionId) => {
-    const title = prompt("Título de la lección:");
-    if (!title) return;
-
-    const currentLessons = lessonsBySection[sectionId] || [];
-    try {
-      const newLesson = await LessonService.create({
-        courseId,
-        sectionId,
-        title,
-        kind: "video", // Default to video for now
-        order: currentLessons.length,
-      });
-      setLessonsBySection({
-        ...lessonsBySection,
-        [sectionId]: [...currentLessons, newLesson],
-      });
-    } catch (e) {
-      console.error(e);
-      alert("Error al crear lección");
-    }
-  };
-
-  const handleDeleteLesson = async (sectionId, lessonId) => {
-    if (!confirm("¿Eliminar lección?")) return;
-    try {
-      await LessonService.delete(lessonId);
-      setLessonsBySection({
-        ...lessonsBySection,
-        [sectionId]: lessonsBySection[sectionId].filter(
-          (l) => l.$id !== lessonId,
-        ),
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const loadCategories = async () => {
     try {
-      // Assuming categories collection is public or readable
       const res = await db.listDocuments(
         APPWRITE.databaseId,
         APPWRITE.collections.categories,
@@ -197,6 +158,7 @@ export function TeacherCourseEditorPage() {
         categoryId: data.categoryId,
         level: data.level,
         priceCents: data.priceCents || 0,
+        currency: data.currency || "MXN",
         language: data.language || "es",
         coverFileId: data.coverFileId || "",
       });
@@ -210,7 +172,9 @@ export function TeacherCourseEditorPage() {
 
   const handleSave = async () => {
     if (!formData.title || !formData.categoryId) {
-      alert("Título y Categoría son requeridos.");
+      alert(
+        `${t("teacher.form.titleRequired")}. ${t("teacher.form.categoryRequired")}`,
+      );
       return;
     }
 
@@ -226,34 +190,150 @@ export function TeacherCourseEditorPage() {
       } else {
         const updated = await TeacherCoursesService.update(courseId, formData);
         setCourse(updated);
-        // Maybe show toast
       }
     } catch (error) {
       console.error("Save failed", error);
-      alert("Error al guardar. Revisa la consola.");
+      alert(t("teacher.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCoverUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // Section handlers
+  const handleAddSection = () => {
+    setEditingSection(null);
+    setSectionTitle("");
+    setSectionModalOpen(true);
+  };
 
-    // TODO: Implement file upload service for course covers
-    // For now, this is a placeholder/mock
-    alert("La subida de portadas se implementará pronto.");
+  const handleEditSection = (section) => {
+    setEditingSection(section);
+    setSectionTitle(section.title);
+    setSectionModalOpen(true);
+  };
+
+  const handleSaveSection = async () => {
+    if (!sectionTitle.trim()) return;
+
+    try {
+      if (editingSection) {
+        const updated = await SectionService.update(editingSection.$id, {
+          title: sectionTitle.trim(),
+        });
+        setSections(sections.map((s) => (s.$id === updated.$id ? updated : s)));
+      } else {
+        const newSec = await SectionService.create({
+          courseId,
+          title: sectionTitle.trim(),
+          order: sections.length,
+        });
+        setSections([...sections, newSec]);
+        setLessonsBySection({ ...lessonsBySection, [newSec.$id]: [] });
+      }
+      setSectionModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      alert(t("teacher.errors.saveFailed"));
+    }
+  };
+
+  const handleDeleteSection = async (section) => {
+    if (!confirm(t("teacher.curriculum.deleteSectionConfirm"))) return;
+    try {
+      await SectionService.delete(section.$id);
+      setSections(sections.filter((s) => s.$id !== section.$id));
+    } catch (e) {
+      console.error(e);
+      alert(t("teacher.errors.deleteFailed"));
+    }
+  };
+
+  // Lesson handlers
+  const handleAddLesson = (section) => {
+    setEditingLesson(null);
+    setLessonSection(section);
+    setLessonModalOpen(true);
+  };
+
+  const handleEditLesson = (lesson) => {
+    setEditingLesson(lesson);
+    setLessonSection(sections.find((s) => s.$id === lesson.sectionId));
+    setLessonModalOpen(true);
+  };
+
+  const handleSaveLesson = async (lessonData, lessonId) => {
+    try {
+      if (lessonId) {
+        const updated = await LessonService.update(lessonId, lessonData);
+        setLessonsBySection({
+          ...lessonsBySection,
+          [lessonData.sectionId]: lessonsBySection[lessonData.sectionId].map(
+            (l) => (l.$id === lessonId ? updated : l),
+          ),
+        });
+      } else {
+        const currentLessons = lessonsBySection[lessonData.sectionId] || [];
+        const newLesson = await LessonService.create({
+          ...lessonData,
+          order: currentLessons.length,
+        });
+        setLessonsBySection({
+          ...lessonsBySection,
+          [lessonData.sectionId]: [...currentLessons, newLesson],
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const handleDeleteLesson = async (lesson) => {
+    if (!confirm(t("teacher.curriculum.deleteLessonConfirm"))) return;
+    try {
+      await LessonService.delete(lesson.$id);
+      setLessonsBySection({
+        ...lessonsBySection,
+        [lesson.sectionId]: lessonsBySection[lesson.sectionId].filter(
+          (l) => l.$id !== lesson.$id,
+        ),
+      });
+    } catch (e) {
+      console.error(e);
+      alert(t("teacher.errors.deleteFailed"));
+    }
+  };
+
+  // Publish handlers
+  const handleTogglePublish = async () => {
+    const newState = !course?.isPublished;
+    const msg = newState
+      ? t("teacher.publish.confirmPublish")
+      : t("teacher.publish.confirmUnpublish");
+    if (!confirm(msg)) return;
+
+    try {
+      const updated = await TeacherCoursesService.publish(courseId, newState);
+      setCourse(updated);
+    } catch (e) {
+      console.error(e);
+      alert(t("teacher.errors.statusChangeFailed"));
+    }
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Cargando editor...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 pb-20">
+    <div className="mx-auto max-w-5xl px-4 py-4 sm:py-6 pb-24">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
@@ -261,241 +341,125 @@ export function TeacherCourseEditorPage() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black tracking-tight">
-                {isNew ? "Nuevo Curso" : formData.title || "Sin título"}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg sm:text-xl font-black tracking-tight truncate">
+                {isNew
+                  ? t("teacher.createCourse")
+                  : formData.title || t("teacher.editCourse")}
               </h1>
               {!isNew && (
                 <Badge variant={course?.isPublished ? "success" : "secondary"}>
-                  {course?.isPublished ? "Publicado" : "Borrador"}
+                  {course?.isPublished
+                    ? t("teacher.status.published")
+                    : t("teacher.status.draft")}
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-[rgb(var(--text-secondary))]">
-              {isNew
-                ? "Comienza definiendo los detalles básicos"
-                : "Editando contenido del curso"}
+            <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))] truncate">
+              {isNew ? t("teacher.form.generalInfo") : t("teacher.editCourse")}
             </p>
           </div>
         </div>
         {!isNew && (
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm">
-              <Eye className="mr-2 h-4 w-4" /> Preview
-            </Button>
-          </div>
+          <Button variant="secondary" size="sm" className="hidden sm:flex">
+            <Eye className="mr-2 h-4 w-4" /> {t("teacher.lesson.preview")}
+          </Button>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="sticky top-0 z-10 mb-6 flex gap-2 border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-base))] pt-2 backdrop-blur-sm">
-        <TabButton
-          active={tab === "details"}
-          onClick={() => setTab("details")}
-          icon={BookText}
-        >
-          Detalles
-        </TabButton>
-        <TabButton
-          active={tab === "curriculum"}
-          onClick={() => !isNew && setTab("curriculum")}
-          icon={Layers3}
-        >
-          Contenido {isNew && "(Guardar primero)"}
-        </TabButton>
-        <TabButton
-          active={tab === "publish"}
-          onClick={() => !isNew && setTab("publish")}
-          icon={UploadCloud}
-        >
-          Publicar
-        </TabButton>
+      <div className="sticky top-0 z-10 mb-4 sm:mb-6 -mx-4 px-4 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1 sm:gap-2 border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-base))] pt-2 pb-0 min-w-max">
+          <TabButton
+            active={tab === "details"}
+            onClick={() => setTab("details")}
+            icon={BookText}
+          >
+            {t("teacher.tabs.details")}
+          </TabButton>
+          <TabButton
+            active={tab === "curriculum"}
+            onClick={() => !isNew && setTab("curriculum")}
+            icon={Layers3}
+            disabled={isNew}
+          >
+            {t("teacher.tabs.curriculum")}
+          </TabButton>
+          <TabButton
+            active={tab === "quizzes"}
+            onClick={() => !isNew && setTab("quizzes")}
+            icon={HelpCircle}
+            disabled={isNew}
+          >
+            {t("teacher.tabs.quizzes")}
+          </TabButton>
+          <TabButton
+            active={tab === "assignments"}
+            onClick={() => !isNew && setTab("assignments")}
+            icon={ClipboardList}
+            disabled={isNew}
+          >
+            {t("teacher.tabs.assignments")}
+          </TabButton>
+          <TabButton
+            active={tab === "reviews"}
+            onClick={() => !isNew && setTab("reviews")}
+            icon={MessageSquare}
+            disabled={isNew}
+          >
+            {t("teacher.tabs.reviews")}
+          </TabButton>
+          <TabButton
+            active={tab === "publish"}
+            onClick={() => !isNew && setTab("publish")}
+            icon={UploadCloud}
+            disabled={isNew}
+          >
+            {t("teacher.publish.title")}
+          </TabButton>
+        </div>
       </div>
 
       {/* Tab Content */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {/* === DETAILS TAB === */}
         {tab === "details" && (
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
             {/* Left Column: Main Info */}
-            <div className="md:col-span-2 space-y-6">
-              <Card className="p-6">
-                <h3 className="mb-4 text-lg font-bold">Información General</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                      Título del Curso <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      placeholder="Ej: Curso Maestro de React"
-                      value={formData.title}
-                      onChange={(e) =>
-                        setFormData({ ...formData, title: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                      Subtítulo Promocional
-                    </label>
-                    <Input
-                      placeholder="Una frase corta que atrape..."
-                      value={formData.subtitle}
-                      onChange={(e) =>
-                        setFormData({ ...formData, subtitle: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                      Descripción Completa
-                    </label>
-                    <Textarea
-                      placeholder="Describe detalladamente qué aprenderán los estudiantes..."
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                      rows={6}
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <h3 className="mb-4 text-lg font-bold">Clasificación</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                      Categoría <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      className="w-full h-10 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
-                      value={formData.categoryId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, categoryId: e.target.value })
-                      }
-                    >
-                      <option value="">Selecciona una categoría</option>
-                      {categories.map((cat) => (
-                        <option key={cat.$id} value={cat.$id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                      Nivel
-                    </label>
-                    <select
-                      className="w-full h-10 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-3 text-sm"
-                      value={formData.level}
-                      onChange={(e) =>
-                        setFormData({ ...formData, level: e.target.value })
-                      }
-                    >
-                      <option value="beginner">Principiante</option>
-                      <option value="intermediate">Intermedio</option>
-                      <option value="advanced">Avanzado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                      Idioma
-                    </label>
-                    <select
-                      className="w-full h-10 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-3 text-sm"
-                      value={formData.language}
-                      onChange={(e) =>
-                        setFormData({ ...formData, language: e.target.value })
-                      }
-                    >
-                      <option value="es">Español</option>
-                      <option value="en">Inglés</option>
-                    </select>
-                  </div>
-                </div>
-              </Card>
+            <div className="lg:col-span-2">
+              <CourseBasicInfoForm
+                formData={formData}
+                setFormData={setFormData}
+                categories={categories}
+              />
             </div>
 
-            {/* Right Column: Media & Settings */}
-            <div className="space-y-6">
-              <Card className="p-6">
-                <h3 className="mb-4 text-lg font-bold">Portada</h3>
-                <div
-                  className="relative flex aspect-video w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8]"
-                  onClick={() =>
-                    document.getElementById("cover-upload").click()
-                  }
-                >
-                  {formData.coverFileId ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 rounded-xl">
-                      <span className="text-xs">
-                        Image ID: {formData.coverFileId}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-[rgb(var(--text-muted))]">
-                      <ImageIcon className="mx-auto h-8 w-8 mb-2" />
-                      <span className="text-xs font-medium">Subir Imagen</span>
-                    </div>
-                  )}
-                  <input
-                    id="cover-upload"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleCoverUpload}
-                  />
-                </div>
-                <p className="mt-2 text-[10px] text-[rgb(var(--text-secondary))] text-center">
-                  Recomendado: 1280x720 (JPG, PNG)
-                </p>
-              </Card>
+            {/* Right Column: Media & Pricing */}
+            <div className="space-y-4 sm:space-y-6">
+              <CourseMediaUploader
+                formData={formData}
+                setFormData={setFormData}
+                uploading={uploading}
+                setUploading={setUploading}
+              />
+              <CoursePricingForm
+                formData={formData}
+                setFormData={setFormData}
+              />
 
-              <Card className="p-6">
-                <h3 className="mb-4 text-lg font-bold">Precio</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                      Precio (Centavos)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="Ej: 99900 (para $999.00)"
-                      value={formData.priceCents}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          priceCents: parseInt(e.target.value) || 0,
-                        })
-                      }
-                    />
-                    <p className="mt-1 text-xs text-[rgb(var(--text-secondary))]">
-                      Equivale a: ${(formData.priceCents / 100).toFixed(2)}{" "}
-                      {formData.currency || "MXN"}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Action Bar */}
+              {/* Save Button */}
               <div className="sticky bottom-4 z-10">
                 <Button
                   size="lg"
                   className="w-full shadow-lg"
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || uploading}
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {saving ? "Guardando..." : "Guardar Cambios"}
+                  {saving
+                    ? t("teacher.form.saving")
+                    : t("teacher.form.saveChanges")}
                 </Button>
               </div>
             </div>
@@ -504,98 +468,44 @@ export function TeacherCourseEditorPage() {
 
         {/* === CURRICULUM TAB === */}
         {tab === "curriculum" && (
-          <div className="mx-auto max-w-4xl space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">Contenido del Curso</h3>
-              <Button onClick={handleAddSection} size="sm">
-                <Plus className="mr-2 h-4 w-4" /> Agregar Sección
-              </Button>
-            </div>
+          <CurriculumEditor
+            sections={sections}
+            lessonsBySection={lessonsBySection}
+            onAddSection={handleAddSection}
+            onEditSection={handleEditSection}
+            onDeleteSection={handleDeleteSection}
+            onAddLesson={handleAddLesson}
+            onEditLesson={handleEditLesson}
+            onDeleteLesson={handleDeleteLesson}
+          />
+        )}
 
-            {sections.length === 0 ? (
-              <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
-                No hay secciones. Agrega una para comenzar.
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {sections.map((section, index) => (
-                  <div
-                    key={section.$id}
-                    className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] overflow-hidden"
-                  >
-                    <div className="flex items-center justify-between bg-[rgb(var(--bg-muted))] px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgb(var(--bg-surface))] text-xs font-bold text-[rgb(var(--text-secondary))]">
-                          {index + 1}
-                        </div>
-                        <span className="font-bold text-[rgb(var(--text-primary))]">
-                          {section.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteSection(section.$id)}
-                          className="text-red-500 hover:text-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+        {/* === QUIZZES TAB === */}
+        {tab === "quizzes" && (
+          <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
+            <HelpCircle className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            <p>{t("teacher.quiz.noQuizzes")}</p>
+            <Button className="mt-4">{t("teacher.quiz.createQuiz")}</Button>
+          </Card>
+        )}
 
-                    <div className="p-4 bg-[rgb(var(--bg-surface))]">
-                      <div className="space-y-2">
-                        {(lessonsBySection[section.$id] || []).map(
-                          (lesson, lIndex) => (
-                            <div
-                              key={lesson.$id}
-                              className="flex items-center justify-between rounded-lg border border-[rgb(var(--border-base))] ks-2 py-2 px-3 transition hover:border-[rgb(var(--brand-primary))]"
-                            >
-                              <div className="flex items-center gap-3">
-                                <GripVertical className="h-4 w-4 text-[rgb(var(--text-muted))] cursor-move" />
-                                <div
-                                  className={`p-1.5 rounded-md ${lesson.kind === "video" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"}`}
-                                >
-                                  {lesson.kind === "video" ? (
-                                    <Video className="h-4 w-4" />
-                                  ) : (
-                                    <FileText className="h-4 w-4" />
-                                  )}
-                                </div>
-                                <span className="text-sm font-medium">
-                                  {lesson.title}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() =>
-                                    handleDeleteLesson(section.$id, lesson.$id)
-                                  }
-                                >
-                                  <X className="h-4 w-4 text-[rgb(var(--text-muted))]" />
-                                </Button>
-                              </div>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="mt-4 w-full border-dashed border-2 border-[rgb(var(--border-base))] bg-transparent hover:bg-[rgb(var(--bg-muted))]"
-                        onClick={() => handleAddLesson(section.$id)}
-                      >
-                        <Plus className="mr-2 h-4 w-4" /> Agregar Lección
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* === ASSIGNMENTS TAB === */}
+        {tab === "assignments" && (
+          <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
+            <ClipboardList className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            <p>{t("teacher.assignment.noAssignments")}</p>
+            <Button className="mt-4">
+              {t("teacher.assignment.createAssignment")}
+            </Button>
+          </Card>
+        )}
+
+        {/* === REVIEWS TAB === */}
+        {tab === "reviews" && (
+          <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
+            <MessageSquare className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            <p>{t("teacher.reviews.noReviews")}</p>
+          </Card>
         )}
 
         {/* === PUBLISH TAB === */}
@@ -603,55 +513,84 @@ export function TeacherCourseEditorPage() {
           <Card className="p-8">
             <div className="flex flex-col items-center text-center">
               <div
-                className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${course?.isPublished ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}
+                className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
+                  course?.isPublished
+                    ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                }`}
               >
                 <UploadCloud className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-bold">
                 {course?.isPublished
-                  ? "Tu curso está publicado"
-                  : "Tu curso está en borrador"}
+                  ? t("teacher.publish.published")
+                  : t("teacher.publish.draft")}
               </h3>
               <p className="mt-2 max-w-md text-[rgb(var(--text-secondary))]">
                 {course?.isPublished
-                  ? "Los estudiantes pueden ver y matricularse en este curso."
-                  : "Este curso no es visible para los estudiantes. Publícalo cuando estés listo."}
+                  ? t("teacher.publish.publishedDesc")
+                  : t("teacher.publish.draftDesc")}
               </p>
 
               <div className="mt-8">
                 <Button
                   size="lg"
                   variant={course?.isPublished ? "secondary" : "primary"}
-                  onClick={async () => {
-                    if (
-                      confirm(
-                        course?.isPublished
-                          ? "¿Despublicar este curso?"
-                          : "¿Publicar este curso ahora?",
-                      )
-                    ) {
-                      try {
-                        const updated = await TeacherCoursesService.publish(
-                          courseId,
-                          !course?.isPublished,
-                        );
-                        setCourse(updated);
-                      } catch (e) {
-                        console.error(e);
-                        alert("Error al cambiar estado");
-                      }
-                    }
-                  }}
+                  onClick={handleTogglePublish}
                 >
                   {course?.isPublished
-                    ? "Despublicar Curso"
-                    : "Publicar Curso Ahora"}
+                    ? t("teacher.publish.unpublishCourse")
+                    : t("teacher.publish.publishNow")}
                 </Button>
               </div>
             </div>
           </Card>
         )}
       </div>
+
+      {/* Section Modal */}
+      <Modal
+        open={sectionModalOpen}
+        onClose={() => setSectionModalOpen(false)}
+        title={
+          editingSection
+            ? t("teacher.curriculum.editSection")
+            : t("teacher.addSection")
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              {t("teacher.curriculum.sectionTitle")}
+            </label>
+            <Input
+              placeholder={t("teacher.curriculum.sectionTitlePlaceholder")}
+              value={sectionTitle}
+              onChange={(e) => setSectionTitle(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setSectionModalOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleSaveSection}>{t("common.save")}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Lesson Modal */}
+      <LessonEditorModal
+        open={lessonModalOpen}
+        onClose={() => setLessonModalOpen(false)}
+        lesson={editingLesson}
+        section={lessonSection}
+        courseId={courseId}
+        onSave={handleSaveLesson}
+      />
     </div>
   );
 }
