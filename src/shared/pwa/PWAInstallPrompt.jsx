@@ -29,7 +29,7 @@ export function PWAInstallPrompt() {
   };
 
   return (
-    <div className="fixed bottom-3 left-3 right-3 z-40 sm:left-auto sm:right-4 sm:w-[360px]">
+    <div className="fixed bottom-3 left-3 right-3 z-40 mb-safe sm:left-auto sm:right-4 sm:w-[360px]">
       <div className="rounded-[var(--radius)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.92] p-3 shadow-soft backdrop-blur-soft">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--brand-primary))/0.15]">

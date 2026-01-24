@@ -2,6 +2,102 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ================================================
+   PWA Safe Area Support & Mobile Optimizations
+   ================================================ */
+
+/* Safe area CSS custom properties with fallbacks */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+/* Padding utilities for safe areas */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.px-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.py-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.p-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+/* Margin utilities for safe areas */
+.mt-safe {
+  margin-top: env(safe-area-inset-top, 0px);
+}
+.mr-safe {
+  margin-right: env(safe-area-inset-right, 0px);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+.ml-safe {
+  margin-left: env(safe-area-inset-left, 0px);
+}
+.mx-safe {
+  margin-left: env(safe-area-inset-left, 0px);
+  margin-right: env(safe-area-inset-right, 0px);
+}
+.my-safe {
+  margin-top: env(safe-area-inset-top, 0px);
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Min-height that accounts for safe areas */
+.min-h-safe-screen {
+  min-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/* Height that accounts for safe areas */
+.h-safe-screen {
+  height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/* Top position with safe area offset */
+.top-safe {
+  top: env(safe-area-inset-top, 0px);
+}
+
+/* Bottom position with safe area offset */
+.bottom-safe {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Overscroll behavior for native-like experience */
+.overscroll-none {
+  overscroll-behavior: none;
+}
+
+/* Smooth momentum scrolling for iOS */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ================================================
    RACOON LMS — Design Tokens (Red/Rose/Guinda)
    Mobile-first, dark-mode first-class
    Premium UI with animations and effects

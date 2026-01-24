@@ -383,7 +383,7 @@ export function AppLayout() {
       </div>
 
       {/* ========== Mobile Header ========== */}
-      <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 backdrop-blur-lg md:hidden">
+      <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 pt-safe backdrop-blur-lg md:hidden">
         <button
           onClick={() => setDrawerOpen(true)}
           className="rounded-lg p-2 text-[rgb(var(--text-secondary))] transition hover:bg-[rgb(var(--bg-muted))]"
@@ -490,7 +490,7 @@ export function AppLayout() {
       </Drawer>
 
       {/* ========== Mobile Main ========== */}
-      <main className="min-h-dvh pt-14 pb-16 md:hidden">
+      <main className="min-h-dvh pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -505,8 +505,8 @@ export function AppLayout() {
       </main>
 
       {/* ========== Mobile Bottom Nav ========== */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.95] backdrop-blur-lg md:hidden">
-        <div className="grid grid-cols-4 items-center px-1 py-1.5 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.95] pb-safe backdrop-blur-lg md:hidden">
+        <div className="grid grid-cols-4 items-center px-1 py-1.5">
           {navItems.slice(0, 4).map((item) => (
             <div key={item.to} className="flex justify-center">
               <MobileNavItem {...item} />
