@@ -10,11 +10,13 @@ export function LandingPage() {
   const [courses, setCourses] = React.useState([]);
 
   React.useEffect(() => {
-    listPublishedCourses({ limit: 6 }).then(setCourses).catch(() => setCourses([]));
+    listPublishedCourses({ limit: 6 })
+      .then(setCourses)
+      .catch(() => setCourses([]));
   }, []);
 
   return (
-    <div>
+    <div className="overflow-hidden">
       <section className="mx-auto max-w-6xl px-4 pt-10 pb-8">
         <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
           <div>
@@ -30,12 +32,16 @@ export function LandingPage() {
 
             <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
               Aprende con una plataforma tipo Udemy,
-              <span className="text-[rgb(var(--brand-primary))]"> pero más simple</span>.
+              <span className="text-[rgb(var(--brand-primary))]">
+                {" "}
+                pero más simple
+              </span>
+              .
             </h1>
 
             <p className="mt-3 text-sm leading-relaxed text-[rgb(var(--text-secondary))] sm:text-base">
-              Cursos con video, progreso del alumno, panel para maestros y una experiencia responsiva
-              que se siente como app nativa.
+              Cursos con video, progreso del alumno, panel para maestros y una
+              experiencia responsiva que se siente como app nativa.
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -45,7 +51,11 @@ export function LandingPage() {
                 </Button>
               </Link>
               <Link to="/auth/register">
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                >
                   Crear cuenta gratis
                 </Button>
               </Link>
@@ -99,12 +109,17 @@ export function LandingPage() {
       <section className="mx-auto max-w-6xl px-4 pb-14">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <div className="text-sm font-extrabold tracking-tight">Cursos destacados</div>
+            <div className="text-sm font-extrabold tracking-tight">
+              Cursos destacados
+            </div>
             <div className="text-xs text-[rgb(var(--text-secondary))]">
               Hechos para aprender rápido, sin fricción.
             </div>
           </div>
-          <Link to="/catalog" className="text-sm font-semibold text-[rgb(var(--brand-primary))]">
+          <Link
+            to="/catalog"
+            className="text-sm font-semibold text-[rgb(var(--brand-primary))]"
+          >
             Ver todo →
           </Link>
         </div>

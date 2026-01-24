@@ -3,88 +3,142 @@
 
 /* ================================================
    PWA Safe Area Support & Mobile Optimizations
+   iOS Safari requires specific handling for env()
    ================================================ */
 
-/* Safe area CSS custom properties with fallbacks */
+/* Safe area CSS custom properties with fallbacks for older iOS (constant) and newer (env) */
 :root {
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left: env(safe-area-inset-left, 0px);
+  /* Fallback to 0px, then constant() for iOS 11.0-11.2, then env() for iOS 11.2+ */
+  --safe-top: 0px;
+  --safe-right: 0px;
+  --safe-bottom: 0px;
+  --safe-left: 0px;
 }
 
-/* Padding utilities for safe areas */
+/* iOS 11.0-11.2 support */
+@supports (padding-top: constant(safe-area-inset-top)) {
+  :root {
+    --safe-top: constant(safe-area-inset-top);
+    --safe-right: constant(safe-area-inset-right);
+    --safe-bottom: constant(safe-area-inset-bottom);
+    --safe-left: constant(safe-area-inset-left);
+  }
+}
+
+/* iOS 11.2+ and modern browsers */
+@supports (padding-top: env(safe-area-inset-top)) {
+  :root {
+    --safe-top: env(safe-area-inset-top);
+    --safe-right: env(safe-area-inset-right);
+    --safe-bottom: env(safe-area-inset-bottom);
+    --safe-left: env(safe-area-inset-left);
+  }
+}
+
+/* Padding utilities for safe areas - with both constant() and env() fallbacks */
 .pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
 }
 .pr-safe {
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-right: constant(safe-area-inset-right);
+  padding-right: env(safe-area-inset-right);
 }
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .pl-safe {
-  padding-left: env(safe-area-inset-left, 0px);
+  padding-left: constant(safe-area-inset-left);
+  padding-left: env(safe-area-inset-left);
 }
 .px-safe {
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: constant(safe-area-inset-left);
+  padding-left: env(safe-area-inset-left);
+  padding-right: constant(safe-area-inset-right);
+  padding-right: env(safe-area-inset-right);
 }
 .py-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .p-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+  padding-right: constant(safe-area-inset-right);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: constant(safe-area-inset-left);
+  padding-left: env(safe-area-inset-left);
 }
 
 /* Margin utilities for safe areas */
 .mt-safe {
-  margin-top: env(safe-area-inset-top, 0px);
+  margin-top: constant(safe-area-inset-top);
+  margin-top: env(safe-area-inset-top);
 }
 .mr-safe {
-  margin-right: env(safe-area-inset-right, 0px);
+  margin-right: constant(safe-area-inset-right);
+  margin-right: env(safe-area-inset-right);
 }
 .mb-safe {
-  margin-bottom: env(safe-area-inset-bottom, 0px);
+  margin-bottom: constant(safe-area-inset-bottom);
+  margin-bottom: env(safe-area-inset-bottom);
 }
 .ml-safe {
-  margin-left: env(safe-area-inset-left, 0px);
+  margin-left: constant(safe-area-inset-left);
+  margin-left: env(safe-area-inset-left);
 }
 .mx-safe {
-  margin-left: env(safe-area-inset-left, 0px);
-  margin-right: env(safe-area-inset-right, 0px);
+  margin-left: constant(safe-area-inset-left);
+  margin-left: env(safe-area-inset-left);
+  margin-right: constant(safe-area-inset-right);
+  margin-right: env(safe-area-inset-right);
 }
 .my-safe {
-  margin-top: env(safe-area-inset-top, 0px);
-  margin-bottom: env(safe-area-inset-bottom, 0px);
+  margin-top: constant(safe-area-inset-top);
+  margin-top: env(safe-area-inset-top);
+  margin-bottom: constant(safe-area-inset-bottom);
+  margin-bottom: env(safe-area-inset-bottom);
 }
 
 /* Min-height that accounts for safe areas */
 .min-h-safe-screen {
   min-height: calc(
-    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+    100dvh - constant(safe-area-inset-top) - constant(safe-area-inset-bottom)
+  );
+  min-height: calc(
+    100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
   );
 }
 
 /* Height that accounts for safe areas */
 .h-safe-screen {
   height: calc(
-    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+    100dvh - constant(safe-area-inset-top) - constant(safe-area-inset-bottom)
   );
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
 /* Top position with safe area offset */
 .top-safe {
-  top: env(safe-area-inset-top, 0px);
+  top: constant(safe-area-inset-top);
+  top: env(safe-area-inset-top);
 }
 
 /* Bottom position with safe area offset */
 .bottom-safe {
-  bottom: env(safe-area-inset-bottom, 0px);
+  bottom: constant(safe-area-inset-bottom);
+  bottom: env(safe-area-inset-bottom);
+}
+
+/* Height based on safe area top - for overlay behind notch/Dynamic Island */
+.h-safe-top {
+  height: constant(safe-area-inset-top);
+  height: env(safe-area-inset-top);
 }
 
 /* Overscroll behavior for native-like experience */

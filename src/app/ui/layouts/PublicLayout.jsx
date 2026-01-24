@@ -21,7 +21,7 @@ export function PublicLayout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh overflow-x-hidden">
       {/* ========== Header ========== */}
       {/* ========== Header ========== */}
       <PublicNavbar />

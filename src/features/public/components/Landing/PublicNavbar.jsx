@@ -15,8 +15,8 @@ export function PublicNavbar() {
 
   return (
     <>
-      {/* Safe area background for iOS PWA */}
-      <div className="fixed top-0 left-0 right-0 z-50 h-[var(--safe-top)] bg-[rgb(var(--bg-surface))/0.8]" />
+      {/* Safe area background for iOS PWA - covers the notch/Dynamic Island area */}
+      <div className="fixed top-0 left-0 right-0 z-50 h-safe-top bg-[rgb(var(--bg-surface))]" />
       <header className="fixed top-safe left-0 right-0 z-50 border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.8] backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
