@@ -40,12 +40,6 @@ export const APPWRITE = {
   },
   functions: {
     onUserCreated: pick("VITE_APPWRITE_FN_ON_USER_CREATED", "onUserCreated"),
-    recomputeCourseStats: pick(
-      "VITE_APPWRITE_FN_RECOMPUTE_COURSE_STATS",
-      "recomputeCourseStats",
-    ),
-    enrollCourse: pick("VITE_APPWRITE_FN_ENROLL_COURSE", "enrollCourse"),
-    updateProgress: pick("VITE_APPWRITE_FN_UPDATE_PROGRESS", "updateProgress"),
     syncUserProfile: pick(
       "VITE_APPWRITE_FN_SYNC_USER_PROFILE",
       "syncUserProfile",
@@ -54,6 +48,14 @@ export const APPWRITE = {
     onReviewCreated: pick(
       "VITE_APPWRITE_FN_ON_REVIEW_CREATED",
       "onReviewCreated",
+    ),
+    onCourseCreated: pick(
+      "VITE_APPWRITE_FN_ON_COURSE_CREATED",
+      "onCourseCreated",
+    ),
+    onEnrollmentCreated: pick(
+      "VITE_APPWRITE_FN_ON_ENROLLMENT_CREATED",
+      "onEnrollmentCreated",
     ),
   },
 };

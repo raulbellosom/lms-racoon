@@ -50,7 +50,7 @@ export function ForgotPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-[rgb(var(--bg-main))] p-4">
       <Card className="w-full max-w-md p-8">
         <Link
-          to="/login"
+          to="/auth/login"
           className="mb-6 flex items-center text-sm text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))]"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

@@ -99,13 +99,35 @@ module.exports = async ({ req, res, log, error }) => {
       const appUrl = process.env.APP_BASE_URL || "http://localhost:5173";
       const resetLink = `${appUrl}/reset-password?userId=${userId}&token=${token}`;
 
+      // Validate SMTP config
+      const smtpHost = process.env.EMAIL_SMTP_HOST;
+      const smtpPort = process.env.EMAIL_SMTP_PORT;
+      const smtpUser = process.env.EMAIL_SMTP_USER;
+      const smtpPass = process.env.EMAIL_SMTP_PASS;
+      const fromAddress = process.env.EMAIL_FROM_ADDRESS;
+
+      if (!smtpHost || !smtpUser || !smtpPass || !fromAddress) {
+        error(
+          `SMTP not configured. Missing: ${!smtpHost ? "HOST " : ""}${!smtpUser ? "USER " : ""}${!smtpPass ? "PASS " : ""}${!fromAddress ? "FROM_ADDRESS" : ""}`,
+        );
+        // Still return success to not reveal if user exists, but log the config issue
+        return res.json({
+          success: true,
+          message: "If email exists, recovery email will be sent.",
+        });
+      }
+
+      log(
+        `SMTP Config: host=${smtpHost}, port=${smtpPort}, user=${smtpUser}, from=${fromAddress}`,
+      );
+
       const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_SMTP_HOST,
-        port: process.env.EMAIL_SMTP_PORT,
+        host: smtpHost,
+        port: parseInt(smtpPort) || 587,
         secure: process.env.EMAIL_SMTP_SECURE === "true", // true for 465, false for other ports
         auth: {
-          user: process.env.EMAIL_SMTP_USER,
-          pass: process.env.EMAIL_SMTP_PASS,
+          user: smtpUser,
+          pass: smtpPass,
         },
       });
 
@@ -201,19 +223,20 @@ module.exports = async ({ req, res, log, error }) => {
       </html>
       `;
 
-      await transporter.sendMail({
-        from: `"${process.env.EMAIL_FROM_NAME || "Racoon LMS"}" <${
-          process.env.EMAIL_FROM_ADDRESS
-        }>`,
+      const mailResult = await transporter.sendMail({
+        from: `"${process.env.EMAIL_FROM_NAME || "Racoon LMS"}" <${fromAddress}>`,
         to: email,
         subject: "Restablecer tu contraseña - Racoon LMS",
         html: emailHtml,
       });
 
-      log(`Recovery email sent to ${email} (User: ${userId})`);
+      log(
+        `Recovery email sent to ${email} (User: ${userId}). MessageId: ${mailResult.messageId}`,
+      );
       return res.json({ success: true, message: "Recovery email sent" });
     } catch (err) {
       error(`Error in request_recovery: ${err.message}`);
+      error(`Stack: ${err.stack}`);
       return res.json({ success: false, message: "Internal Error" }, 500);
     }
   }

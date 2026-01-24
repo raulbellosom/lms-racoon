@@ -55,7 +55,7 @@ export function ResetPasswordPage() {
         setIsSuccess(true);
         showToast("Contraseña actualizada correctamente", "success");
         setTimeout(() => {
-          navigate("/login");
+          navigate("/auth/login");
         }, 3000);
       } else {
         showToast(
@@ -105,7 +105,7 @@ export function ResetPasswordPage() {
               Tu contraseña ha sido cambiada exitosamente. Serás redirigido al
               login en unos segundos...
             </p>
-            <Link to="/login">
+            <Link to="/auth/login">
               <Button className="w-full">Ir al Login ahora</Button>
             </Link>
           </div>
