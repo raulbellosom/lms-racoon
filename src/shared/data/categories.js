@@ -5,11 +5,31 @@ import { Query } from "appwrite";
 const COLLECTION = APPWRITE.collections.categories;
 
 export const CategoryService = {
-  async list() {
-    const response = await db.listDocuments(APPWRITE.databaseId, COLLECTION, [
+  async list({ page = 1, limit = 10, search = "" } = {}) {
+    const queries = [
       Query.orderAsc("name"),
-    ]);
-    return response.documents;
+      Query.limit(limit),
+      Query.offset((page - 1) * limit),
+    ];
+
+    if (search) {
+      queries.push(Query.search("name", search));
+    }
+
+    const response = await db.listDocuments(
+      APPWRITE.databaseId,
+      COLLECTION,
+      queries,
+    );
+
+    return {
+      documents: response.documents,
+      total: response.total,
+    };
+  },
+
+  async update(id, data) {
+    return await db.updateDocument(APPWRITE.databaseId, COLLECTION, id, data);
   },
 
   async create(data) {

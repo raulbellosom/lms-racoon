@@ -11,6 +11,7 @@ import {
   Edit,
   CheckCircle,
   Ban,
+  Info,
 } from "lucide-react";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { CategoryService } from "../../../shared/data/categories";
@@ -30,20 +31,45 @@ export function AdminCategoriesPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
+  // Pagination & Search State
+  const [page, setPage] = React.useState(1);
+  const [total, setTotal] = React.useState(0);
+  const [search, setSearch] = React.useState("");
+  const limit = 10;
+
+  // Edit State
+  const [editingId, setEditingId] = React.useState(null);
+
   // Form State
   const [formData, setFormData] = React.useState({
     name: "",
     slug: "",
   });
 
+  // Debounced search
   React.useEffect(() => {
-    loadCategories();
-  }, []);
+    const timer = setTimeout(() => {
+      setPage(1); // Reset to page 1 on search change
+      loadCategories(1, search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const loadCategories = async () => {
+  // Load on page change
+  React.useEffect(() => {
+    loadCategories(page, search);
+  }, [page]);
+
+  const loadCategories = async (pageNum, searchQuery) => {
+    setLoading(true);
     try {
-      const docs = await CategoryService.list();
-      setCategories(docs);
+      const res = await CategoryService.list({
+        page: pageNum,
+        limit,
+        search: searchQuery,
+      });
+      setCategories(res.documents);
+      setTotal(res.total);
     } catch (error) {
       console.error(error);
       showToast("Error al cargar categorías", "error");
@@ -53,7 +79,14 @@ export function AdminCategoriesPage() {
   };
 
   const handleOpenCreate = () => {
+    setEditingId(null);
     setFormData({ name: "", slug: "" });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (cat) => {
+    setEditingId(cat.$id);
+    setFormData({ name: cat.name, slug: cat.slug });
     setIsModalOpen(true);
   };
 
@@ -73,7 +106,10 @@ export function AdminCategoriesPage() {
     setFormData((prev) => ({
       ...prev,
       name: val,
-      slug: prev.slug || generateSlug(val), // Auto-generate slug if empty or user hasn't manually edited it much (heuristic)
+      slug:
+        !editingId && (prev.slug || generateSlug(val)) // Auto-generate only for new or if not manually edited logic (simplified)
+          ? generateSlug(val)
+          : prev.slug,
     }));
   };
 
@@ -85,13 +121,18 @@ export function AdminCategoriesPage() {
 
     setSaving(true);
     try {
-      const newCat = await CategoryService.create(formData);
-      setCategories([...categories, newCat]);
+      if (editingId) {
+        await CategoryService.update(editingId, formData);
+        showToast("Categoría actualizada", "success");
+      } else {
+        await CategoryService.create(formData);
+        showToast("Categoría creada", "success");
+      }
       setIsModalOpen(false);
-      showToast("Categoría creada", "success");
+      loadCategories(page, search);
     } catch (error) {
       console.error(error);
-      showToast("Error al crear categoría", "error");
+      showToast("Error al guardar categoría", "error");
     } finally {
       setSaving(false);
     }
@@ -106,20 +147,27 @@ export function AdminCategoriesPage() {
         await CategoryService.restore(cat.$id);
         showToast("Categoría habilitada", "success");
       }
-      // Reload or update verification
-      loadCategories(); // simplest
+      loadCategories(page, search);
     } catch (error) {
       console.error(error);
       showToast("Error al actualizar estado", "error");
     }
   };
 
+  const totalPages = Math.ceil(total / limit);
+
   return (
     <PageLayout
       title="Categorías"
       subtitle="Administra las categorías de cursos"
     >
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <Input
+          placeholder="Buscar categorías..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
         <Button onClick={handleOpenCreate}>
           <Plus className="mr-2 h-4 w-4" /> Nueva Categoría
         </Button>
@@ -138,6 +186,7 @@ export function AdminCategoriesPage() {
         <div className="divide-y divide-[rgb(var(--border-base))]">
           {loading ? (
             <div className="p-8 text-center text-[rgb(var(--text-secondary))]">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin mb-2" />
               Cargando...
             </div>
           ) : categories.length === 0 ? (
@@ -179,6 +228,12 @@ export function AdminCategoriesPage() {
                     }
                   >
                     <DropdownItem
+                      icon={Edit}
+                      onClick={() => handleOpenEdit(cat)}
+                    >
+                      Editar
+                    </DropdownItem>
+                    <DropdownItem
                       icon={cat.enabled ? Ban : CheckCircle}
                       onClick={() => handleToggleStatus(cat)}
                       danger={cat.enabled}
@@ -191,13 +246,47 @@ export function AdminCategoriesPage() {
             ))
           )}
         </div>
+
+        {/* Pagination */}
+        {total > 0 && (
+          <div className="flex items-center justify-between border-t border-[rgb(var(--border-base))] px-6 py-4">
+            <div className="text-sm text-[rgb(var(--text-secondary))]">
+              Mostrando {categories.length} de {total} resultados
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+              >
+                Anterior
+              </Button>
+              <div className="flex items-center px-2 text-sm font-bold">
+                Página {page} de {totalPages || 1}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages || loading}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Modal
         open={isModalOpen}
         onClose={() => !saving && setIsModalOpen(false)}
-        title="Nueva Categoría"
-        description="Crea una categoría para organizar los cursos."
+        title={editingId ? "Editar Categoría" : "Nueva Categoría"}
+        description={
+          editingId
+            ? "Modifica los detalles de la categoría."
+            : "Crea una categoría para organizar los cursos."
+        }
       >
         <div className="space-y-4">
           <div>
@@ -212,8 +301,20 @@ export function AdminCategoriesPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+            <label className="mb-1 flex items-center gap-2 text-sm font-semibold text-[rgb(var(--text-secondary))]">
               Slug *
+              <div
+                className="group relative flex items-center justify-center cursor-help"
+                title="El slug se usa en la URL del navegador. Ejemplo: 'desarrollo-web'"
+              >
+                <Info className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+                {/* Custom Tooltip (Responsive) */}
+                <div className="absolute bottom-full left-1/2 mb-2 hidden w-48 -translate-x-1/2 rounded-lg bg-black/90 p-2 text-xs text-white shadow-xl group-hover:block z-50 text-center">
+                  El slug es la versión amigable del nombre para la URL.
+                  Ejemplo: "Desarrollo Web" &rarr; "desarrollo-web"
+                  <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-black/90"></div>
+                </div>
+              </div>
             </label>
             <Input
               value={formData.slug}
@@ -236,7 +337,7 @@ export function AdminCategoriesPage() {
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Crear
+            {editingId ? "Guardar Cambios" : "Crear"}
           </Button>
         </ModalFooter>
       </Modal>
