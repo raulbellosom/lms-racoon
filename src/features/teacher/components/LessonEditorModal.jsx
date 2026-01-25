@@ -16,6 +16,9 @@ import { Textarea } from "../../../shared/ui/Textarea";
 import { Button } from "../../../shared/ui/Button";
 import { FileService } from "../../../shared/data/files";
 import { useToast } from "../../../app/providers/ToastProvider";
+import SimpleMDE from "react-simplemde-editor";
+import "easymde/dist/easymde.min.css";
+import { CharacterCountCircle } from "./CharacterCountCircle";
 
 /**
  * Lesson type options
@@ -143,6 +146,28 @@ export function LessonEditorModal({
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Markdown Options
+  const mdeOptions = React.useMemo(
+    () => ({
+      spellChecker: false,
+      maxHeight: "300px",
+      placeholder: t("teacher.lesson.descriptionPlaceholder"),
+      status: false,
+      toolbar: [
+        "bold",
+        "italic",
+        "heading",
+        "|",
+        "quote",
+        "unordered-list",
+        "ordered-list",
+        "|",
+        "preview",
+      ],
+    }),
+    [t],
+  );
 
   // Handle video upload
   const handleVideoUpload = async (e) => {
@@ -300,6 +325,7 @@ export function LessonEditorModal({
       title={
         isNew ? t("teacher.lesson.createTitle") : t("teacher.lesson.editTitle")
       }
+      maxWidth="max-w-4xl"
     >
       <div className="space-y-4">
         {/* Lesson Type Selector */}
@@ -330,28 +356,44 @@ export function LessonEditorModal({
 
         {/* Title */}
         <div>
-          <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-            {t("teacher.curriculum.lessonTitle")}{" "}
-            <span className="text-red-500">*</span>
-          </label>
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              {t("teacher.curriculum.lessonTitle")}{" "}
+              <span className="text-red-500">*</span>
+            </label>
+            <CharacterCountCircle
+              current={formData.title.length}
+              max={80}
+              size={18}
+            />
+          </div>
           <Input
             placeholder={t("teacher.curriculum.lessonTitlePlaceholder")}
             value={formData.title}
             onChange={(e) => updateField("title", e.target.value)}
+            maxLength={80}
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-            {t("teacher.lesson.description")}
-          </label>
-          <Textarea
-            placeholder={t("teacher.lesson.descriptionPlaceholder")}
-            value={formData.description}
-            onChange={(e) => updateField("description", e.target.value)}
-            rows={3}
-          />
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              {t("teacher.lesson.description")}
+            </label>
+            <CharacterCountCircle
+              current={formData.description.length}
+              max={2000}
+              size={18}
+            />
+          </div>
+          <div className="markdown-editor-wrapper">
+            <SimpleMDE
+              value={formData.description}
+              onChange={(val) => updateField("description", val)}
+              options={mdeOptions}
+            />
+          </div>
         </div>
 
         {/* Video Upload (for video type) */}

@@ -1,11 +1,23 @@
 import React from "react";
-import { Star, Users, BarChart, BookOpen, Eye } from "lucide-react";
+import {
+  Star,
+  Users,
+  BarChart,
+  BookOpen,
+  Eye,
+  ShoppingCart,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card } from "../../shared/ui/Card";
 import { Button } from "../../shared/ui/Button";
 import { FileService } from "../../shared/data/files";
+import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../app/providers/AuthProvider";
 
 export function CourseCard({ course, className = "" }) {
+  const { isInCart, addToCart, removeFromCart } = useCart();
+  const { auth } = useAuth();
+
   const {
     $id,
     title,
@@ -19,7 +31,11 @@ export function CourseCard({ course, className = "" }) {
     category, // string or object
     level,
     isPublished, // for instructor view
+    teacherId,
   } = course;
+
+  const isOwner = auth.user?.$id === teacherId;
+  const inCart = isInCart($id);
 
   // 1. Compute Image URL
   const displayCoverUrl = React.useMemo(() => {
@@ -132,14 +148,43 @@ export function CourseCard({ course, className = "" }) {
               <span className="capitalize">{level || "General"}</span>
             </span>
 
-            <Link to={`/courses/${$id}`}>
-              <Button
-                size="sm"
-                className="h-7 px-3 text-xs bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 border border-white/10"
-              >
-                Ver Curso
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              {!isOwner && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={`h-7 px-2 text-xs border border-white/10 ${
+                    inCart
+                      ? "bg-green-500/20 text-green-300 hover:bg-green-500/30"
+                      : "bg-white/10 text-white hover:bg-white/20"
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (inCart) {
+                      removeFromCart($id);
+                    } else {
+                      addToCart(course);
+                    }
+                  }}
+                  title={inCart ? "Quitar del carrito" : "Añadir al carrito"}
+                >
+                  {inCart ? (
+                    <ShoppingCart className="h-3.5 w-3.5 fill-current" />
+                  ) : (
+                    <ShoppingCart className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              )}
+
+              <Link to={`/courses/${$id}`}>
+                <Button
+                  size="sm"
+                  className="h-7 px-3 text-xs bg-indigo-600/90 text-white hover:bg-indigo-500 shadow-sm border border-transparent"
+                >
+                  Ver Curso
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

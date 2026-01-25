@@ -9,6 +9,17 @@ export function PWAInstallPrompt() {
     const onBeforeInstall = (e) => {
       e.preventDefault();
       setDeferred(e);
+
+      // Check cooldown
+      const dismissedAt = localStorage.getItem("pwa_prompt_dismissed_at");
+      if (dismissedAt) {
+        const diff = Date.now() - parseInt(dismissedAt, 10);
+        const cooldown = 24 * 60 * 60 * 1000; // 24 hours
+        if (diff < cooldown) {
+          return; // Don't show
+        }
+      }
+
       setVisible(true);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
@@ -17,6 +28,11 @@ export function PWAInstallPrompt() {
   }, []);
 
   if (!visible || !deferred) return null;
+
+  const onDismiss = () => {
+    setVisible(false);
+    localStorage.setItem("pwa_prompt_dismissed_at", Date.now().toString());
+  };
 
   const install = async () => {
     try {
@@ -30,7 +46,7 @@ export function PWAInstallPrompt() {
 
   return (
     <div className="fixed bottom-3 left-3 right-3 z-40 mb-safe sm:left-auto sm:right-4 sm:w-[360px]">
-      <div className="rounded-[var(--radius)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.92] p-3 shadow-soft backdrop-blur-soft">
+      <div className="rounded-(--radius) border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.92] p-3 shadow-soft backdrop-blur-soft">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--brand-primary))/0.15]">
             <Download className="h-5 w-5 text-[rgb(var(--brand-primary))]" />
@@ -49,7 +65,7 @@ export function PWAInstallPrompt() {
               Instalar
             </button>
             <button
-              onClick={() => setVisible(false)}
+              onClick={onDismiss}
               className="group rounded-lg p-2 text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))]"
             >
               <X className="h-4 w-4 transition-transform group-hover:scale-110" />

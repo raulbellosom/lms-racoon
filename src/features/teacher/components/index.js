@@ -11,3 +11,4 @@ export { QuizEditorModal } from "./QuizEditorModal";
 export { AssignmentList } from "./AssignmentList";
 export { AssignmentEditorModal } from "./AssignmentEditorModal";
 export { MarkdownDescriptionEditor } from "./MarkdownDescriptionEditor";
+export { CharacterCountCircle } from "./CharacterCountCircle";

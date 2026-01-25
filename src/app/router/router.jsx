@@ -30,6 +30,7 @@ import {
 
 import { ForgotPasswordPage } from "../../pages/public/ForgotPasswordPage";
 import { ResetPasswordPage } from "../../pages/public/ResetPasswordPage";
+import { CartPage } from "../../pages/public/CartPage";
 
 export const router = createBrowserRouter([
   {
@@ -43,15 +44,24 @@ export const router = createBrowserRouter([
 
       {
         element: <PublicLayout />,
-        loader: requireGuestLoader,
+        // removed loader: requireGuestLoader from here to allow /cart and /catalog for auth users
         children: [
           { index: true, element: <LandingView /> },
           { path: "/catalog", element: <CatalogView /> },
           { path: "/catalog/:id", element: <CourseDetailView /> },
           // Legacy route redirect or keep
           { path: "/courses/:id", element: <CourseDetailView /> },
-          { path: "/auth/login", element: <LoginView /> },
-          { path: "/auth/register", element: <RegisterView /> },
+          {
+            path: "/auth/login",
+            element: <LoginView />,
+            loader: requireGuestLoader,
+          },
+          {
+            path: "/auth/register",
+            element: <RegisterView />,
+            loader: requireGuestLoader,
+          },
+          { path: "/cart", element: <CartPage /> },
         ],
       },
       {
@@ -65,6 +75,7 @@ export const router = createBrowserRouter([
           { path: "courses/:id", element: <CourseDetailView /> },
           { path: "my-courses", element: <MyCoursesView /> },
           { path: "progress", element: <ProgressView /> },
+          { path: "cart", element: <CartPage /> },
           { path: "learn/:courseId/:lessonId?", element: <LearnPage /> },
           { path: "profile", element: <ProfileView /> },
           { path: "settings", element: <SettingsView /> },

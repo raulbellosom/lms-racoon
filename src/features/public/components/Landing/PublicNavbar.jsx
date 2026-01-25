@@ -1,13 +1,24 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, X, LogIn, UserPlus } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, ShoppingCart } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "../../../../shared/ui/Button";
 import { ThemeToggleButton } from "../../../../shared/theme/ThemeProvider";
 import { LanguageSelector } from "../../../../shared/ui/LanguageSelector";
 import appIcon from "../../../../resources/icon.svg";
+import { useCart } from "../../../../context/CartContext";
+
+function CartBadge() {
+  const { cartItems } = useCart();
+  if (cartItems.length === 0) return null;
+  return (
+    <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] text-[10px] font-bold text-white">
+      {cartItems.length}
+    </span>
+  );
+}
 
 export function PublicNavbar() {
   const { t } = useTranslation();
@@ -39,6 +50,15 @@ export function PublicNavbar() {
             >
               {t("nav.explore", "Explorar")}
             </Link>
+
+            <Link
+              to="/cart"
+              className="relative text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))] transition-colors"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              <CartBadge />
+            </Link>
+
             <div className="h-4 w-px bg-[rgb(var(--border-base))]" />
             <LanguageSelector side="bottom" />
             <ThemeToggleButton />
@@ -113,6 +133,15 @@ export function PublicNavbar() {
                   className="text-lg font-medium text-[rgb(var(--text-secondary))]"
                 >
                   {t("landing.exploreCourses", "Explorar Cursos")}
+                </Link>
+                <Link
+                  to="/cart"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-lg font-medium text-[rgb(var(--text-secondary))] flex items-center gap-2"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Carrito
+                  <CartBadge />
                 </Link>
               </div>
               <div className="h-px w-full bg-[rgb(var(--border-base))]" />

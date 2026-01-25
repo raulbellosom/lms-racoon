@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Search,
   Tag,
+  ShoppingCart,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../resources/icon.svg";
@@ -32,6 +33,7 @@ import {
 } from "../../../shared/ui/Dropdown";
 import { Avatar } from "../../../shared/ui/Avatar";
 import { useAuth } from "../../providers/AuthProvider";
+import { useCart } from "../../../context/CartContext";
 import { logout } from "../../../shared/services/auth";
 import {
   useTheme,
@@ -41,12 +43,13 @@ import {
 import { ThemeSelect } from "../../../shared/theme/ThemeSelect";
 import { LanguageSelector } from "../../../shared/ui/LanguageSelector";
 import { ProfileService } from "../../../shared/data/profiles";
+import { CartDropdown } from "../../../features/cart/components/CartDropdown";
 
 /**
  * NavItem with precise fixed-width icon aligned.
  * Structure: [Fixed 5rem Icon Area] [Animated Text Area]
  */
-function NavItem({ to, icon: Icon, label, onClick, collapsed }) {
+function NavItem({ to, icon: Icon, label, onClick, collapsed, badge }) {
   return (
     <NavLink
       to={to}
@@ -67,13 +70,18 @@ function NavItem({ to, icon: Icon, label, onClick, collapsed }) {
               Reducing width slightly from w-20 to match standard sizing better if we add margins.
               Let's keep w-12 for the icon container itself.
           */}
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center relative">
             {/* The icon itself doesn't need a background anymore since the parent has it. */}
             <Icon
               className={`h-5 w-5 ${
                 isActive ? "text-[rgb(var(--brand-primary))]" : ""
               }`}
             />
+            {badge && (
+              <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-[rgb(var(--bg-surface))]">
+                {badge}
+              </span>
+            )}
           </div>
 
           {/* Text - Smooth reveal */}
@@ -138,6 +146,7 @@ function MobileNavItem({ to, icon: Icon, label }) {
 export function AppLayout() {
   const { t } = useTranslation();
   const { auth, authStore } = useAuth();
+  const { cartItems } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -302,6 +311,8 @@ export function AppLayout() {
 
         {/* Right Actions: User Profile */}
         <div className="flex items-center gap-4">
+          <CartDropdown />
+          <div className="h-8 w-px bg-[rgb(var(--border-base))]" />
           <Dropdown
             align="end"
             side="bottom"
@@ -310,11 +321,13 @@ export function AppLayout() {
             trigger={
               <button className="group flex items-center gap-3 transition-colors">
                 <div className="flex flex-col items-end">
-                  <span className="text-sm font-bold text-[rgb(var(--text-primary))]">
-                    {displayName}
+                  <span className="text-sm font-bold text-[rgb(var(--text-primary))] max-w-[150px] truncate">
+                    {displayName.length > 20
+                      ? displayName.substring(0, 20) + "..."
+                      : displayName}
                   </span>
-                  <span className="text-xs text-[rgb(var(--text-secondary))]">
-                    {auth.user?.email}
+                  <span className="text-xs text-[rgb(var(--text-secondary))] capitalize">
+                    {t(`roles.${role}`, role)}
                   </span>
                 </div>
                 <Avatar
@@ -331,7 +344,10 @@ export function AppLayout() {
               <div className="text-xs font-bold text-[rgb(var(--text-primary))]">
                 {displayName}
               </div>
-              <div className="text-xs text-[rgb(var(--text-secondary))]">
+              <div className="text-xs text-[rgb(var(--text-secondary))] truncate mb-1">
+                {auth.user?.email}
+              </div>
+              <div className="text-xs text-[rgb(var(--text-tertiary))] capitalize">
                 {t(`roles.${role}`, role)}
               </div>
             </div>

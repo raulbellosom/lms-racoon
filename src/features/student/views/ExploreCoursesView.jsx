@@ -147,7 +147,7 @@ export function ExploreCoursesView() {
               {/* Results Grid */}
               {courses.length > 0 ? (
                 <div className="space-y-8">
-                  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
                     {courses.map((course) => (
                       <CourseCard key={course.$id} course={course} />
                     ))}

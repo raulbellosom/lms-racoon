@@ -57,8 +57,26 @@ export function LoginForm() {
       });
 
       // Check for returnUrl
-      const returnUrl = location.state?.returnUrl || "/app/home";
-      navigate(returnUrl);
+      // Check for returnUrl
+      const searchParams = new URLSearchParams(window.location.search);
+      let returnUrl =
+        searchParams.get("redirect") ||
+        location.state?.returnUrl ||
+        "/app/home";
+
+      // Ensure returnUrl is absolute path relative to root if it starts with /
+      if (!returnUrl.startsWith("/")) {
+        returnUrl = "/" + returnUrl;
+      }
+
+      console.log("Redirecting to:", returnUrl); // Debug
+
+      // If returning to public cart alias, switch to app cart
+      if (returnUrl === "/cart") {
+        returnUrl = "/app/cart";
+      }
+
+      navigate(returnUrl, { replace: true });
     } catch (err) {
       toast.push({
         title: t("toast.errorTitle"),

@@ -12,6 +12,7 @@ import "easymde/dist/easymde.min.css";
 import { router } from "./app/router/router";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { ToastProvider } from "./app/providers/ToastProvider";
+import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./shared/theme/ThemeProvider";
 import { RenderErrorBoundary } from "./shared/errors/RenderErrorBoundary";
 import { PWAInstallPrompt } from "./shared/pwa/PWAInstallPrompt";
@@ -39,13 +40,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       >
         <ThemeProvider defaultTheme="system" storageKey="racoon-lms-theme">
           <ToastProvider>
-            <AuthProvider>
-              <RouterProvider
-                router={router}
-                fallbackElement={<LoadingScreen />}
-              />
-              <PWAInstallPrompt />
-            </AuthProvider>
+            <CartProvider>
+              <AuthProvider>
+                <RouterProvider
+                  router={router}
+                  fallbackElement={<LoadingScreen />}
+                />
+                <PWAInstallPrompt />
+              </AuthProvider>
+            </CartProvider>
           </ToastProvider>
         </ThemeProvider>
       </PersistQueryClientProvider>
