@@ -235,6 +235,22 @@ export function TeacherCourseEditorPage() {
       }
 
       setCourse(data);
+      let promoVideoCoverFileId = "";
+      if (data.promoVideoFileId) {
+        try {
+          // Find the lesson with this video to get its cover
+          const lessons = await LessonService.listByCourse(courseId);
+          const promoLesson = lessons.find(
+            (l) => l.videoFileId === data.promoVideoFileId,
+          );
+          if (promoLesson?.videoCoverFileId) {
+            promoVideoCoverFileId = promoLesson.videoCoverFileId;
+          }
+        } catch (e) {
+          console.warn("Failed to resolve promo video cover", e);
+        }
+      }
+
       const loadedData = {
         title: data.title,
         subtitle: data.subtitle || "",
@@ -247,7 +263,7 @@ export function TeacherCourseEditorPage() {
         coverFileId: data.coverFileId || "",
         bannerFileId: data.bannerFileId || "",
         promoVideoFileId: data.promoVideoFileId || "",
-        promoVideoCoverFileId: data.promoVideoCoverFileId || "",
+        promoVideoCoverFileId: promoVideoCoverFileId, // Populated from lesson
       };
       setFormData(loadedData);
       setInitialFormData(loadedData);
@@ -276,9 +292,12 @@ export function TeacherCourseEditorPage() {
     setErrors({});
     setSaving(true);
     try {
+      // Sanitize data: Remove promoVideoCoverFileId strictly for UI state
+      const { promoVideoCoverFileId, ...dataToSave } = formData;
+
       if (isNew) {
         const newCourse = await TeacherCoursesService.create({
-          ...formData,
+          ...dataToSave,
           teacherId: auth.user.$id,
         });
         navigate(`/app/teach/courses/${newCourse.$id}`, { replace: true });
@@ -286,7 +305,10 @@ export function TeacherCourseEditorPage() {
         setInitialFormData(formData);
         showToast(t("teacher.courseCreated"), "success");
       } else {
-        const updated = await TeacherCoursesService.update(courseId, formData);
+        const updated = await TeacherCoursesService.update(
+          courseId,
+          dataToSave,
+        );
         setCourse(updated);
         setInitialFormData(formData);
         showToast(t("teacher.courseUpdated"), "success");

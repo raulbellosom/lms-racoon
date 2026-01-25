@@ -65,6 +65,26 @@ export function CourseDetailView() {
       setCourse({ ...courseData, content });
       setStats(statsData);
 
+      // Fetch promo video cover if applicable
+      if (courseData.promoVideoFileId) {
+        try {
+          const promoLesson = lessonsData.find(
+            (l) => l.videoFileId === courseData.promoVideoFileId,
+          );
+          if (promoLesson?.videoCoverFileId) {
+            courseData.promoVideoCoverFileId = promoLesson.videoCoverFileId;
+          }
+        } catch (e) {
+          console.warn("Failed to resolve promo video cover", e);
+        }
+      }
+      // Re-set course with promo cover
+      setCourse({
+        ...courseData,
+        content,
+        promoVideoCoverFileId: courseData.promoVideoCoverFileId,
+      });
+
       // Fetch category if exists
       if (courseData.categoryId) {
         try {
@@ -287,7 +307,13 @@ export function CourseDetailView() {
                       src={activeMediaUrl}
                       controls
                       className="w-full rounded-xl shadow-2xl"
-                      poster={coverUrl || undefined}
+                      poster={
+                        course.promoVideoCoverFileId
+                          ? FileService.getCourseCoverUrl(
+                              course.promoVideoCoverFileId,
+                            )
+                          : coverUrl || undefined
+                      }
                     />
                   ) : (
                     <img
