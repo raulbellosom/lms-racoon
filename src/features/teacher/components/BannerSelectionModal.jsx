@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  X,
   Upload,
   Video,
   Image as ImageIcon,
@@ -10,7 +9,6 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import { Modal } from "../../../shared/ui/Modal";
-import { Button } from "../../../shared/ui/Button";
 import { FileService } from "../../../shared/data/files";
 import { LessonService } from "../../../shared/data/lessons-teacher";
 import { DEFAULT_BANNERS } from "../../../shared/assets/banners";
@@ -34,7 +32,7 @@ export function BannerSelectionModal({
     if (activeTab === "video" && courseId && lessons.length === 0) {
       loadLessons();
     }
-  }, [activeTab, courseId]);
+  }, [activeTab, courseId, lessons.length]);
 
   const loadLessons = async () => {
     setLoadingLessons(true);
@@ -87,7 +85,7 @@ export function BannerSelectionModal({
       }
       className="max-w-3xl"
     >
-      <div className="flex flex-col gap-6 mt-4">
+      <div className="mt-4 flex flex-col gap-6">
         {/* Tabs Navigation */}
         <div className="flex border-b border-[rgb(var(--border-base))]">
           <button
@@ -135,21 +133,21 @@ export function BannerSelectionModal({
         <div className="min-h-[300px]">
           {/* UPLOAD TAB */}
           {activeTab === "upload" && (
-            <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-[rgb(var(--border-base))] rounded-xl bg-[rgb(var(--bg-muted))] hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors relative">
+            <div className="relative flex h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] transition-colors hover:bg-[rgb(var(--bg-muted))/0.8]">
               <input
                 type="file"
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 accept="image/*"
                 onChange={handleFileUpload}
                 disabled={uploading}
               />
-              <div className="text-center p-6 pointer-events-none">
+              <div className="pointer-events-none p-6 text-center">
                 {uploading ? (
-                  <div className="animate-spin h-8 w-8 border-2 border-[rgb(var(--brand-primary))] border-t-transparent rounded-full mx-auto mb-4" />
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
                 ) : (
-                  <ImageIcon className="h-12 w-12 mx-auto mb-4 text-[rgb(var(--text-muted))]" />
+                  <ImageIcon className="mx-auto mb-4 h-12 w-12 text-[rgb(var(--text-muted))]" />
                 )}
-                <h3 className="text-lg font-medium mb-1">
+                <h3 className="mb-1 text-lg font-medium">
                   {uploading
                     ? t("common.uploading")
                     : t("teacher.banner.dragDrop") ||
@@ -171,16 +169,16 @@ export function BannerSelectionModal({
               </p>
               {loadingLessons ? (
                 <div className="flex justify-center p-8">
-                  <div className="animate-spin h-8 w-8 border-2 border-[rgb(var(--brand-primary))] border-t-transparent rounded-full" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
                 </div>
               ) : lessons.length === 0 ? (
-                <div className="text-center p-8 border rounded-xl bg-[rgb(var(--bg-muted))]">
-                  <Video className="h-10 w-10 mx-auto mb-3 text-[rgb(var(--text-muted))]" />
+                <div className="rounded-xl border bg-[rgb(var(--bg-muted))] p-8 text-center">
+                  <Video className="mx-auto mb-3 h-10 w-10 text-[rgb(var(--text-muted))]" />
                   <p className="font-medium">
                     {t("teacher.banner.noVideos") ||
                       "No hay lecciones con video en este curso."}
                   </p>
-                  <p className="text-sm text-[rgb(var(--text-secondary))] mt-1">
+                  <p className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
                     Sube videos en la pestaña de Contenido primero.
                   </p>
                 </div>
@@ -190,7 +188,7 @@ export function BannerSelectionModal({
                     <div
                       key={lesson.$id}
                       className={`
-                                    relative p-3 rounded-xl border cursor-pointer transition-all hover:shadow-md
+                                    relative cursor-pointer rounded-xl border p-3 transition-all hover:shadow-md
                                     ${
                                       currentVideoId === lesson.videoFileId
                                         ? "border-[rgb(var(--brand-primary))] bg-[rgb(var(--brand-primary))/0.05]"
@@ -206,19 +204,19 @@ export function BannerSelectionModal({
                       }}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="h-16 w-24 bg-black/10 rounded-lg flex items-center justify-center shrink-0">
+                        <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg bg-black/10">
                           <PlayCircle className="h-8 w-8 text-[rgb(var(--text-muted))]" />
                         </div>
                         <div className="min-w-0 pr-6">
-                          <h4 className="font-medium text-sm line-clamp-2">
+                          <h4 className="line-clamp-2 text-sm font-medium">
                             {lesson.title}
                           </h4>
-                          <span className="text-xs text-[rgb(var(--text-secondary))] block mt-1">
+                          <span className="mt-1 block text-xs text-[rgb(var(--text-secondary))]">
                             {t("common.lesson")}
                           </span>
                         </div>
                         {currentVideoId === lesson.videoFileId && (
-                          <div className="absolute top-3 right-3 h-5 w-5 bg-[rgb(var(--brand-primary))] rounded-full flex items-center justify-center">
+                          <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))]">
                             <Check className="h-3 w-3 text-white" />
                           </div>
                         )}
@@ -232,12 +230,12 @@ export function BannerSelectionModal({
 
           {/* PATTERNS TAB */}
           {activeTab === "patterns" && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {DEFAULT_BANNERS.map((banner) => (
                 <div
                   key={banner.id}
                   className={`
-                                relative aspect-video rounded-xl cursor-pointer overflow-hidden border-2 transition-all
+                                relative aspect-video cursor-pointer overflow-hidden rounded-xl border-2 transition-all
                                 ${
                                   currentBannerId === banner.id
                                     ? "border-[rgb(var(--brand-primary))]"
@@ -252,12 +250,12 @@ export function BannerSelectionModal({
                   <img
                     src={banner.url}
                     alt={banner.label}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/5 hover:bg-transparent transition-colors" />
+                  <div className="absolute inset-0 bg-black/5 transition-colors hover:bg-transparent" />
 
                   {currentBannerId === banner.id && (
-                    <div className="absolute top-2 right-2 h-6 w-6 bg-[rgb(var(--brand-primary))] rounded-full flex items-center justify-center shadow-sm">
+                    <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] shadow-sm">
                       <Check className="h-4 w-4 text-white" />
                     </div>
                   )}
