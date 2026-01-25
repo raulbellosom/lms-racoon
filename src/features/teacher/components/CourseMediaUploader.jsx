@@ -1,8 +1,13 @@
-import React from "react";
-import { useTranslation } from "react-i18next";
-import { Image as ImageIcon, X, Upload } from "lucide-react";
-import { Card } from "../../../shared/ui/Card";
+// ... imports
+import { BannerSelectionModal } from "./BannerSelectionModal";
 import { FileService } from "../../../shared/data/files";
+import { getBannerById } from "../../../shared/assets/banners";
+import {
+  Video as VideoIcon,
+  LayoutTemplate,
+  PlayCircle,
+  Trash2,
+} from "lucide-react";
 
 /**
  * CourseMediaUploader - Cover image and promo video uploader
@@ -10,17 +15,20 @@ import { FileService } from "../../../shared/data/files";
  * @param {Function} setFormData - State setter function
  * @param {boolean} uploading - Upload in progress state
  * @param {Function} setUploading - Set upload state
+ * @param {string} courseId - Course ID for fetching lessons
  */
 export function CourseMediaUploader({
   formData,
   setFormData,
   uploading = false,
   setUploading,
+  courseId,
 }) {
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = React.useState(null);
+  const [bannerModalOpen, setBannerModalOpen] = React.useState(false);
 
-  // Generate preview URL if cover exists
+  // Generate preview URL if cover exists (existing code)
   React.useEffect(() => {
     if (formData.coverFileId) {
       const url = FileService.getCourseCoverUrl(formData.coverFileId);
@@ -30,7 +38,45 @@ export function CourseMediaUploader({
     }
   }, [formData.coverFileId]);
 
+  // Helper to get banner preview
+  const getBannerPreview = () => {
+    if (formData.promoVideoFileId) {
+      // If video is selected, show generic video placeholder or thumbnail if possible
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center bg-black/5 text-[rgb(var(--text-muted))]">
+          <PlayCircle className="h-10 w-10 mb-2" />
+          <span className="text-xs font-medium">Video Seleccionado</span>
+        </div>
+      );
+    }
+    if (formData.bannerFileId) {
+      // Check if it's a pattern
+      const pattern = getBannerById(formData.bannerFileId);
+      if (pattern) {
+        return (
+          <img
+            src={pattern.url}
+            alt={pattern.name}
+            className="h-full w-full object-cover"
+          />
+        );
+      }
+
+      // Otherwise assume it's a file ID
+      return (
+        <img
+          src={FileService.getCourseCoverUrl(formData.bannerFileId)}
+          alt="Banner"
+          className="h-full w-full object-cover"
+        />
+      );
+    }
+    return null;
+  };
+
+  // ... existing handleCoverUpload ...
   const handleCoverUpload = async (e) => {
+    // ... (keep existing implementation)
     const file = e.target.files[0];
     if (!file) return;
 
@@ -94,6 +140,7 @@ export function CourseMediaUploader({
     }
   };
 
+  // ... existing handleRemoveCover ...
   const handleRemoveCover = async () => {
     if (formData.coverFileId) {
       try {
@@ -106,73 +153,149 @@ export function CourseMediaUploader({
     setPreviewUrl(null);
   };
 
-  return (
-    <Card className="p-4 sm:p-6">
-      <h3 className="mb-4 text-lg font-bold">{t("teacher.coverImage")}</h3>
+  const handleBannerSelect = (selection) => {
+    if (selection.type === "video") {
+      setFormData((prev) => ({
+        ...prev,
+        promoVideoFileId: selection.value,
+        bannerFileId: "", // Clear banner if video is selected? Or keep both? Plan said prioritize Video.
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        bannerFileId: selection.value,
+        promoVideoFileId: "", // Clear video if banner is selected
+      }));
+    }
+  };
 
-      <div
-        className="relative flex aspect-video w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors overflow-hidden"
-        onClick={() =>
-          !uploading && document.getElementById("cover-upload").click()
-        }
-      >
-        {previewUrl ? (
-          <>
-            <img
-              src={previewUrl}
-              alt="Cover preview"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-              <span className="text-white text-sm font-medium flex items-center gap-2">
-                <Upload className="h-4 w-4" />
-                {t("teacher.form.uploadCover")}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRemoveCover();
-              }}
-              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </>
-        ) : (
-          <div className="text-[rgb(var(--text-muted))]">
-            {uploading ? (
-              <div className="flex flex-col items-center gap-2">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
-                <span className="text-xs font-medium">
-                  {t("common.loading")}
-                </span>
-              </div>
-            ) : (
-              <>
-                <ImageIcon className="mx-auto h-8 w-8 mb-2" />
-                <span className="text-xs font-medium">
+  const handleRemoveBanner = () => {
+    setFormData((prev) => ({
+      ...prev,
+      bannerFileId: "",
+      promoVideoFileId: "",
+    }));
+  };
+
+  return (
+    <Card className="p-4 sm:p-6 space-y-6">
+      {/* Cover Image Section */}
+      <div>
+        <h3 className="mb-4 text-lg font-bold">{t("teacher.coverImage")}</h3>
+        <div
+          className="relative flex aspect-video w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors overflow-hidden"
+          onClick={() =>
+            !uploading && document.getElementById("cover-upload").click()
+          }
+        >
+          {previewUrl ? (
+            <>
+              <img
+                src={previewUrl}
+                alt="Cover preview"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="text-white text-sm font-medium flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
                   {t("teacher.form.uploadCover")}
                 </span>
-              </>
-            )}
-          </div>
-        )}
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveCover();
+                }}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <div className="text-[rgb(var(--text-muted))]">
+              {uploading ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
+                  <span className="text-xs font-medium">
+                    {t("common.loading")}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <ImageIcon className="mx-auto h-8 w-8 mb-2" />
+                  <span className="text-xs font-medium">
+                    {t("teacher.form.uploadCover")}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
 
-        <input
-          id="cover-upload"
-          type="file"
-          className="hidden"
-          accept="image/*"
-          onChange={handleCoverUpload}
-          disabled={uploading}
-        />
+          <input
+            id="cover-upload"
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={handleCoverUpload}
+            disabled={uploading}
+          />
+        </div>
+        <p className="mt-2 text-[10px] text-[rgb(var(--text-secondary))] text-center">
+          {t("teacher.form.coverRecommended")}
+        </p>
       </div>
 
-      <p className="mt-2 text-[10px] text-[rgb(var(--text-secondary))] text-center">
-        {t("teacher.form.coverRecommended")}
-      </p>
+      {/* Banner / Trailer Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold">Banner / Trailer</h3>
+          {(formData.bannerFileId || formData.promoVideoFileId) && (
+            <button
+              onClick={handleRemoveBanner}
+              className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
+            >
+              <Trash2 className="h-3 w-3" /> Eliminar
+            </button>
+          )}
+        </div>
+
+        <div
+          className="relative flex aspect-3/1 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors overflow-hidden"
+          onClick={() => setBannerModalOpen(true)}
+        >
+          {formData.bannerFileId || formData.promoVideoFileId ? (
+            <>
+              {getBannerPreview()}
+              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="text-white text-sm font-medium flex items-center gap-2">
+                  <LayoutTemplate className="h-4 w-4" />
+                  Cambiar Banner/Trailer
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="text-[rgb(var(--text-muted))] flex flex-col items-center">
+              <LayoutTemplate className="h-8 w-8 mb-2" />
+              <span className="text-xs font-medium">
+                Seleccionar Banner o Trailer
+              </span>
+              <span className="text-[10px] text-[rgb(var(--text-secondary))] mt-1">
+                Imagen, Patrón o Video del curso
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <BannerSelectionModal
+        open={bannerModalOpen}
+        onOpenChange={setBannerModalOpen}
+        onSelect={handleBannerSelect}
+        courseId={courseId}
+        currentBannerId={formData.bannerFileId}
+        currentVideoId={formData.promoVideoFileId}
+      />
     </Card>
   );
 }

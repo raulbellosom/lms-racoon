@@ -24,7 +24,7 @@ import { LessonService } from "../../../shared/data/lessons-teacher";
 import { StatsService } from "../../../shared/data/stats";
 import { FileService } from "../../../shared/data/files";
 import { useAuth } from "../../../app/providers/AuthProvider";
-import { getRandomBanner } from "../../../shared/assets/banners";
+import { getRandomBanner, getBannerById } from "../../../shared/assets/banners";
 
 export function CourseDetailView() {
   const { id } = useParams();
@@ -116,12 +116,15 @@ export function CourseDetailView() {
     : null;
 
   // Banner: use specific banner, or fallback to cover, or fallback to SVG
-  const bannerUrl = course.bannerFileId
-    ? FileService.getFileViewUrl(
-        "courseCovers", // Assuming same bucket for banners for now, or could be separate
-        course.bannerFileId,
-      )
-    : null;
+  let bannerUrl = null;
+  if (course.bannerFileId) {
+    const pattern = getBannerById(course.bannerFileId);
+    if (pattern) {
+      bannerUrl = pattern.url;
+    } else {
+      bannerUrl = FileService.getCourseCoverUrl(course.bannerFileId);
+    }
+  }
 
   // If no banner, use cover as background, then SVG
   const backgroundUrl = bannerUrl || coverUrl;

@@ -25,14 +25,22 @@ export const DEFAULT_BANNERS = [
     svg: `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
 <defs>
 <pattern id="dotPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-<circle cx="2" cy="2" r="1" fill="#ffffff" opacity="0.2"/>
+<circle cx="2" cy="2" r="1" fill="#ffffff" opacity="0.2" />
 </pattern>
 </defs>
 <rect width="100%" height="100%" fill="url(#dotPattern)"/>
 </svg>`,
   },
-];
+].map((b) => ({
+  ...b,
+  // Create a data URI for the SVG to be used in img tags
+  url: `data:image/svg+xml;base64,${btoa(b.svg)}`,
+}));
 
 export const getRandomBanner = () => {
   return DEFAULT_BANNERS[Math.floor(Math.random() * DEFAULT_BANNERS.length)];
+};
+
+export const getBannerById = (id) => {
+  return DEFAULT_BANNERS.find((b) => b.id === id);
 };

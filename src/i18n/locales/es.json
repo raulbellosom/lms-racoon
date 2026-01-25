@@ -387,7 +387,18 @@
       "published": "Publicado",
       "draft": "Borrador"
     },
+    "banner": {
+      "selectModalTitle": "Seleccionar Banner / Trailer",
+      "uploadTab": "Subir Imagen",
+      "videoTab": "Video del Curso",
+      "patternsTab": "Patrones",
+      "dragDrop": "Click o arrastra para subir",
+      "videoDescription": "Selecciona un video de tus lecciones para usar como trailer",
+      "noVideos": "No hay lecciones con video disponible"
+    },
     "errors": {
+      "invalidFileType": "Tipo de archivo no válido",
+      "fileTooLarge": "El archivo es demasiado grande (max 8MB)",
       "loadFailed": "Error al cargar",
       "saveFailed": "Error al guardar. Revisa la consola.",
       "deleteFailed": "Error al eliminar",
