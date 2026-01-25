@@ -24,6 +24,7 @@ export function SectionCard({
   onAddLesson,
   onEditLesson,
   onDeleteLesson,
+  ...props
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = React.useState(true);
@@ -37,7 +38,7 @@ export function SectionCard({
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           {/* Expand/collapse icon */}
-          <button className="p-1 rounded hover:bg-[rgb(var(--bg-surface))] transition-colors flex-shrink-0">
+          <button className="p-1 rounded hover:bg-[rgb(var(--bg-surface))] transition-colors shrink-0">
             {expanded ? (
               <ChevronDown className="h-4 w-4 text-[rgb(var(--text-secondary))]" />
             ) : (
@@ -46,7 +47,7 @@ export function SectionCard({
           </button>
 
           {/* Section number */}
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgb(var(--bg-surface))] text-xs font-bold text-[rgb(var(--text-secondary))] flex-shrink-0">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgb(var(--bg-surface))] text-xs font-bold text-[rgb(var(--text-secondary))] shrink-0">
             {index + 1}
           </div>
 
@@ -56,14 +57,14 @@ export function SectionCard({
           </span>
 
           {/* Lessons count badge */}
-          <span className="text-xs text-[rgb(var(--text-secondary))] flex-shrink-0">
+          <span className="text-xs text-[rgb(var(--text-secondary))] shrink-0">
             ({lessons.length} {t("courses.lessons")})
           </span>
         </div>
 
         {/* Actions */}
         <div
-          className="flex items-center gap-1 flex-shrink-0"
+          className="flex items-center gap-1 shrink-0"
           onClick={(e) => e.stopPropagation()}
         >
           <Button
@@ -98,6 +99,7 @@ export function SectionCard({
                 lesson={lesson}
                 onEdit={onEditLesson}
                 onDelete={onDeleteLesson}
+                onPreview={props.onPreviewLesson}
               />
             ))}
           </div>

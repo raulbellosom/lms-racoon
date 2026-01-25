@@ -1,5 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { useAuth } from "../../../app/providers/AuthProvider";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -30,15 +32,38 @@ export function CatalogView() {
   const [totalCourses, setTotalCourses] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
 
-  // Filters state
-  const [filters, setFilters] = React.useState({
-    search: "",
-    categories: [],
-    // Levels logic would require backend support or client-side filter if small dataset
-    // For now we will keep the UI but maybe disable functionality or implementing client-side if needed.
-    // The user request focused on API integration.
-    levels: [],
-  });
+  // useSearchParams to sync filters with URL
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Parse filters from URL
+  const filters = React.useMemo(
+    () => ({
+      search: searchParams.get("search") || "",
+      categories: searchParams.get("categories")
+        ? searchParams.get("categories").split(",")
+        : [],
+      levels: searchParams.get("levels")
+        ? searchParams.get("levels").split(",")
+        : [],
+      myCoursesOnly: searchParams.get("myCourses") === "true",
+    }),
+    [searchParams],
+  );
+
+  const updateFilters = (newFilters) => {
+    const params = new URLSearchParams();
+    if (newFilters.search) params.set("search", newFilters.search);
+    if (newFilters.categories.length > 0)
+      params.set("categories", newFilters.categories.join(","));
+    if (newFilters.levels.length > 0)
+      params.set("levels", newFilters.levels.join(","));
+    if (newFilters.myCoursesOnly) params.set("myCourses", "true");
+
+    setSearchParams(params);
+    setPage(1); // Reset page on filter change
+  };
+
+  const { auth } = useAuth();
 
   const [page, setPage] = React.useState(1);
   const LIMIT = 12;
@@ -62,30 +87,39 @@ export function CatalogView() {
       setLoading(true);
       try {
         // Prepare API params
-        // Note: Our modified service supports single categoryId, but UI supports multiple.
-        // We will fetch by the first category selected for now, or consider strict filtering.
-        // If we want multiple categories OR logic, we need advanced Appwrite queries or multiple requests.
-        // For simplicity and matching typical patterns, let's filter by the first selected category if any.
         const categoryId =
           filters.categories.length > 0 ? filters.categories[0] : "";
 
-        // Debounce search could be added here, but relying on effect for now
+        let teacherId = "";
+        let excludeTeacherId = "";
+
+        // If user is teacher/admin:
+        // - if myCoursesOnly is TRUE -> Show ONLY my courses (teacherId = me)
+        // - if myCoursesOnly is FALSE -> Show all EXCEPT my courses (excludeTeacherId = me)
+        // Wait for auth to be ready
+        if (
+          auth.user &&
+          (auth.profile?.role === "teacher" || auth.profile?.role === "admin")
+        ) {
+          if (filters.myCoursesOnly) {
+            teacherId = auth.user.$id;
+          } else {
+            excludeTeacherId = auth.user.$id;
+          }
+        }
+
         const { documents, total } = await listPublishedCourses({
           q: filters.search,
           categoryId,
           page,
           limit: LIMIT,
+          teacherId,
+          excludeTeacherId,
         });
 
-        // If client-side level filtering is desired, we could do it here,
-        // but pagination complicates it. Ideally levels are a query param.
-        // Checking if we should filter client side for levels:
+        // Client-side level filtering
         let displayDocs = documents;
-        if (filters.levels.length > 0) {
-          displayDocs = documents.filter((doc) =>
-            filters.levels.includes(doc.level),
-          );
-        }
+        // Logic for client-side filtering if needed
 
         setCourses(displayDocs);
         setTotalCourses(total);
@@ -99,12 +133,7 @@ export function CatalogView() {
     // Debounce search slightly
     const timeoutId = setTimeout(fetchCourses, 300);
     return () => clearTimeout(timeoutId);
-  }, [filters.search, filters.categories, filters.levels, page]);
-
-  // Reset page on filter change
-  React.useEffect(() => {
-    setPage(1);
-  }, [filters.search, filters.categories, filters.levels]);
+  }, [filters, page, auth.user]); // Added auth.user dependency to re-run when auth loads
 
   const totalPages = Math.ceil(totalCourses / LIMIT);
 
@@ -140,7 +169,7 @@ export function CatalogView() {
           <aside className="hidden w-64 shrink-0 lg:block">
             <CatalogFilters
               filters={filters}
-              onChange={setFilters}
+              onChange={updateFilters}
               categories={categories}
             />
           </aside>
@@ -159,7 +188,7 @@ export function CatalogView() {
                   )}
                   value={filters.search}
                   onChange={(e) =>
-                    setFilters({ ...filters, search: e.target.value })
+                    updateFilters({ ...filters, search: e.target.value })
                   }
                   className="w-full rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] py-3 pl-10 pr-4 outline-none transition focus:border-[rgb(var(--brand-primary))] focus:ring-2 focus:ring-[rgb(var(--brand-primary))/0.2]"
                 />
@@ -231,7 +260,12 @@ export function CatalogView() {
                       variant="ghost"
                       className="mt-4"
                       onClick={() =>
-                        setFilters({ search: "", categories: [], levels: [] })
+                        updateFilters({
+                          search: "",
+                          categories: [],
+                          levels: [],
+                          myCoursesOnly: false,
+                        })
                       }
                     >
                       Limpiar filtros
@@ -253,7 +287,7 @@ export function CatalogView() {
         <div className="p-4">
           <CatalogFilters
             filters={filters}
-            onChange={setFilters}
+            onChange={updateFilters}
             categories={categories}
           />
           <div className="mt-8">

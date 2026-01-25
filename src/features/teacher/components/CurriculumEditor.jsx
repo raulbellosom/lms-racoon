@@ -25,6 +25,7 @@ export function CurriculumEditor({
   onAddLesson,
   onEditLesson,
   onDeleteLesson,
+  ...props
 }) {
   const { t } = useTranslation();
 
@@ -56,6 +57,7 @@ export function CurriculumEditor({
               onAddLesson={onAddLesson}
               onEditLesson={onEditLesson}
               onDeleteLesson={onDeleteLesson}
+              onPreviewLesson={props.onPreviewLesson}
             />
           ))}
         </div>

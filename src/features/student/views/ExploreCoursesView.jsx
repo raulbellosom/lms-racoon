@@ -1,5 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { useAuth } from "../../../app/providers/AuthProvider";
 import {
   Search,
   Filter,
@@ -25,12 +27,38 @@ export function ExploreCoursesView() {
   const [totalCourses, setTotalCourses] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
 
-  // Filters state
-  const [filters, setFilters] = React.useState({
-    search: "",
-    categories: [],
-    levels: [],
-  });
+  // useSearchParams to sync filters with URL
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Parse filters from URL
+  const filters = React.useMemo(
+    () => ({
+      search: searchParams.get("search") || "",
+      categories: searchParams.get("categories")
+        ? searchParams.get("categories").split(",")
+        : [],
+      levels: searchParams.get("levels")
+        ? searchParams.get("levels").split(",")
+        : [],
+      myCoursesOnly: searchParams.get("myCourses") === "true",
+    }),
+    [searchParams],
+  );
+
+  const updateFilters = (newFilters) => {
+    const params = new URLSearchParams();
+    if (newFilters.search) params.set("search", newFilters.search);
+    if (newFilters.categories.length > 0)
+      params.set("categories", newFilters.categories.join(","));
+    if (newFilters.levels.length > 0)
+      params.set("levels", newFilters.levels.join(","));
+    if (newFilters.myCoursesOnly) params.set("myCourses", "true");
+
+    setSearchParams(params);
+    setPage(1); // Reset page on filter change
+  };
+
+  const { auth } = useAuth();
 
   const [page, setPage] = React.useState(1);
   const LIMIT = 12;
@@ -56,20 +84,35 @@ export function ExploreCoursesView() {
         const categoryId =
           filters.categories.length > 0 ? filters.categories[0] : "";
 
+        let teacherId = "";
+        let excludeTeacherId = "";
+
+        // If user is teacher/admin:
+        // - if myCoursesOnly is TRUE -> Show ONLY my courses (teacherId = me)
+        // - if myCoursesOnly is FALSE -> Show all EXCEPT my courses (excludeTeacherId = me)
+        if (
+          auth.user &&
+          (auth.profile?.role === "teacher" || auth.profile?.role === "admin")
+        ) {
+          if (filters.myCoursesOnly) {
+            teacherId = auth.user.$id;
+          } else {
+            excludeTeacherId = auth.user.$id;
+          }
+        }
+
         const { documents, total } = await listPublishedCourses({
           q: filters.search,
           categoryId,
           page,
           limit: LIMIT,
+          teacherId,
+          excludeTeacherId,
         });
 
         // Client-side level filtering
         let displayDocs = documents;
-        if (filters.levels.length > 0) {
-          displayDocs = documents.filter((doc) =>
-            filters.levels.includes(doc.level),
-          );
-        }
+        // Logic for client-side filtering if needed
 
         setCourses(displayDocs);
         setTotalCourses(total);
@@ -82,12 +125,12 @@ export function ExploreCoursesView() {
 
     const timeoutId = setTimeout(fetchCourses, 300);
     return () => clearTimeout(timeoutId);
-  }, [filters.search, filters.categories, filters.levels, page]);
+  }, [filters, page, auth.user]);
 
   // Reset page
   React.useEffect(() => {
     setPage(1);
-  }, [filters.search, filters.categories, filters.levels]);
+  }, [filters, auth.user]);
 
   const totalPages = Math.ceil(totalCourses / LIMIT);
 
@@ -107,7 +150,7 @@ export function ExploreCoursesView() {
         <aside className="hidden w-64 shrink-0 lg:block">
           <CatalogFilters
             filters={filters}
-            onChange={setFilters}
+            onChange={updateFilters}
             categories={categories}
           />
         </aside>
@@ -123,7 +166,7 @@ export function ExploreCoursesView() {
                 placeholder={t("catalog.searchPlaceholder", "Buscar cursos...")}
                 value={filters.search}
                 onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
+                  updateFilters({ ...filters, search: e.target.value })
                 }
                 className="w-full rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] py-3 pl-10 pr-4 outline-none transition focus:border-[rgb(var(--brand-primary))] focus:ring-2 focus:ring-[rgb(var(--brand-primary))/0.2]"
               />
@@ -195,7 +238,12 @@ export function ExploreCoursesView() {
                     variant="ghost"
                     className="mt-4"
                     onClick={() =>
-                      setFilters({ search: "", categories: [], levels: [] })
+                      updateFilters({
+                        search: "",
+                        categories: [],
+                        levels: [],
+                        myCoursesOnly: false,
+                      })
                     }
                   >
                     Limpiar filtros
@@ -216,7 +264,7 @@ export function ExploreCoursesView() {
         <div className="p-4">
           <CatalogFilters
             filters={filters}
-            onChange={setFilters}
+            onChange={updateFilters}
             categories={categories}
           />
           <div className="mt-8">

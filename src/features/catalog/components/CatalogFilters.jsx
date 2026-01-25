@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../../app/providers/AuthProvider";
 import { Search } from "lucide-react";
 
 export function CatalogFilters({
@@ -9,6 +10,10 @@ export function CatalogFilters({
   className = "",
 }) {
   const { t } = useTranslation();
+  const { auth } = useAuth();
+  const isTeacherOrAdmin =
+    auth.user &&
+    (auth.profile?.role === "teacher" || auth.profile?.role === "admin");
 
   const handleCategoryChange = (catId) => {
     const newCategories = filters.categories.includes(catId)
@@ -127,12 +132,29 @@ export function CatalogFilters({
                 onChange={() => handleLevelChange(level)}
               />
               <span className="text-sm font-medium text-[rgb(var(--text-secondary))] group-hover:text-[rgb(var(--text-primary))] transition-colors">
-                {t(`levels.${level}`, level)}
+                {t(`courses.levels.${level}`, level)}
               </span>
             </label>
           ))}
         </div>
       </div>
+
+      {/* Teacher Filter */}
+      {isTeacherOrAdmin && (
+        <label className="flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300 text-[rgb(var(--brand-primary))] focus:ring-[rgb(var(--brand-primary))]"
+            checked={filters.myCoursesOnly || false}
+            onChange={(e) =>
+              onChange({ ...filters, myCoursesOnly: e.target.checked })
+            }
+          />
+          <span className="text-sm font-medium text-[rgb(var(--text-primary))]">
+            {t("catalog.myCourses", "Ver mis cursos")}
+          </span>
+        </label>
+      )}
     </div>
   );
 }

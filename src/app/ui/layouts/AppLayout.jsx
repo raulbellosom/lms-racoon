@@ -413,6 +413,7 @@ export function AppLayout() {
           >
             <Menu className="h-5 w-5" />
           </button>
+
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center">
               <img
@@ -423,6 +424,8 @@ export function AppLayout() {
             </div>
             <span className="font-bold">Racoon LMS</span>
           </div>
+
+          <CartDropdown />
         </div>
       </header>
 
@@ -474,6 +477,13 @@ export function AppLayout() {
                 onClick={() => setDrawerOpen(false)}
               />
             ))}
+            <NavItem
+              to="/app/cart"
+              icon={ShoppingCart}
+              label={t("nav.cart", "Mi Carrito")}
+              badge={cartItems.length > 0 ? cartItems.length : undefined}
+              onClick={() => setDrawerOpen(false)}
+            />
           </div>
         </DrawerSection>
 

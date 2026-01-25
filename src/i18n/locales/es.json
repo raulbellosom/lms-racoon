@@ -526,5 +526,14 @@
     "errorTitle": "Error",
     "infoTitle": "Info",
     "warningTitle": "Atención"
+  },
+  "catalog": {
+    "myCourses": "Ver mis cursos",
+    "title": "Explora Cursos",
+    "subtitle": "Descubre contenido de clase mundial para llevar tu carrera al siguiente nivel.",
+    "searchPlaceholder": "Buscar cursos...",
+    "categories": "Categorías",
+    "levels": "Niveles",
+    "results": "Ver {{count}} resultados"
   }
 }

@@ -78,9 +78,7 @@ export function FeaturedCourses() {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
             >
-              <Link to={`/courses/${course.$id}`} className="block">
-                <CourseCard course={course} />
-              </Link>
+              <CourseCard course={course} />
             </motion.div>
           ))}
         </div>

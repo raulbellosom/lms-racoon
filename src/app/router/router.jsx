@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
 
       {
         element: <PublicLayout />,
-        // removed loader: requireGuestLoader from here to allow /cart and /catalog for auth users
+        loader: requireGuestLoader,
         children: [
           { index: true, element: <LandingView /> },
           { path: "/catalog", element: <CatalogView /> },
@@ -54,12 +54,10 @@ export const router = createBrowserRouter([
           {
             path: "/auth/login",
             element: <LoginView />,
-            loader: requireGuestLoader,
           },
           {
             path: "/auth/register",
             element: <RegisterView />,
-            loader: requireGuestLoader,
           },
           { path: "/cart", element: <CartPage /> },
         ],

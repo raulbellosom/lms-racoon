@@ -8,8 +8,10 @@ import {
   X,
   GripVertical,
   Edit2,
+  File,
 } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
+import { FileService } from "../../../shared/data/files";
 
 /**
  * Get icon for lesson type
@@ -54,10 +56,30 @@ const getLessonTypeClasses = (kind) => {
  * @param {Function} onDelete - Delete callback
  * @param {boolean} isDragging - Is currently being dragged
  */
-export function LessonItem({ lesson, onEdit, onDelete, isDragging = false }) {
+export function LessonItem({
+  lesson,
+  onEdit,
+  onDelete,
+  onPreview,
+  isDragging = false,
+}) {
   const { t } = useTranslation();
   const Icon = getLessonIcon(lesson.kind);
   const colorClasses = getLessonTypeClasses(lesson.kind);
+
+  // Check for attachments (new array format or old JSON)
+  const hasAttachments = React.useMemo(() => {
+    if (lesson.attachments && lesson.attachments.length > 0) return true;
+    if (lesson.attachmentsJson) {
+      try {
+        const parsed = JSON.parse(lesson.attachmentsJson);
+        return Array.isArray(parsed) && parsed.length > 0;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }, [lesson]);
 
   const formatDuration = (seconds) => {
     if (!seconds) return null;
@@ -65,6 +87,18 @@ export function LessonItem({ lesson, onEdit, onDelete, isDragging = false }) {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
+
+  // Get thumbnail URL if available
+  const coverUrl = React.useMemo(() => {
+    if (lesson.videoCoverFileId) {
+      return FileService.getCourseCoverUrl(lesson.videoCoverFileId, {
+        width: 100,
+        height: 100,
+        quality: 60,
+      }); // Using course cover bucket for now
+    }
+    return null;
+  }, [lesson.videoCoverFileId]);
 
   return (
     <div
@@ -78,26 +112,58 @@ export function LessonItem({ lesson, onEdit, onDelete, isDragging = false }) {
           <GripVertical className="h-4 w-4 text-[rgb(var(--text-muted))]" />
         </div>
 
-        {/* Type icon */}
-        <div className={`p-1.5 rounded-md flex-shrink-0 ${colorClasses}`}>
-          <Icon className="h-4 w-4" />
-        </div>
+        {/* Thumbnail or Type icon */}
+        {coverUrl ? (
+          <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded-md bg-black">
+            <img
+              src={coverUrl}
+              alt={lesson.title}
+              className="h-full w-full object-cover opacity-80"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Icon className="h-4 w-4 text-white drop-shadow-md" />
+            </div>
+          </div>
+        ) : (
+          <div className={`p-1.5 rounded-md shrink-0 ${colorClasses}`}>
+            <Icon className="h-4 w-4" />
+          </div>
+        )}
 
-        {/* Title */}
+        {/* Title & Meta */}
         <div className="min-w-0 flex-1">
-          <span className="text-sm font-medium truncate block">
-            {lesson.title}
-          </span>
-          {lesson.durationSec > 0 && (
-            <span className="text-xs text-[rgb(var(--text-secondary))]">
-              {formatDuration(lesson.durationSec)}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium truncate block">
+              {lesson.title}
             </span>
-          )}
+            {hasAttachments && (
+              <File
+                className="h-3.5 w-3.5 text-[rgb(var(--text-muted))]"
+                title={t("teacher.lesson.hasAttachments") || "Tiene adjuntos"}
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-[rgb(var(--text-secondary))]">
+            {lesson.durationSec > 0 && (
+              <span>{formatDuration(lesson.durationSec)}</span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+      <div className="flex items-center gap-1 shrink-0 ml-2">
+        {lesson.kind === "video" && lesson.videoFileId && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onPreview?.(lesson)}
+            className="h-8 w-8 text-[rgb(var(--brand-primary))]"
+            title={t("teacher.lesson.preview") || "Vista previa"}
+          >
+            <Video className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"

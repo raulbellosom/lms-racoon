@@ -19,6 +19,8 @@ import { SectionService } from "../../../shared/data/sections-teacher";
 import { LessonService } from "../../../shared/data/lessons-teacher";
 import { APPWRITE } from "../../../shared/appwrite/ids";
 import { db } from "../../../shared/appwrite/client";
+import { FileService } from "../../../shared/data/files";
+import { VideoPlayer } from "../../../shared/ui/VideoPlayer";
 import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
 import { Badge } from "../../../shared/ui/Badge";
@@ -111,6 +113,15 @@ export function TeacherCourseEditorPage() {
   const [lessonModalOpen, setLessonModalOpen] = React.useState(false);
   const [editingLesson, setEditingLesson] = React.useState(null);
   const [lessonSection, setLessonSection] = React.useState(null);
+
+  // Video Preview State
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const [previewLesson, setPreviewLesson] = React.useState(null);
+
+  const handlePreviewLesson = (lesson) => {
+    setPreviewLesson(lesson);
+    setPreviewOpen(true);
+  };
 
   // Form State
   const [formData, setFormData] = React.useState({
@@ -628,6 +639,7 @@ export function TeacherCourseEditorPage() {
             onAddLesson={handleAddLesson}
             onEditLesson={handleEditLesson}
             onDeleteLesson={handleDeleteLesson}
+            onPreviewLesson={handlePreviewLesson}
           />
         )}
 
@@ -742,6 +754,38 @@ export function TeacherCourseEditorPage() {
         courseId={courseId}
         onSave={handleSaveLesson}
       />
+
+      {/* Video Preview Modal */}
+      <Modal
+        open={previewOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setPreviewLesson(null);
+        }}
+        title={`Vista previa: ${previewLesson?.title || ""}`}
+        className="max-w-4xl sm:max-w-5xl lg:max-w-7xl"
+      >
+        <div className="aspect-video bg-black rounded-lg overflow-hidden">
+          {previewLesson?.videoFileId ? (
+            <VideoPlayer
+              src={FileService.getLessonVideoUrl(previewLesson.videoFileId)}
+              poster={
+                previewLesson.videoCoverFileId
+                  ? FileService.getCourseCoverUrl(
+                      previewLesson.videoCoverFileId,
+                      { width: 1280, height: 720 },
+                    )
+                  : null
+              }
+              className="w-full h-full"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-white">
+              No hay video disponible
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Confirmation Modal */}
       <ConfirmationModal

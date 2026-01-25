@@ -20,8 +20,8 @@ export function CartDropdown() {
   const total = getCartTotal();
 
   // Limited items for preview
-  const previewItems = cartItems.slice(0, 3);
-  const remainingCount = Math.max(0, cartItems.length - 3);
+  const previewItems = cartItems.slice(0, 5);
+  const remainingCount = Math.max(0, cartItems.length - 5);
 
   return (
     <Dropdown

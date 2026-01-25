@@ -47,12 +47,18 @@ export function CourseCard({ course, className = "" }) {
   // 2. Normalize Category Name
   const categoryName = typeof category === "object" ? category?.name : category;
 
+  // 3. Determine Route Path
+  const coursePath = auth.user ? `/app/courses/${$id}` : `/courses/${$id}`;
+
   return (
     <Card
       className={`group relative flex h-[340px] flex-col overflow-hidden border-0 shadow-lg transition-transform hover:-translate-y-1 hover:shadow-xl ${className}`}
     >
       {/* Background Image / Gradient */}
-      <div className="absolute inset-0 z-0 bg-[rgb(var(--bg-muted))]">
+      <Link
+        to={coursePath}
+        className="absolute inset-0 z-0 block bg-[rgb(var(--bg-muted))]"
+      >
         {displayCoverUrl ? (
           <img
             src={displayCoverUrl}
@@ -67,7 +73,7 @@ export function CourseCard({ course, className = "" }) {
         )}
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/60 to-transparent" />
-      </div>
+      </Link>
 
       {/* Badges Overlay */}
       <div className="absolute right-3 top-3 z-10 flex gap-2">
@@ -88,7 +94,7 @@ export function CourseCard({ course, className = "" }) {
         </div>
 
         <Link
-          to={`/courses/${$id}`}
+          to={coursePath}
           className="group-hover:text-indigo-300 transition-colors"
         >
           <h3
@@ -176,7 +182,7 @@ export function CourseCard({ course, className = "" }) {
                 </Button>
               )}
 
-              <Link to={`/courses/${$id}`}>
+              <Link to={coursePath}>
                 <Button
                   size="sm"
                   className="h-7 px-3 text-xs bg-indigo-600/90 text-white hover:bg-indigo-500 shadow-sm border border-transparent"

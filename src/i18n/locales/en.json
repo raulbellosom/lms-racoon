@@ -516,5 +516,14 @@
     "errorTitle": "Error",
     "infoTitle": "Info",
     "warningTitle": "Attention"
+  },
+  "catalog": {
+    "myCourses": "My Courses",
+    "title": "Explore Courses",
+    "subtitle": "Discover world-class content to take your career to the next level.",
+    "searchPlaceholder": "Search courses...",
+    "categories": "Categories",
+    "levels": "Levels",
+    "results": "View {{count}} results"
   }
 }

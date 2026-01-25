@@ -251,19 +251,19 @@ export function CourseDetailView() {
                     <Button
                       variant="outline"
                       onClick={async () => {
+                        const shareUrl = `${window.location.protocol}//${window.location.host}/courses/${course.$id}`;
+
                         const shareData = {
                           title: course.title,
                           text: course.subtitle,
-                          url: window.location.href,
+                          url: shareUrl,
                         };
 
                         try {
                           if (navigator.share) {
                             await navigator.share(shareData);
                           } else {
-                            await navigator.clipboard.writeText(
-                              window.location.href,
-                            );
+                            await navigator.clipboard.writeText(shareUrl);
                             console.log("Link copied to clipboard!");
                           }
                         } catch (err) {
