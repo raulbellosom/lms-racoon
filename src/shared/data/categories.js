@@ -28,6 +28,10 @@ export const CategoryService = {
     };
   },
 
+  async getById(id) {
+    return await db.getDocument(APPWRITE.databaseId, COLLECTION, id);
+  },
+
   async update(id, data) {
     return await db.updateDocument(APPWRITE.databaseId, COLLECTION, id, data);
   },

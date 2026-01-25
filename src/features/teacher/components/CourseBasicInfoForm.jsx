@@ -129,30 +129,6 @@ export function CourseBasicInfoForm({
               </p>
             )}
           </div>
-
-          {/* Description */}
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <label className="text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                {t("teacher.courseDescription")}
-              </label>
-              <CharCounter current={formData.description.length} max={8000} />
-            </div>
-            <Textarea
-              placeholder={t("teacher.form.descriptionPlaceholder")}
-              value={formData.description}
-              onChange={(e) => updateField("description", e.target.value)}
-              rows={6}
-              className={
-                formData.description.length > 8000 ? "border-red-500" : ""
-              }
-            />
-            {formData.description.length > 8000 && (
-              <p className="mt-1 text-xs text-red-500">
-                La descripción es demasiado larga.
-              </p>
-            )}
-          </div>
         </div>
       </Card>
 

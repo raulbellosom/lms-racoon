@@ -7,6 +7,7 @@ import {
   Check,
   PlayCircle,
   LayoutTemplate,
+  X,
 } from "lucide-react";
 import { Modal } from "../../../shared/ui/Modal";
 import { FileService } from "../../../shared/data/files";
@@ -65,7 +66,7 @@ export function BannerSelectionModal({
 
     setUploading(true);
     try {
-      const fileId = await FileService.uploadCourseCover(file); // Reusing courseCovers bucket for banners
+      const fileId = await FileService.uploadCourseCover(file);
       onSelect({ type: "image", value: fileId });
       onOpenChange(false);
     } catch (error) {
@@ -73,6 +74,22 @@ export function BannerSelectionModal({
       alert(t("teacher.errors.uploadFailed"));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleRemoveBanner = async () => {
+    try {
+      // Delete from storage if it's a file ID (not a pattern)
+      if (
+        currentBannerId &&
+        !DEFAULT_BANNERS.find((b) => b.id === currentBannerId)
+      ) {
+        await FileService.deleteFile(currentBannerId);
+      }
+      onSelect({ type: "image", value: null });
+    } catch (error) {
+      console.error("Failed to delete banner", error);
+      alert(t("teacher.errors.deleteFailed"));
     }
   };
 
@@ -114,59 +131,127 @@ export function BannerSelectionModal({
               {t("teacher.banner.videoTab") || "Usar Video del Curso"}
             </div>
           </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "patterns"
-                ? "border-[rgb(var(--brand-primary))] text-[rgb(var(--brand-primary))]"
-                : "border-transparent text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text-primary))]"
-            }`}
-            onClick={() => setActiveTab("patterns")}
-          >
-            <div className="flex items-center gap-2">
-              <LayoutTemplate className="h-4 w-4" />
-              {t("teacher.banner.patternsTab") || "Patrones"}
-            </div>
-          </button>
         </div>
+
+        {/* Current Selection Status */}
+        {(currentBannerId || currentVideoId) && (
+          <div className="rounded-lg bg-[rgb(var(--bg-muted))] p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              {currentBannerId && (
+                <>
+                  <ImageIcon className="h-4 w-4 text-[rgb(var(--brand-primary))]" />
+                  <span className="font-medium">Banner de imagen actual</span>
+                </>
+              )}
+              {currentVideoId && (
+                <>
+                  <PlayCircle className="h-4 w-4 text-[rgb(var(--brand-primary))]" />
+                  <span className="font-medium">
+                    Trailer actual seleccionado
+                  </span>
+                </>
+              )}
+            </div>
+            <span className="text-xs text-[rgb(var(--text-muted))]">
+              Selecciona uno nuevo para reemplazar
+            </span>
+          </div>
+        )}
 
         {/* Tab Content */}
         <div className="min-h-[300px]">
           {/* UPLOAD TAB */}
           {activeTab === "upload" && (
             <div className="relative flex h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] transition-colors hover:bg-[rgb(var(--bg-muted))/0.8]">
+              {currentBannerId &&
+              !DEFAULT_BANNERS.find((b) => b.id === currentBannerId) ? (
+                // Show current banner with delete option
+                <>
+                  <img
+                    src={FileService.getCourseCoverUrl(currentBannerId)}
+                    alt="Current banner"
+                    className="absolute inset-0 h-full w-full object-cover rounded-xl"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                    <span className="text-white text-sm font-medium">
+                      Banner actual
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveBanner}
+                    className="absolute top-2 right-2 p-2 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition-colors z-10"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document.getElementById("banner-file-input").click()
+                    }
+                    className="absolute bottom-3 left-1/2 -translate-x-1/2 px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-lg"
+                  >
+                    Reemplazar imagen
+                  </button>
+                </>
+              ) : (
+                // Show upload area
+                <>
+                  <input
+                    id="banner-file-input"
+                    type="file"
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                  />
+                  <div className="pointer-events-none p-6 text-center">
+                    {uploading ? (
+                      <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
+                    ) : (
+                      <ImageIcon className="mx-auto mb-4 h-12 w-12 text-[rgb(var(--text-muted))]" />
+                    )}
+                    <h3 className="mb-1 text-lg font-medium">
+                      {uploading
+                        ? t("common.uploading")
+                        : t("teacher.banner.dragDrop") ||
+                          "Click o arrastra para subir"}
+                    </h3>
+                    <p className="text-sm text-[rgb(var(--text-secondary))]">
+                      JPG, PNG, WEBP (Max 8MB)
+                    </p>
+                  </div>
+                </>
+              )}
+              {/* Hidden input for replacement */}
               <input
+                id="banner-file-input"
                 type="file"
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                className="hidden"
                 accept="image/*"
                 onChange={handleFileUpload}
                 disabled={uploading}
               />
-              <div className="pointer-events-none p-6 text-center">
-                {uploading ? (
-                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
-                ) : (
-                  <ImageIcon className="mx-auto mb-4 h-12 w-12 text-[rgb(var(--text-muted))]" />
-                )}
-                <h3 className="mb-1 text-lg font-medium">
-                  {uploading
-                    ? t("common.uploading")
-                    : t("teacher.banner.dragDrop") ||
-                      "Click o arrastra para subir"}
-                </h3>
-                <p className="text-sm text-[rgb(var(--text-secondary))]">
-                  JPG, PNG, WEBP (Max 8MB)
-                </p>
-              </div>
             </div>
           )}
 
           {/* VIDEO TAB */}
           {activeTab === "video" && (
             <div className="space-y-4">
-              <p className="text-sm text-[rgb(var(--text-secondary))]">
-                {t("teacher.banner.videoDescription") ||
-                  "Selecciona un video de tus lecciones para usarlo como trailer del curso."}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[rgb(var(--text-secondary))]">
+                  {t("teacher.banner.videoDescription") ||
+                    "Selecciona un video de tus lecciones para usarlo como trailer del curso."}
+                </p>
+                {currentVideoId && (
+                  <button
+                    onClick={() => onSelect({ type: "video", value: null })}
+                    className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
+                  >
+                    <X className="h-3 w-3" /> Deseleccionar
+                  </button>
+                )}
+              </div>
               {loadingLessons ? (
                 <div className="flex justify-center p-8">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
@@ -225,42 +310,6 @@ export function BannerSelectionModal({
                   ))}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* PATTERNS TAB */}
-          {activeTab === "patterns" && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {DEFAULT_BANNERS.map((banner) => (
-                <div
-                  key={banner.id}
-                  className={`
-                                relative aspect-video cursor-pointer overflow-hidden rounded-xl border-2 transition-all
-                                ${
-                                  currentBannerId === banner.id
-                                    ? "border-[rgb(var(--brand-primary))]"
-                                    : "border-transparent hover:border-[rgb(var(--brand-primary))/0.5]"
-                                }
-                            `}
-                  onClick={() => {
-                    onSelect({ type: "image", value: banner.id });
-                    onOpenChange(false);
-                  }}
-                >
-                  <img
-                    src={banner.url}
-                    alt={banner.label}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/5 transition-colors hover:bg-transparent" />
-
-                  {currentBannerId === banner.id && (
-                    <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] shadow-sm">
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
           )}
         </div>

@@ -7,6 +7,8 @@ import { QueryClient } from "@tanstack/react-query";
 
 import "./i18n"; // Initialize i18n
 import "./styles/app.css";
+import "easymde/dist/easymde.min.css";
+
 import { router } from "./app/router/router";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { ToastProvider } from "./app/providers/ToastProvider";

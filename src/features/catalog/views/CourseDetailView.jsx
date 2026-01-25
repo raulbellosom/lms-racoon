@@ -1,7 +1,8 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Play,
   CheckCircle,
@@ -12,12 +13,12 @@ import {
   Share2,
   Heart,
   Users,
-  X,
   AlertCircle,
 } from "lucide-react";
 
 import { Button } from "../../../shared/ui/Button";
 import { CourseCurriculum } from "../components/CourseCurriculum";
+import { CourseMetaTags } from "../components/CourseMetaTags";
 import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
 import { SectionService } from "../../../shared/data/sections-teacher";
 import { LessonService } from "../../../shared/data/lessons-teacher";
@@ -25,6 +26,7 @@ import { StatsService } from "../../../shared/data/stats";
 import { FileService } from "../../../shared/data/files";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { getRandomBanner, getBannerById } from "../../../shared/assets/banners";
+import { CategoryService } from "../../../shared/data/categories";
 
 export function CourseDetailView() {
   const { id } = useParams();
@@ -35,8 +37,7 @@ export function CourseDetailView() {
   const [course, setCourse] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [stats, setStats] = React.useState(null);
-  const [showTrailer, setShowTrailer] = React.useState(false);
-  const [svgBanner] = React.useState(getRandomBanner());
+  const [category, setCategory] = React.useState(null);
 
   React.useEffect(() => {
     if (id) {
@@ -62,6 +63,19 @@ export function CourseDetailView() {
 
       setCourse({ ...courseData, content });
       setStats(statsData);
+
+      // Fetch category if exists
+      if (courseData.categoryId) {
+        try {
+          const cat = await CategoryService.getById(courseData.categoryId);
+          setCategory(cat);
+        } catch (error) {
+          console.error("Failed to load category", error);
+          setCategory({ name: "General", slug: "general" });
+        }
+      } else {
+        console.log("No categoryId found in course");
+      }
     } catch (error) {
       console.error("Failed to load course details", error);
     } finally {
@@ -91,8 +105,23 @@ export function CourseDetailView() {
   if (!course) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-[rgb(var(--bg-base))] p-4 text-center">
-        <h2 className="mb-2 text-2xl font-bold">Curso no encontrado</h2>
-        <Button onClick={() => navigate(-1)}>Volver</Button>
+        <h2 className="mb-2 text-2xl font-bold">{t("courses.notFound")}</h2>
+        <Button onClick={() => navigate(-1)}>{t("courses.goBack")}</Button>
+      </div>
+    );
+  }
+
+  // Access Control: Only course owner can view unpublished courses
+  if (!course.isPublished && auth.user?.$id !== course.teacherId) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-[rgb(var(--bg-base))] p-4 text-center">
+        <h2 className="mb-2 text-2xl font-bold">{t("courses.notAvailable")}</h2>
+        <p className="mb-4 text-[rgb(var(--text-secondary))]">
+          {t("courses.notPublished")}
+        </p>
+        <Button onClick={() => navigate("/app/explore")}>
+          {t("courses.exploreCourses")}
+        </Button>
       </div>
     );
   }
@@ -115,20 +144,6 @@ export function CourseDetailView() {
     ? FileService.getCourseCoverUrl(course.coverFileId)
     : null;
 
-  // Banner: use specific banner, or fallback to cover, or fallback to SVG
-  let bannerUrl = null;
-  if (course.bannerFileId) {
-    const pattern = getBannerById(course.bannerFileId);
-    if (pattern) {
-      bannerUrl = pattern.url;
-    } else {
-      bannerUrl = FileService.getCourseCoverUrl(course.bannerFileId);
-    }
-  }
-
-  // If no banner, use cover as background, then SVG
-  const backgroundUrl = bannerUrl || coverUrl;
-
   const promoVideoUrl = course.promoVideoFileId
     ? FileService.getLessonVideoUrl(course.promoVideoFileId)
     : null;
@@ -136,192 +151,226 @@ export function CourseDetailView() {
   const rating = stats?.averageRating || 0;
   const studentsCount = stats?.totalStudents || 0;
 
+  let activeMediaType = "cover";
+  let activeMediaUrl = coverUrl;
+
+  // Resolve Banner (Pattern or File)
+  let resolvedBannerUrl = null;
+  if (course.bannerFileId) {
+    const pattern = getBannerById(course.bannerFileId);
+    resolvedBannerUrl = pattern
+      ? pattern.url
+      : FileService.getCourseCoverUrl(course.bannerFileId);
+  }
+
+  if (course.promoVideoFileId) {
+    activeMediaType = "video";
+    activeMediaUrl = FileService.getLessonVideoUrl(course.promoVideoFileId);
+  } else if (resolvedBannerUrl) {
+    activeMediaType = "banner";
+    activeMediaUrl = resolvedBannerUrl;
+  }
+
   return (
-    <div className="min-h-dvh bg-[rgb(var(--bg-base))] pb-32 md:pb-20">
-      {/* Hero Header */}
-      <div
-        className="relative overflow-hidden bg-[rgb(var(--bg-surface-strong))] text-white transition-all duration-500 ease-in-out"
-        style={{ minHeight: showTrailer ? "60vh" : "auto" }}
-      >
-        {/* Background (Image or Gradient) */}
-        {!showTrailer && (
-          <div className="absolute inset-0 overflow-hidden">
-            {backgroundUrl ? (
-              <div className="h-full w-full">
-                <img
-                  src={backgroundUrl}
-                  alt=""
-                  className="h-full w-full object-cover opacity-20 blur-xl animate-ken-burns"
-                />
-                <div className="absolute inset-0 bg-base-900/60" />
-              </div>
-            ) : (
-              <div
-                className="h-full w-full opacity-30"
-                dangerouslySetInnerHTML={{ __html: svgBanner.svg }}
-              />
-            )}
-            <div className="absolute inset-0 bg-linear-to-t from-[rgb(var(--bg-base))] to-transparent" />
+    <>
+      <CourseMetaTags course={course} />
+      <div className="min-h-dvh bg-[rgb(var(--bg-base))] pb-32 md:pb-20">
+        {/* Hero Section */}
+        <div className="relative min-h-[300px] overflow-hidden bg-[rgb(var(--bg-surface-strong))] text-white">
+          {/* Blurred Background */}
+          <div className="absolute inset-0">
+            <img
+              src={resolvedBannerUrl || coverUrl || ""}
+              alt=""
+              className="h-full w-full object-cover opacity-50 blur-md scale-110"
+            />
+            <div className="absolute inset-0 bg-white/60 dark:bg-[rgb(var(--bg-base))/0.75]" />
           </div>
-        )}
 
-        {/* Video Player Overlay */}
-        <AnimatePresence>
-          {showTrailer && promoVideoUrl && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.4 }}
-              className="absolute inset-0 z-20 flex items-center justify-center bg-black"
-            >
-              <div className="relative h-full w-full max-w-7xl mx-auto flex items-center justify-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-4 right-4 z-30 text-white bg-black/50 hover:bg-black/70 rounded-full"
-                  onClick={() => setShowTrailer(false)}
-                >
-                  <X className="h-6 w-6" />
-                </Button>
-                <video
-                  src={promoVideoUrl}
-                  controls
-                  autoPlay
-                  className="max-h-full max-w-full shadow-2xl"
-                />
+          {/* Content Grid */}
+          <div className="relative z-10 mx-auto max-w-7xl px-6 py-8 md:py-12">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center min-h-[250px]">
+              {/* Left: Course Info */}
+              <div className="flex flex-col justify-center">
+                {/* Badges */}
+                <div className="mb-4 flex flex-wrap gap-2 items-center">
+                  {/* Category Badge */}
+                  {category && (
+                    <button
+                      onClick={() =>
+                        navigate(`/app/explore?category=${category.slug}`)
+                      }
+                      className="rounded bg-[rgb(var(--brand-primary))]/20 border border-[rgb(var(--brand-primary))]/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-[rgb(var(--brand-primary))] hover:bg-[rgb(var(--brand-primary))]/30 transition-colors cursor-pointer"
+                    >
+                      {category.name}
+                    </button>
+                  )}
+                  {/* Level Badge */}
+                  <button
+                    onClick={() =>
+                      navigate(`/app/explore?level=${course.level}`)
+                    }
+                    className="rounded bg-blue-500/20 border border-blue-500/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-400 hover:bg-blue-500/30 transition-colors cursor-pointer"
+                  >
+                    {t(`courses.levels.${course.level}`)}
+                  </button>
+                  {/* Rating */}
+                  <span className="flex items-center gap-1 text-base font-medium text-amber-400">
+                    <span className="text-amber-400 text-lg">★</span>{" "}
+                    {rating.toFixed(1)}
+                  </span>
+                </div>
+
+                <h1 className="text-3xl font-extrabold md:text-4xl lg:text-5xl leading-tight text-[rgb(var(--text-primary))] mb-4 drop-shadow-lg">
+                  {course.title}
+                </h1>
+                <p className="text-lg md:text-xl text-[rgb(var(--text-secondary))] mb-6 max-w-2xl drop-shadow-md">
+                  {course.subtitle}
+                </p>
+
+                <div className="flex flex-wrap gap-4 text-sm text-[rgb(var(--text-muted))] dark:text-white/80 font-medium mb-4">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {studentsCount} {t("courses.students")}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" /> {t("courses.lastUpdated")}:{" "}
+                    {new Date(course.$updatedAt).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Globe className="h-4 w-4" />{" "}
+                    {t(`common.languages.${course.language}`) ||
+                      course.language}
+                  </div>
+                </div>
+
+                {/* Share Button - Only for published courses */}
+                {!isDraft && course.isPublished && (
+                  <div className="mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        const shareData = {
+                          title: course.title,
+                          text: course.subtitle,
+                          url: window.location.href,
+                        };
+
+                        try {
+                          if (navigator.share) {
+                            await navigator.share(shareData);
+                          } else {
+                            await navigator.clipboard.writeText(
+                              window.location.href,
+                            );
+                            console.log("Link copied to clipboard!");
+                          }
+                        } catch (err) {
+                          console.error("Share failed:", err);
+                        }
+                      }}
+                      className="gap-2"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      {t("common.share") || "Compartir"}
+                    </Button>
+                  </div>
+                )}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        <div className="relative mx-auto max-w-7xl px-6 py-12 md:py-20 lg:flex lg:gap-12">
-          {/* Left Content */}
-          <motion.div
-            className="lg:w-2/3"
-            animate={{
-              opacity: showTrailer ? 0 : 1,
-              y: showTrailer ? 50 : 0,
-              pointerEvents: showTrailer ? "none" : "auto",
-            }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="mb-4 flex flex-wrap gap-2 items-center">
-              {isDraft && (
-                <span className="rounded bg-amber-500/20 border border-amber-500/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-amber-500">
-                  {t("status.draft")}
-                </span>
-              )}
-              {isOwner && (
-                <span className="rounded bg-blue-500/20 border border-blue-500/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-400">
-                  {t("roles.teacher")}
-                </span>
-              )}
-
-              <span className="flex items-center gap-1 text-xs font-medium text-amber-400">
-                <span className="text-amber-400">★</span> {rating.toFixed(1)}
-              </span>
+              {/* Right: Banner Image or Video */}
+              <div className="flex items-center justify-center lg:justify-end">
+                <div className="w-full max-w-xl">
+                  {activeMediaType === "video" ? (
+                    <video
+                      src={activeMediaUrl}
+                      controls
+                      className="w-full rounded-xl shadow-2xl"
+                      poster={coverUrl || undefined}
+                    />
+                  ) : (
+                    <img
+                      src={activeMediaUrl || ""}
+                      alt={course.title}
+                      className="w-full rounded-xl shadow-2xl"
+                    />
+                  )}
+                </div>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <h1 className="text-3xl font-extrabold md:text-5xl">
-              {course.title}
-            </h1>
-            <p className="mt-4 text-lg text-gray-200 md:text-xl">
-              {course.subtitle}
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-4 text-sm text-gray-300">
-              <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                {studentsCount} {t("courses.students")}
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" /> Última actualización:{" "}
-                {new Date(course.$updatedAt).toLocaleDateString()}
-              </div>
-              <div className="flex items-center gap-1">
-                <Globe className="h-4 w-4" />{" "}
-                {course.language === "es" ? "Español" : course.language}
-              </div>
-            </div>
-
-            {/* Promo Video Button (Mobile mainly, or if sidebar is hidden) */}
-            {promoVideoUrl && (
-              <div className="mt-6 lg:hidden">
-                <Button onClick={() => setShowTrailer(true)} className="gap-2">
-                  <Play className="h-4 w-4 fill-current" />{" "}
-                  {t("teacher.lesson.preview")}
-                </Button>
+        {/* Main Content Info */}
+        <div className="mx-auto mt-8 grid max-w-7xl gap-8 px-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            {/* Validation Alert */}
+            {(isDraft || isOwner) && (
+              <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <div>
+                  <p className="font-bold mb-1">{t("courses.previewMode")}</p>
+                  <p>
+                    {isOwner
+                      ? t("courses.previewModeOwner")
+                      : t("courses.previewModeUnpublished")}
+                  </p>
+                </div>
               </div>
             )}
-          </motion.div>
-        </div>
-      </div>
 
-      {/* Main Content Info */}
-      <div className="mx-auto mt-8 grid max-w-7xl gap-8 px-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          {/* Validation Alert */}
-          {(isDraft || isOwner) && (
-            <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 shrink-0" />
-              <div>
-                <p className="font-bold mb-1">Modo de Vista Previa</p>
-                <p>
-                  {isOwner
-                    ? "Estás viendo tu propio curso. Las opciones de compra y reseña están desactivadas."
-                    : "Este curso aún no está publicado. Solo el instructor puede verlo."}
-                </p>
+            {/* Description */}
+            <section className="mb-10">
+              <h2 className="mb-4 text-2xl font-bold text-[rgb(var(--text-primary))]">
+                {t("courses.courseDescription")}
+              </h2>
+              <div className="markdown-content text-[rgb(var(--text-secondary))]">
+                {course.description ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {(course.description || "")
+                      .replace(/\r\n/g, "\n")
+                      .replace(/\n(\* |\d+\. |> )/g, "\n\n$1")}
+                  </ReactMarkdown>
+                ) : (
+                  <p>{t("courses.noDescription")}</p>
+                )}
               </div>
-            </div>
-          )}
+            </section>
 
-          {/* Description */}
-          <section className="mb-10">
-            <h2 className="mb-4 text-2xl font-bold text-[rgb(var(--text-primary))]">
-              Descripción del curso
-            </h2>
-            <div
-              className="prose prose-invert max-w-none text-[rgb(var(--text-secondary))]"
-              style={{ whiteSpace: "pre-wrap" }}
-            >
-              {course.description || "Sin descripción."}
-            </div>
-          </section>
+            {/* Curriculum */}
+            <section className="mb-10">
+              <h2 className="mb-4 text-2xl font-bold text-[rgb(var(--text-primary))]">
+                {t("courses.courseContent")}
+              </h2>
+              <CourseCurriculum content={course.content || []} />
+            </section>
+          </div>
 
-          {/* Curriculum */}
-          <section className="mb-10">
-            <h2 className="mb-4 text-2xl font-bold text-[rgb(var(--text-primary))]">
-              Contenido del curso
-            </h2>
-            <CourseCurriculum content={course.content || []} />
-          </section>
-        </div>
-
-        {/* Sidebar Sticky Card (Desktop) */}
-        <div className="relative hidden lg:block">
-          <div className="sticky top-24 rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-1 shadow-2xl">
-            {/* Video Preview Area */}
-            <div
-              className="relative aspect-video w-full overflow-hidden rounded-xl bg-black/20"
-              style={
-                !course.coverFileId
-                  ? { background: getFallbackGradient(course.$id) }
-                  : {}
-              }
-            >
-              <img
-                src={coverUrl || ""}
-                alt=""
-                className={`h-full w-full object-cover transition-opacity ${!coverUrl ? "hidden" : ""}`}
-                style={{ opacity: showTrailer ? 0 : 1 }}
-              />
-              {!showTrailer && (
+          {/* Sidebar Sticky Card (Desktop) */}
+          <div className="relative hidden lg:block">
+            <div className="sticky top-24 rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-1 shadow-2xl">
+              {/* Video Preview Area */}
+              <div
+                className="relative aspect-video w-full overflow-hidden rounded-xl bg-black/20"
+                style={
+                  !course.coverFileId
+                    ? { background: getFallbackGradient(course.$id) }
+                    : {}
+                }
+              >
+                <img
+                  src={coverUrl || ""}
+                  alt=""
+                  className={`h-full w-full object-cover transition-opacity ${!coverUrl ? "hidden" : ""}`}
+                />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                   {promoVideoUrl ? (
                     <div
                       className="rounded-full bg-white/20 p-4 backdrop-blur-sm transition hover:scale-110 cursor-pointer"
-                      onClick={() => setShowTrailer(true)}
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        setIsExpanded(true);
+                      }}
                     >
                       <Play className="ml-1 h-8 w-8 fill-white text-white shadow-xl" />
                     </div>
@@ -331,92 +380,94 @@ export function CourseDetailView() {
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="p-6">
-              <div className="mb-2 text-3xl font-black text-[rgb(var(--text-primary))]">
+              <div className="p-6">
+                <div className="mb-2 text-3xl font-black text-[rgb(var(--text-primary))]">
+                  {formattedPrice}
+                </div>
+
+                <Button
+                  className="mb-3 w-full"
+                  size="lg"
+                  disabled={!canEnroll && !isOwner}
+                  onClick={() => {
+                    if (isOwner) {
+                      navigate(`/app/teach/courses/${id}`);
+                      return;
+                    }
+                    if (!canEnroll) return;
+                    // handleEnroll(); // Future implementation
+                  }}
+                >
+                  {isOwner
+                    ? t("courses.manage")
+                    : isDraft
+                      ? t("courses.unavailable")
+                      : t("courses.enrollNow")}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={!canInteract}
+                  onClick={
+                    canInteract
+                      ? () => console.log("Toggle favorite")
+                      : undefined
+                  }
+                >
+                  <Heart className="mr-2 h-4 w-4" />
+                  {canInteract
+                    ? t("courses.addToFavorites")
+                    : t("courses.favoritesDisabled")}
+                </Button>
+
+                <div className="mt-6 space-y-3 text-sm text-[rgb(var(--text-secondary))]">
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4" /> {t("courses.certificate")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" /> {t("courses.lifetimeAccess")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BarChart className="h-4 w-4" /> {t("courses.level")}{" "}
+                    <span className="capitalize">{course.level}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Bottom Bar for Enrollment */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4 shadow-top lg:hidden">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <div className="text-xl font-bold text-[rgb(var(--text-primary))]">
                 {formattedPrice}
               </div>
-
-              <Button
-                className="mb-3 w-full"
-                size="lg"
-                disabled={!canEnroll && !isOwner}
-                onClick={() => {
-                  if (isOwner) {
-                    navigate(`/app/teach/courses/${id}`);
-                    return;
-                  }
-                  if (!canEnroll) return;
-                  // handleEnroll(); // Future implementation
-                }}
-              >
-                {isOwner
-                  ? t("courses.manage")
-                  : isDraft
-                    ? t("courses.unavailable")
-                    : t("courses.enrollNow")}
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={!canInteract}
-                onClick={
-                  canInteract ? () => console.log("Toggle favorite") : undefined
-                }
-              >
-                <Heart className="mr-2 h-4 w-4" />
-                {canInteract
-                  ? t("courses.addToFavorites")
-                  : t("courses.favoritesDisabled")}
-              </Button>
-
-              <div className="mt-6 space-y-3 text-sm text-[rgb(var(--text-secondary))]">
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4" /> {t("courses.certificate")}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" /> {t("courses.lifetimeAccess")}
-                </div>
-                <div className="flex items-center gap-2">
-                  <BarChart className="h-4 w-4" /> {t("courses.level")}{" "}
-                  <span className="capitalize">{course.level}</span>
-                </div>
+              <div className="text-xs text-[rgb(var(--text-secondary))]">
+                {isDraft ? t("status.draft") : "Oferta limitada"}
               </div>
             </div>
+            <Button
+              className="flex-1"
+              size="lg"
+              disabled={!canEnroll && !isOwner}
+              onClick={() => {
+                if (isOwner) {
+                  navigate(`/app/teach/courses/${id}`);
+                  return;
+                }
+                if (!canEnroll) return;
+              }}
+            >
+              {isOwner ? t("courses.manage") : t("courses.enrollNow")}
+            </Button>
           </div>
         </div>
       </div>
-
-      {/* Mobile Bottom Bar for Enrollment */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4 shadow-top lg:hidden">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <div className="text-xl font-bold text-[rgb(var(--text-primary))]">
-              {formattedPrice}
-            </div>
-            <div className="text-xs text-[rgb(var(--text-secondary))]">
-              {isDraft ? t("status.draft") : "Oferta limitada"}
-            </div>
-          </div>
-          <Button
-            className="flex-1"
-            size="lg"
-            disabled={!canEnroll && !isOwner}
-            onClick={() => {
-              if (isOwner) {
-                navigate(`/app/teach/courses/${id}`);
-                return;
-              }
-              if (!canEnroll) return;
-            }}
-          >
-            {isOwner ? t("courses.manage") : t("courses.enrollNow")}
-          </Button>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }

@@ -33,6 +33,7 @@ import {
   CoursePricingForm,
   CurriculumEditor,
   LessonEditorModal,
+  MarkdownDescriptionEditor,
 } from "../../../features/teacher";
 
 // Tab Button Component
@@ -187,6 +188,18 @@ export function TeacherCourseEditorPage() {
     setLoading(true);
     try {
       const data = await TeacherCoursesService.getById(courseId);
+
+      // Authorization check: Only course owner can edit
+      if (data.teacherId !== auth.user?.$id) {
+        showToast(
+          t("teacher.errors.unauthorized") ||
+            "No tienes permiso para editar este curso",
+          "error",
+        );
+        navigate("/app/teach/courses");
+        return;
+      }
+
       setCourse(data);
       const loadedData = {
         title: data.title,
@@ -411,42 +424,16 @@ export function TeacherCourseEditorPage() {
             </p>
           </div>
         </div>
-        {!isNew && (
-          <div className="flex items-center gap-2">
-            <Dropdown
-              trigger={
-                <Button variant="outline" size="sm">
-                  {course?.isPublished
-                    ? t("teacher.status.published")
-                    : t("teacher.status.draft")}
-                  <ChevronLeft className="ml-2 h-4 w-4 rotate-270" />
-                </Button>
-              }
-            >
-              <DropdownItem
-                onClick={() => handleTogglePublish()}
-                disabled={course?.isPublished}
-              >
-                {t("teacher.status.published")}
-              </DropdownItem>
-              <DropdownItem
-                onClick={() => handleTogglePublish()}
-                disabled={!course?.isPublished}
-              >
-                {t("teacher.status.draft")}
-              </DropdownItem>
-            </Dropdown>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              className="hidden sm:flex"
-              onClick={() => window.open(`/app/courses/${courseId}`, "_blank")}
-            >
-              <Eye className="mr-2 h-4 w-4" /> {t("teacher.lesson.preview")}
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="hidden sm:flex"
+            onClick={() => window.open(`/app/courses/${courseId}`, "_blank")}
+          >
+            <Eye className="mr-2 h-4 w-4" /> {t("teacher.lesson.preview")}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -508,12 +495,21 @@ export function TeacherCourseEditorPage() {
         {tab === "details" && (
           <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
             {/* Left Column: Main Info */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               <CourseBasicInfoForm
                 formData={formData}
                 setFormData={setFormData}
                 categories={categories}
                 errors={errors}
+              />
+
+              {/* Full-width Description Editor */}
+              <MarkdownDescriptionEditor
+                value={formData.description}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, description: value }))
+                }
+                maxLength={8000}
               />
             </div>
 

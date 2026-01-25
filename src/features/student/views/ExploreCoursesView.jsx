@@ -7,6 +7,11 @@ import { CatalogCourseCard } from "../../catalog/components/CatalogCourseCard";
 import { Drawer } from "../../../shared/ui/Drawer";
 import { Button } from "../../../shared/ui/Button";
 
+// NOTE: When implementing real course fetching from the database,
+// make sure to filter courses by isPublished===true so that only
+// published courses appear in the explore view.
+// Unpublished courses should only be visible to their owners.
+
 // Duplicated Mock data from CatalogView for now
 const MOCK_CATEGORIES = [
   { $id: "1", name: "Desarrollo" },

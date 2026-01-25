@@ -10,3 +10,4 @@ export { QuizList } from "./QuizList";
 export { QuizEditorModal } from "./QuizEditorModal";
 export { AssignmentList } from "./AssignmentList";
 export { AssignmentEditorModal } from "./AssignmentEditorModal";
+export { MarkdownDescriptionEditor } from "./MarkdownDescriptionEditor";

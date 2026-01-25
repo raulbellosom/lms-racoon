@@ -155,7 +155,19 @@
     "startLearning": "Comenzar a aprender",
     "continueLearning": "Continuar aprendiendo",
     "noCoursesFound": "No se encontraron cursos",
-    "searchPlaceholder": "Buscar cursos..."
+    "searchPlaceholder": "Buscar cursos...",
+    "notFound": "Curso no encontrado",
+    "goBack": "Volver",
+    "notAvailable": "Curso no disponible",
+    "notPublished": "Este curso aún no está publicado.",
+    "exploreCourses": "Explorar cursos",
+    "lastUpdated": "Última actualización",
+    "previewMode": "Modo de Vista Previa",
+    "previewModeOwner": "Estás viendo tu propio curso. Las opciones de compra y reseña están desactivadas.",
+    "previewModeUnpublished": "Este curso aún no está publicado. Solo el instructor puede verlo.",
+    "courseDescription": "Descripción del curso",
+    "noDescription": "Sin descripción.",
+    "courseContent": "Contenido del curso"
   },
   "student": {
     "welcome": "Hola",
@@ -248,7 +260,11 @@
       "categoryRequired": "Categoría es requerida",
       "saving": "Guardando...",
       "saveChanges": "Guardar Cambios",
-      "saved": "Guardado"
+      "saved": "Guardado",
+      "markdownSupported": "Markdown soportado",
+      "markdownModalTitle": "Markdown Soportado",
+      "markdownModalContent": "Puedes usar **Markdown** para dar formato enriquecido a la descripción de tu curso. Copia y pega código Markdown, y se mostrará con formato en la vista del curso.",
+      "markdownModalExamples": "**Ejemplos:**\n- `**negrita**` para **negrita**\n- `*cursiva*` para *cursiva*\n- `# Título` para títulos\n- `- item` para listas\n- `[enlace](url)` para enlaces"
     },
     "curriculum": {
       "title": "Contenido del Curso",
@@ -479,6 +495,12 @@
       "light": "Claro",
       "dark": "Oscuro",
       "system": "Sistema"
+    },
+    "languages": {
+      "es": "Español",
+      "en": "English",
+      "pt": "Português",
+      "fr": "Français"
     }
   },
   "roles": {

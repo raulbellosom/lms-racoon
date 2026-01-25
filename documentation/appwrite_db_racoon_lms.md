@@ -125,22 +125,27 @@
 
 ### 5) `lessons`
 
-| Attribute       | Type    | Required | Default | Constraints      | Notes                    |
-| --------------- | ------- | -------: | ------- | ---------------- | ------------------------ |
-| courseId        | string  |       ✅ | —       | min=1 max=36     | FK -> courses.$id        |
-| sectionId       | string  |       ✅ | —       | min=1 max=36     | FK -> courseSections.$id |
-| title           | string  |       ✅ | —       | min=2 max=140    |                          |
-| description     | string  |       ❌ | ""      | min=0 max=8000   |                          |
-| kind            | enum    |       ✅ | —       | —                |                          |
-| order           | integer |       ✅ | —       | min=0 max=100000 |                          |
-| durationSec     | integer |       ❌ | 0       | min=0 max=86400  |                          |
-| videoFileId     | string  |       ❌ | ""      | min=0 max=36     | bucket `lessonVideos`    |
-| attachmentsJson | string  |       ❌ | "[]"    | min=0 max=7500   | fileIds/metadatos        |
-| enabled         | boolean |       ❌ | true    | —                |                          |
+| Attribute        | Type     | Required | isArray | Default | Constraints      | Notes                      |
+| ---------------- | -------- | -------: | ------- | ------- | ---------------- | -------------------------- |
+| courseId         | string   |       ✅ | false   | —       | min=1 max=36     | FK -> courses.$id          |
+| sectionId        | string   |       ✅ | false   | —       | min=1 max=36     | FK -> courseSections.$id   |
+| title            | string   |       ✅ | false   | —       | min=2 max=140    |                            |
+| description      | string   |       ❌ | false   | ""      | min=0 max=8000   |                            |
+| kind             | enum     |       ✅ | false   | —       | —                |                            |
+| order            | integer  |       ✅ | false   | —       | min=0 max=100000 |                            |
+| durationSec      | integer  |       ❌ | false   | 0       | min=0 max=86400  |                            |
+| videoFileId      | string   |       ❌ | false   | ""      | min=0 max=36     | bucket `lessonVideos`      |
+| videoCoverFileId | string   |       ❌ | false   | ""      | min=0 max=36     | bucket `lessonVideos`      |
+| attachments      | string[] |       ❌ | true    | []      | size=36          | bucket `lessonAttachments` |
+| enabled          | boolean  |       ❌ | false   | true    | —                |                            |
 
 **Enum values**
 
 - `kind`: `video`, `article`, `quiz`, `assignment`
+
+**attachments**
+
+- `String[]` de `fileIds`: jpg, png, svg, pdf, doc, docx, xls, xlsx, ppt, pptx, zip, rar, 7z, gif, html, js, css, txt, md, mp4, mp3, wav, webm, ogg, m4a, m4v, webm, ogv
 
 **Indexes**
 

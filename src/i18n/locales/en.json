@@ -150,7 +150,25 @@
     "startLearning": "Start learning",
     "continueLearning": "Continue learning",
     "noCoursesFound": "No courses found",
-    "searchPlaceholder": "Search courses..."
+    "searchPlaceholder": "Search courses...",
+    "notFound": "Course not found",
+    "goBack": "Go back",
+    "notAvailable": "Course not available",
+    "notPublished": "This course has not been published yet.",
+    "exploreCourses": "Explore courses",
+    "lastUpdated": "Last updated",
+    "previewMode": "Preview Mode",
+    "previewModeOwner": "You are viewing your own course. Purchase and review options are disabled.",
+    "previewModeUnpublished": "This course has not been published yet. Only the instructor can view it.",
+    "courseDescription": "Course description",
+    "noDescription": "No description.",
+    "courseContent": "Course content",
+    "manage": "Manage Course",
+    "unavailable": "Not available",
+    "addToFavorites": "Add to favorites",
+    "favoritesDisabled": "Favorites disabled",
+    "certificate": "Certificate of completion",
+    "lifetimeAccess": "Lifetime access"
   },
   "student": {
     "welcome": "Hello",
@@ -243,7 +261,11 @@
       "categoryRequired": "Category is required",
       "saving": "Saving...",
       "saveChanges": "Save Changes",
-      "saved": "Saved"
+      "saved": "Saved",
+      "markdownSupported": "Markdown supported",
+      "markdownModalTitle": "Markdown Supported",
+      "markdownModalContent": "You can use **Markdown** to add rich formatting to your course description. Copy and paste Markdown code, and it will be displayed with formatting in the course view.",
+      "markdownModalExamples": "**Examples:**\n- `**bold**` for **bold**\n- `*italic*` for *italic*\n- `# Heading` for headings\n- `- item` for lists\n- `[link](url)` for links"
     },
     "curriculum": {
       "title": "Course Content",
@@ -463,6 +485,12 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
+    },
+    "languages": {
+      "es": "Spanish",
+      "en": "English",
+      "pt": "Portuguese",
+      "fr": "French"
     }
   },
   "pwa": {

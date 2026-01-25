@@ -31,6 +31,38 @@ export const DEFAULT_BANNERS = [
 <rect width="100%" height="100%" fill="url(#dotPattern)"/>
 </svg>`,
   },
+  {
+    id: "pattern-4",
+    name: "Grid",
+    svg: `<svg width="100%" height="100%" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 0h40v40H0V0zm1 1h38v38H1V1z" fill="#ffffff" fill-rule="evenodd" opacity="0.1"/>
+</svg>`,
+  },
+  {
+    id: "pattern-5",
+    name: "Hexagons",
+    svg: `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern id="hexagons" width="50" height="43.4" patternUnits="userSpaceOnUse" patternTransform="scale(0.5)">
+<path d="M25 0L50 14.4V43.3L25 57.7L0 43.3V14.4L25 0Z" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.1"/>
+</pattern>
+</defs>
+<rect width="100%" height="100%" fill="url(#hexagons)"/>
+</svg>`,
+  },
+  {
+    id: "pattern-6",
+    name: "Gradient",
+    svg: `<svg width="100%" height="100%" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.1" />
+<stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+</linearGradient>
+</defs>
+<rect width="100%" height="100%" fill="url(#grad1)"/>
+</svg>`,
+  },
 ].map((b) => ({
   ...b,
   // Create a data URI for the SVG to be used in img tags

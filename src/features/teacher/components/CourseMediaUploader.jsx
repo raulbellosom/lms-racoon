@@ -46,9 +46,18 @@ export function CourseMediaUploader({
   // Helper to get banner preview
   const getBannerPreview = () => {
     if (formData.promoVideoFileId) {
-      // If video is selected, show generic video placeholder or thumbnail if possible
+      // If video is selected, show video cover if available, otherwise generic placeholder
+      if (formData.promoVideoCoverFileId) {
+        return (
+          <img
+            src={FileService.getCourseCoverUrl(formData.promoVideoCoverFileId)}
+            alt="Video cover"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        );
+      }
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center bg-black/5 text-[rgb(var(--text-muted))]">
+        <div className="absolute inset-0 flex h-full w-full flex-col items-center justify-center bg-black/5 text-[rgb(var(--text-muted))]">
           <PlayCircle className="h-10 w-10 mb-2" />
           <span className="text-xs font-medium">Video Seleccionado</span>
         </div>
@@ -62,7 +71,7 @@ export function CourseMediaUploader({
           <img
             src={pattern.url}
             alt={pattern.name}
-            className="h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         );
       }
@@ -72,7 +81,7 @@ export function CourseMediaUploader({
         <img
           src={FileService.getCourseCoverUrl(formData.bannerFileId)}
           alt="Banner"
-          className="h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
         />
       );
     }
@@ -158,18 +167,31 @@ export function CourseMediaUploader({
     setPreviewUrl(null);
   };
 
-  const handleBannerSelect = (selection) => {
+  const handleBannerSelect = async (selection) => {
     if (selection.type === "video") {
+      // If there was a banner file (not a pattern), delete it to save space
+      const oldBannerId = formData.bannerFileId;
+      if (oldBannerId && !getBannerById(oldBannerId)) {
+        try {
+          await FileService.deleteCourseCover(oldBannerId);
+        } catch (e) {
+          console.warn("Failed to delete replaced banner:", e);
+        }
+      }
+
       setFormData((prev) => ({
         ...prev,
         promoVideoFileId: selection.value,
-        bannerFileId: "", // Clear banner if video is selected? Or keep both? Plan said prioritize Video.
+        bannerFileId: "", // Clear banner, video takes priority
       }));
     } else {
+      // Selecting a banner (image or pattern)
+      // We do NOT delete the promo video file here, as per instructions
+      // just clear the ID from the form so banner takes priority
       setFormData((prev) => ({
         ...prev,
         bannerFileId: selection.value,
-        promoVideoFileId: "", // Clear video if banner is selected
+        promoVideoFileId: "", // Clear video ID so banner is displayed
       }));
     }
   };
