@@ -524,7 +524,7 @@ export function TeacherCourseEditorPage() {
                 setFormData={setFormData}
                 uploading={uploading}
                 setUploading={setUploading}
-                courseId={id}
+                courseId={courseId}
               />
               <CoursePricingForm
                 formData={formData}

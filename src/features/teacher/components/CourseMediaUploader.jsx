@@ -1,13 +1,18 @@
-// ... imports
-import { BannerSelectionModal } from "./BannerSelectionModal";
-import { FileService } from "../../../shared/data/files";
-import { getBannerById } from "../../../shared/assets/banners";
+import React from "react";
+import { useTranslation } from "react-i18next";
 import {
+  Image as ImageIcon,
+  X,
+  Upload,
   Video as VideoIcon,
   LayoutTemplate,
   PlayCircle,
   Trash2,
 } from "lucide-react";
+import { Card } from "../../../shared/ui/Card";
+import { BannerSelectionModal } from "./BannerSelectionModal";
+import { FileService } from "../../../shared/data/files";
+import { getBannerById } from "../../../shared/assets/banners";
 
 /**
  * CourseMediaUploader - Cover image and promo video uploader
