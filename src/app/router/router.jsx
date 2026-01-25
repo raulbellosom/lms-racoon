@@ -49,7 +49,7 @@ export const router = createBrowserRouter([
           { path: "/catalog", element: <CatalogView /> },
           { path: "/catalog/:id", element: <CourseDetailView /> },
           // Legacy route redirect or keep
-          { path: "/courses/:courseId", element: <CourseDetailView /> },
+          { path: "/courses/:id", element: <CourseDetailView /> },
           { path: "/auth/login", element: <LoginView /> },
           { path: "/auth/register", element: <RegisterView /> },
         ],

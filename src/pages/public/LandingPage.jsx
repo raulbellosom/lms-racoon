@@ -11,7 +11,7 @@ export function LandingPage() {
 
   React.useEffect(() => {
     listPublishedCourses({ limit: 6 })
-      .then(setCourses)
+      .then(({ documents }) => setCourses(documents))
       .catch(() => setCourses([]));
   }, []);
 
@@ -62,7 +62,7 @@ export function LandingPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="rounded-[var(--radius)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4">
+              <div className="rounded-(--radius) border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4">
                 <div className="flex items-center gap-2 text-sm font-extrabold">
                   <PlayCircle className="h-5 w-5 text-[rgb(var(--brand-primary))]" />
                   Video + capítulos
@@ -71,7 +71,7 @@ export function LandingPage() {
                   Lecciones cortas, claras y con recursos.
                 </div>
               </div>
-              <div className="rounded-[var(--radius)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4">
+              <div className="rounded-(--radius) border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4">
                 <div className="flex items-center gap-2 text-sm font-extrabold">
                   <ShieldCheck className="h-5 w-5 text-[rgb(var(--brand-primary))]" />
                   Progreso real

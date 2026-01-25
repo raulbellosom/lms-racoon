@@ -1,51 +1,145 @@
 import React from "react";
-import { Star, Users } from "lucide-react";
+import { Star, Users, BarChart, BookOpen, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card } from "../../shared/ui/Card";
-import { Badge } from "../../shared/ui/Badge";
-import { cn } from "../../shared/ui/cn";
-import { formatMoney } from "../../shared/utils/money";
+import { Button } from "../../shared/ui/Button";
+import { FileService } from "../../shared/data/files";
 
-export function CourseCard({ course, compact = false, className = "" }) {
+export function CourseCard({ course, className = "" }) {
+  const {
+    $id,
+    title,
+    subtitle,
+    coverUrl, // Optional pre-calculated URL
+    coverFileId, // File ID from DB
+    rating,
+    studentsCount,
+    priceCents = 0,
+    currency = "MXN",
+    category, // string or object
+    level,
+    isPublished, // for instructor view
+  } = course;
+
+  // 1. Compute Image URL
+  const displayCoverUrl = React.useMemo(() => {
+    if (coverUrl) return coverUrl;
+    if (coverFileId) return FileService.getCourseCoverUrl(coverFileId);
+    return null;
+  }, [coverUrl, coverFileId]);
+
+  // 2. Normalize Category Name
+  const categoryName = typeof category === "object" ? category?.name : category;
+
   return (
-    <Card className={cn("overflow-hidden", className)}>
-      <div className="relative">
-        <img
-          src={course.coverUrl}
-          alt={course.title}
-          className={cn("w-full object-cover", compact ? "h-28" : "h-40")}
-          loading="lazy"
-        />
-        <div className="absolute left-3 top-3 flex gap-2">
-          <Badge variant="brand">{course.level}</Badge>
-          <Badge>{course.language?.toUpperCase?.() || "ES"}</Badge>
-        </div>
+    <Card
+      className={`group relative flex h-[340px] flex-col overflow-hidden border-0 shadow-lg transition-transform hover:-translate-y-1 hover:shadow-xl ${className}`}
+    >
+      {/* Background Image / Gradient */}
+      <div className="absolute inset-0 z-0 bg-[rgb(var(--bg-muted))]">
+        {displayCoverUrl ? (
+          <img
+            src={displayCoverUrl}
+            alt={title}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-80">
+            <BookOpen className="h-12 w-12 text-white/50" />
+          </div>
+        )}
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/60 to-transparent" />
       </div>
 
-      <div className="p-4">
-        <div className="text-sm font-extrabold tracking-tight line-clamp-2">{course.title}</div>
-        <div className="mt-1 text-xs text-[rgb(var(--text-secondary))] line-clamp-2">
-          {course.subtitle}
+      {/* Badges Overlay */}
+      <div className="absolute right-3 top-3 z-10 flex gap-2">
+        {/* Draft Badge (Instructor) */}
+        {isPublished === false && (
+          <span className="rounded-full bg-black/50 border border-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
+            Borrador
+          </span>
+        )}
+      </div>
+
+      {/* Content Overlay */}
+      <div className="relative z-10 mt-auto flex flex-col p-5 text-white">
+        <div className="mb-2">
+          <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide">
+            {categoryName || "General"}
+          </span>
         </div>
 
-        <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-[rgb(var(--text-secondary))]">
-            <span className="inline-flex items-center gap-1">
-              <Star className="h-4 w-4 text-[rgb(var(--brand-primary))]" />
-              <span className="font-semibold text-[rgb(var(--text-primary))]">
-                {course.ratingAvg?.toFixed?.(1) ?? "—"}
-              </span>
-              <span className="text-[rgb(var(--text-muted))]">
-                ({course.ratingCount ?? 0})
-              </span>
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {course.studentsCount ?? 0}
-            </span>
+        <Link
+          to={`/courses/${$id}`}
+          className="group-hover:text-indigo-300 transition-colors"
+        >
+          <h3
+            className="mb-1 line-clamp-2 text-xl font-bold leading-tight text-white drop-shadow-sm"
+            title={title}
+          >
+            {title}
+          </h3>
+        </Link>
+
+        {subtitle && (
+          <p className="mb-4 line-clamp-2 text-xs font-medium text-gray-300">
+            {subtitle}
+          </p>
+        )}
+
+        {/* Metadata Footer */}
+        <div className="flex flex-col gap-3 border-t border-white/10 pt-3">
+          {/* Stats Row */}
+          <div className="flex items-center justify-between text-xs text-gray-300">
+            <div className="flex items-center gap-3">
+              {studentsCount > 0 && (
+                <span className="flex items-center gap-1" title="Alumnos">
+                  <Users className="h-3.5 w-3.5 text-blue-300" />
+                  <span className="font-semibold">{studentsCount}</span>
+                </span>
+              )}
+              {rating > 0 && (
+                <span className="flex items-center gap-1" title="Rating">
+                  <Star
+                    className="h-3.5 w-3.5 text-yellow-400"
+                    fill="currentColor"
+                  />
+                  <span className="font-semibold">{rating.toFixed(1)}</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {priceCents === 0 ? (
+                <span className="font-bold text-emerald-300">Gratis</span>
+              ) : (
+                <span className="font-bold text-amber-300">
+                  {new Intl.NumberFormat("es-MX", {
+                    style: "currency",
+                    currency,
+                  }).format(priceCents / 100)}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="text-sm font-extrabold text-[rgb(var(--text-primary))]">
-            {formatMoney(course.priceCents ?? 0, course.currency || "MXN")}
+          {/* Actions Row */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-[10px] text-gray-400">
+              <BarChart className="h-3 w-3" />
+              <span className="capitalize">{level || "General"}</span>
+            </span>
+
+            <Link to={`/courses/${$id}`}>
+              <Button
+                size="sm"
+                className="h-7 px-3 text-xs bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 border border-white/10"
+              >
+                Ver Curso
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { Input } from "../../../shared/ui/Input";
 import { Textarea } from "../../../shared/ui/Textarea";
 import { Button } from "../../../shared/ui/Button";
 import { AssignmentService } from "../../../shared/data/assignments-teacher";
+import { useToast } from "../../../app/providers/ToastProvider";
 
 /**
  * AssignmentEditorModal - Create/edit an assignment
@@ -22,6 +23,7 @@ export function AssignmentEditorModal({
   onSave,
 }) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const isNew = !assignment?.$id;
 
   const [formData, setFormData] = React.useState({
@@ -58,7 +60,7 @@ export function AssignmentEditorModal({
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      alert(t("teacher.form.titleRequired"));
+      showToast(t("teacher.form.titleRequired"), "error");
       return;
     }
 
@@ -82,7 +84,7 @@ export function AssignmentEditorModal({
       onClose();
     } catch (error) {
       console.error("Failed to save assignment:", error);
-      alert(t("teacher.errors.saveFailed"));
+      showToast(t("teacher.errors.saveFailed"), "error");
     } finally {
       setSaving(false);
     }

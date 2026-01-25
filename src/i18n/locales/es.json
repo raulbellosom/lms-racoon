@@ -274,11 +274,13 @@
       "editSection": "Editar sección",
       "deleteSection": "Eliminar sección",
       "deleteSectionConfirm": "¿Eliminar sección y sus lecciones?",
+      "deleteSectionDesc": "Esto eliminará permanentemente la sección y todas sus lecciones.",
       "lessonTitle": "Título de la lección",
       "lessonTitlePlaceholder": "Ej: Bienvenida al curso",
       "editLesson": "Editar lección",
       "deleteLesson": "Eliminar lección",
       "deleteLessonConfirm": "¿Eliminar lección?",
+      "deleteLessonDesc": "Esta acción no se puede deshacer.",
       "lessonType": "Tipo de lección",
       "video": "Video",
       "article": "Artículo/Lectura",
@@ -338,7 +340,8 @@
       "noQuestions": "No hay preguntas. Añade una para comenzar.",
       "saveQuiz": "Guardar evaluación",
       "deleteQuiz": "Eliminar evaluación",
-      "deleteQuizConfirm": "¿Eliminar esta evaluación?"
+      "deleteQuizConfirm": "¿Eliminar esta evaluación?",
+      "deleteQuizDesc": "Se eliminarán todos los intentos de los estudiantes."
     },
     "assignment": {
       "title": "Tareas",
@@ -366,7 +369,8 @@
       "pointsAwarded": "Puntos otorgados",
       "saveGrade": "Guardar calificación",
       "deleteAssignment": "Eliminar tarea",
-      "deleteAssignmentConfirm": "¿Eliminar esta tarea?"
+      "deleteAssignmentConfirm": "¿Eliminar esta tarea?",
+      "deleteAssignmentDesc": "Se eliminarán todas las entregas asociadas."
     },
     "reviews": {
       "title": "Reseñas del curso",
@@ -396,8 +400,11 @@
       "draftDesc": "Este curso no es visible para los estudiantes. Publícalo cuando estés listo.",
       "publishNow": "Publicar Curso Ahora",
       "unpublishCourse": "Despublicar Curso",
+      "unpublishNow": "Despublicar Ahora",
       "confirmPublish": "¿Publicar este curso ahora?",
-      "confirmUnpublish": "¿Despublicar este curso?"
+      "confirmPublishDesc": "El curso será visible para todos los estudiantes.",
+      "confirmUnpublish": "¿Despublicar este curso?",
+      "confirmUnpublishDesc": "El curso dejará de ser visible para los estudiantes."
     },
     "status": {
       "published": "Publicado",

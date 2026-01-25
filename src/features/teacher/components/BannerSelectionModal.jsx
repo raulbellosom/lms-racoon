@@ -13,6 +13,7 @@ import { Modal } from "../../../shared/ui/Modal";
 import { FileService } from "../../../shared/data/files";
 import { LessonService } from "../../../shared/data/lessons-teacher";
 import { DEFAULT_BANNERS } from "../../../shared/assets/banners";
+import { useToast } from "../../../app/providers/ToastProvider";
 
 export function BannerSelectionModal({
   open,
@@ -23,6 +24,7 @@ export function BannerSelectionModal({
   currentVideoId,
 }) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("upload"); // upload, video, patterns
   const [lessons, setLessons] = useState([]);
   const [loadingLessons, setLoadingLessons] = useState(false);
@@ -55,12 +57,12 @@ export function BannerSelectionModal({
 
     // Validate
     if (!file.type.startsWith("image/")) {
-      alert(t("teacher.errors.invalidFileType"));
+      showToast(t("teacher.errors.invalidFileType"), "error");
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
       // 8MB
-      alert(t("teacher.errors.fileTooLarge"));
+      showToast(t("teacher.errors.fileTooLarge"), "error");
       return;
     }
 
@@ -71,7 +73,7 @@ export function BannerSelectionModal({
       onOpenChange(false);
     } catch (error) {
       console.error("Banner upload failed", error);
-      alert(t("teacher.errors.uploadFailed"));
+      showToast(t("teacher.errors.uploadFailed"), "error");
     } finally {
       setUploading(false);
     }
@@ -89,7 +91,7 @@ export function BannerSelectionModal({
       onSelect({ type: "image", value: null });
     } catch (error) {
       console.error("Failed to delete banner", error);
-      alert(t("teacher.errors.deleteFailed"));
+      showToast(t("teacher.errors.deleteFailed"), "error");
     }
   };
 
@@ -284,6 +286,7 @@ export function BannerSelectionModal({
                         onSelect({
                           type: "video",
                           value: lesson.videoFileId,
+                          coverId: lesson.videoCoverFileId,
                         });
                         onOpenChange(false);
                       }}

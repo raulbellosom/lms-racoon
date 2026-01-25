@@ -20,7 +20,9 @@ export function StudentHomePage() {
   }, [auth.user?.$id]);
 
   React.useEffect(() => {
-    listPublishedCourses({ limit: 6 }).then(setRecommendations).catch(() => setRecommendations([]));
+    listPublishedCourses({ limit: 6 })
+      .then(({ documents }) => setRecommendations(documents))
+      .catch(() => setRecommendations([]));
   }, []);
 
   return (
@@ -50,37 +52,52 @@ export function StudentHomePage() {
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-[rgb(var(--bg-muted))] p-3">
-            <div className="text-xs text-[rgb(var(--text-secondary))]">Cursos inscritos</div>
-            <div className="mt-1 text-2xl font-black">{enrolledCourseIds.length}</div>
+            <div className="text-xs text-[rgb(var(--text-secondary))]">
+              Cursos inscritos
+            </div>
+            <div className="mt-1 text-2xl font-black">
+              {enrolledCourseIds.length}
+            </div>
           </div>
           <div className="rounded-2xl bg-[rgb(var(--bg-muted))] p-3">
-            <div className="text-xs text-[rgb(var(--text-secondary))]">Racha</div>
-            <div className="mt-1 text-2xl font-black">3 días</div>
+            <div className="text-xs text-[rgb(var(--text-secondary))]">
+              Racha
+            </div>
+            <div className="mt-1 text-2xl font-black text-[rgb(var(--text-muted))]">
+              -
+            </div>
           </div>
           <div className="rounded-2xl bg-[rgb(var(--bg-muted))] p-3">
-            <div className="text-xs text-[rgb(var(--text-secondary))]">Tiempo hoy</div>
-            <div className="mt-1 text-2xl font-black">22 min</div>
+            <div className="text-xs text-[rgb(var(--text-secondary))]">
+              Tiempo hoy
+            </div>
+            <div className="mt-1 text-2xl font-black text-[rgb(var(--text-muted))]">
+              -
+            </div>
           </div>
         </div>
       </Card>
 
       <div className="mt-6 flex items-end justify-between gap-4">
         <div>
-          <div className="text-sm font-extrabold tracking-tight">Recomendados</div>
+          <div className="text-sm font-extrabold tracking-tight">
+            Recomendados
+          </div>
           <div className="text-xs text-[rgb(var(--text-secondary))]">
             Hechos para móvil: lectura clara y botones grandes.
           </div>
         </div>
-        <Link to="/catalog" className="text-sm font-semibold text-[rgb(var(--brand-primary))]">
+        <Link
+          to="/catalog"
+          className="text-sm font-semibold text-[rgb(var(--brand-primary))]"
+        >
           Ver todo →
         </Link>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {recommendations.map((c) => (
-          <Link key={c.$id} to={`/courses/${c.$id}`} className="block">
-            <CourseCard course={c} />
-          </Link>
+          <CourseCard key={c.$id} course={c} />
         ))}
       </div>
     </div>

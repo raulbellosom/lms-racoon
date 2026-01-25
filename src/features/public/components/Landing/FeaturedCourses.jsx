@@ -18,7 +18,7 @@ export function FeaturedCourses() {
 
   React.useEffect(() => {
     listPublishedCourses({ limit: 6 })
-      .then(setCourses)
+      .then(({ documents }) => setCourses(documents))
       .catch(() => setCourses([]))
       .finally(() => setLoading(false));
   }, []);

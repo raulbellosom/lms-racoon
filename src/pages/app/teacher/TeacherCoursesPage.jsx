@@ -14,6 +14,7 @@ import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
 import { StatsService } from "../../../shared/data/stats";
 import { FileService } from "../../../shared/data/files";
 import { Card } from "../../../shared/ui/Card";
+import { CourseCard } from "../../../components/courses/CourseCard";
 import { Button } from "../../../shared/ui/Button";
 import { Input } from "../../../shared/ui/Input";
 import { CourseGridSkeleton } from "../../../shared/ui/Skeleton";
@@ -111,138 +112,20 @@ export function TeacherCoursesPage() {
             const courseStats = stats[course.$id] || {};
 
             return (
-              <Card
-                key={course.$id}
-                className="group relative flex h-[340px] flex-col overflow-hidden border-0 shadow-lg transition-transform hover:-translate-y-1 hover:shadow-xl"
-              >
-                {/* Background Image / Gradient */}
-                <div className="absolute inset-0 z-0 bg-[rgb(var(--bg-muted))]">
-                  {coverUrl ? (
-                    <img
-                      src={coverUrl}
-                      alt={course.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-80">
-                      <BookOpen className="h-12 w-12 text-white/50" />
-                    </div>
-                  )}
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/60 to-transparent" />
+              <div key={course.$id} className="relative group">
+                <CourseCard course={course} />
+                <div className="absolute top-3 right-3 z-20 flex gap-2">
+                  <Link to={`/app/teach/courses/${course.$id}`}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="shadow-lg backdrop-blur-md bg-white/90 hover:bg-white text-black"
+                    >
+                      Editar
+                    </Button>
+                  </Link>
                 </div>
-
-                {/* Status Badge */}
-                <div className="absolute right-3 top-3 z-10">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-md ${
-                      course.isPublished
-                        ? "bg-green-500/90"
-                        : "bg-black/50 border border-white/20"
-                    }`}
-                  >
-                    {course.isPublished ? "Publicado" : "Borrador"}
-                  </span>
-                </div>
-
-                {/* Content Overlay */}
-                <div className="relative z-10 mt-auto flex flex-col p-5 text-white">
-                  <div className="mb-2">
-                    <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide">
-                      {course.category?.name || "Curso"}
-                    </span>
-                  </div>
-
-                  <h3
-                    className="mb-1 line-clamp-2 text-xl font-bold leading-tight text-white drop-shadow-sm hover:text-indigo-300 transition-colors cursor-pointer"
-                    title={course.title}
-                    onClick={() =>
-                      window.open(`/app/courses/${course.$id}`, "_blank")
-                    }
-                  >
-                    {course.title}
-                  </h3>
-
-                  <p className="mb-4 line-clamp-2 text-xs font-medium text-gray-300">
-                    {course.subtitle || "Sin descripción corta"}
-                  </p>
-
-                  {/* Metadata Footer */}
-                  <div className="flex flex-col gap-3 border-t border-white/10 pt-3">
-                    {/* Stats Row */}
-                    <div className="flex items-center justify-between text-xs text-gray-300">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="flex items-center gap-1"
-                          title="Alumnos"
-                        >
-                          <Users className="h-3.5 w-3.5 text-blue-300" />
-                          <span className="font-semibold">
-                            {courseStats.totalStudents || 0}
-                          </span>
-                        </span>
-                        <span
-                          className="flex items-center gap-1"
-                          title="Rating"
-                        >
-                          <Star
-                            className="h-3.5 w-3.5 text-yellow-400"
-                            fill="currentColor"
-                          />
-                          <span className="font-semibold">
-                            {courseStats.averageRating || 0}
-                          </span>
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {course.priceCents === 0 ? (
-                          <span className="font-bold text-emerald-300">
-                            Gratis
-                          </span>
-                        ) : (
-                          <span className="font-bold text-amber-300">
-                            {(course.priceCents / 100).toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Actions Row */}
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                        <BarChart className="h-3 w-3" />
-                        <span className="capitalize">
-                          {course.level || "General"}
-                        </span>
-                      </span>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 w-7 p-0 text-white/70 hover:bg-white/10 hover:text-white"
-                          title="Vista previa"
-                          onClick={() =>
-                            window.open(`/app/courses/${course.$id}`, "_blank")
-                          }
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-
-                        <Link to={`/app/teach/courses/${course.$id}`}>
-                          <Button
-                            size="sm"
-                            className="h-7 px-3 text-xs bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 border border-white/10"
-                          >
-                            Editar
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+              </div>
             );
           })}
         </div>

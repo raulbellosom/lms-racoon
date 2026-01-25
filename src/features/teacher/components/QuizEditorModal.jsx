@@ -6,10 +6,8 @@ import { Input } from "../../../shared/ui/Input";
 import { Textarea } from "../../../shared/ui/Textarea";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
-import {
-  QuizService,
-  QuizQuestionService,
-} from "../../../shared/data/quizzes-teacher";
+import { QuizQuestionService } from "../../../shared/data/quizzes-teacher";
+import { useToast } from "../../../app/providers/ToastProvider";
 
 const QUESTION_TYPES = [
   { value: "single", label: "singleChoice" },
@@ -28,6 +26,7 @@ const QUESTION_TYPES = [
  */
 export function QuizEditorModal({ open, onClose, quiz, courseId, onSave }) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const isNew = !quiz?.$id;
 
   const [formData, setFormData] = React.useState({
@@ -149,7 +148,7 @@ export function QuizEditorModal({ open, onClose, quiz, courseId, onSave }) {
   // Save quiz
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      alert(t("teacher.form.titleRequired"));
+      showToast(t("teacher.form.titleRequired"), "error");
       return;
     }
 
@@ -199,7 +198,7 @@ export function QuizEditorModal({ open, onClose, quiz, courseId, onSave }) {
       onClose();
     } catch (error) {
       console.error("Failed to save quiz:", error);
-      alert(t("teacher.errors.saveFailed"));
+      showToast(t("teacher.errors.saveFailed"), "error");
     } finally {
       setSaving(false);
     }

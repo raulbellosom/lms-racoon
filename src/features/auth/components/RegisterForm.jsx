@@ -1,5 +1,4 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, User2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -17,6 +16,7 @@ import { useToast } from "../../../app/providers/ToastProvider";
 export function RegisterForm() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
 
   const [firstName, setFirstName] = React.useState("");
@@ -125,7 +125,10 @@ export function RegisterForm() {
         message: t("auth.welcomeBack"),
         variant: "success",
       });
-      navigate("/app/home");
+
+      // Check for returnUrl
+      const returnUrl = location.state?.returnUrl || "/app/home";
+      navigate(returnUrl);
     } catch (err) {
       toast.push({
         title: t("toast.errorTitle"),

@@ -18,7 +18,7 @@ export function RecommendedCourses() {
 
   React.useEffect(() => {
     listPublishedCourses({ limit: 6 })
-      .then(setCourses)
+      .then(({ documents }) => setCourses(documents))
       .catch(() => setCourses([]))
       .finally(() => setLoading(false));
   }, []);
@@ -64,9 +64,7 @@ export function RecommendedCourses() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
             >
-              <Link to={`/courses/${course.$id}`} className="block">
-                <CourseCard course={course} />
-              </Link>
+              <CourseCard course={course} />
             </motion.div>
           ))}
         </div>

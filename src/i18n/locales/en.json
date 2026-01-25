@@ -275,11 +275,13 @@
       "editSection": "Edit section",
       "deleteSection": "Delete section",
       "deleteSectionConfirm": "Delete section and its lessons?",
+      "deleteSectionDesc": "This will permanently delete the section and all its lessons.",
       "lessonTitle": "Lesson title",
       "lessonTitlePlaceholder": "E.g.: Welcome to the course",
       "editLesson": "Edit lesson",
       "deleteLesson": "Delete lesson",
       "deleteLessonConfirm": "Delete lesson?",
+      "deleteLessonDesc": "This action cannot be undone.",
       "lessonType": "Lesson type",
       "video": "Video",
       "article": "Article/Reading",
@@ -339,7 +341,8 @@
       "noQuestions": "No questions. Add one to get started.",
       "saveQuiz": "Save quiz",
       "deleteQuiz": "Delete quiz",
-      "deleteQuizConfirm": "Delete this quiz?"
+      "deleteQuizConfirm": "Delete this quiz?",
+      "deleteQuizDesc": "All student attempts will be deleted."
     },
     "assignment": {
       "title": "Assignments",
@@ -367,7 +370,8 @@
       "pointsAwarded": "Points awarded",
       "saveGrade": "Save grade",
       "deleteAssignment": "Delete assignment",
-      "deleteAssignmentConfirm": "Delete this assignment?"
+      "deleteAssignmentConfirm": "Delete this assignment?",
+      "deleteAssignmentDesc": "All student submissions will be deleted."
     },
     "reviews": {
       "title": "Course reviews",
@@ -397,8 +401,11 @@
       "draftDesc": "This course is not visible to students. Publish it when you're ready.",
       "publishNow": "Publish Course Now",
       "unpublishCourse": "Unpublish Course",
+      "unpublishNow": "Unpublish Now",
       "confirmPublish": "Publish this course now?",
-      "confirmUnpublish": "Unpublish this course?"
+      "confirmPublishDesc": "The course will be visible to all students.",
+      "confirmUnpublish": "Unpublish this course?",
+      "confirmUnpublishDesc": "The course will no longer be visible to students."
     },
     "status": {
       "published": "Published",

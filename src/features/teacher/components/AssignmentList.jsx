@@ -13,6 +13,8 @@ import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
 import { Badge } from "../../../shared/ui/Badge";
 import { AssignmentService } from "../../../shared/data/assignments-teacher";
+import { useToast } from "../../../app/providers/ToastProvider";
+import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
 
 /**
  * AssignmentList - List and manage assignments for a course
@@ -28,8 +30,21 @@ export function AssignmentList({
   onViewSubmissions,
 }) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [assignments, setAssignments] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [confirmation, setConfirmation] = React.useState({
+    open: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+    variant: "default",
+    confirmText: "",
+  });
+
+  const closeConfirmation = () => {
+    setConfirmation((prev) => ({ ...prev, open: false }));
+  };
 
   React.useEffect(() => {
     loadAssignments();
@@ -47,15 +62,27 @@ export function AssignmentList({
     }
   };
 
-  const handleDelete = async (assignment) => {
-    if (!confirm(t("teacher.assignment.deleteAssignmentConfirm"))) return;
-    try {
-      await AssignmentService.delete(assignment.$id);
-      setAssignments(assignments.filter((a) => a.$id !== assignment.$id));
-    } catch (error) {
-      console.error("Failed to delete assignment:", error);
-      alert(t("teacher.errors.deleteFailed"));
-    }
+  const handleDelete = (assignment) => {
+    setConfirmation({
+      open: true,
+      title: t("teacher.assignment.deleteAssignmentConfirm"),
+      description:
+        t("teacher.assignment.deleteAssignmentDesc") ||
+        "¿Estás seguro de eliminar esta tarea?",
+      variant: "destructive",
+      confirmText: t("common.delete"),
+      onConfirm: async () => {
+        try {
+          await AssignmentService.delete(assignment.$id);
+          setAssignments(assignments.filter((a) => a.$id !== assignment.$id));
+          closeConfirmation();
+        } catch (error) {
+          console.error("Failed to delete assignment:", error);
+          showToast(t("teacher.errors.deleteFailed"), "error");
+          closeConfirmation();
+        }
+      },
+    });
   };
 
   const formatDate = (dateString) => {
@@ -152,6 +179,16 @@ export function AssignmentList({
           ))}
         </div>
       )}
+
+      <ConfirmationModal
+        open={confirmation.open}
+        onClose={closeConfirmation}
+        onConfirm={confirmation.onConfirm}
+        title={confirmation.title}
+        description={confirmation.description}
+        variant={confirmation.variant}
+        confirmText={confirmation.confirmText}
+      />
     </div>
   );
 }

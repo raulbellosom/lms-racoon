@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -31,6 +31,7 @@ import { CategoryService } from "../../../shared/data/categories";
 export function CourseDetailView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { auth } = useAuth();
 
@@ -396,6 +397,15 @@ export function CourseDetailView() {
                       navigate(`/app/teach/courses/${id}`);
                       return;
                     }
+
+                    // If not logged in, redirect to register with return URL
+                    if (!auth.user) {
+                      navigate("/auth/register", {
+                        state: { returnUrl: location.pathname },
+                      });
+                      return;
+                    }
+
                     if (!canEnroll) return;
                     // handleEnroll(); // Future implementation
                   }}

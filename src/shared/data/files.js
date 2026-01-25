@@ -221,6 +221,15 @@ export const FileService = {
   getLessonAttachmentUrl,
   deleteLessonAttachment,
 
+  /**
+   * Get lesson attachment metadata (name, size, etc.)
+   * @param {string} fileId - The file ID
+   */
+  async getLessonAttachmentMetadata(fileId) {
+    if (!hasAppwrite()) return null;
+    return storage.getFile(APPWRITE.buckets.lessonAttachments, fileId);
+  },
+
   // Submission attachments
   uploadSubmissionAttachment,
   getSubmissionAttachmentUrl,

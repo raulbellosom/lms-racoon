@@ -1,114 +1,116 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Search, Filter } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 import { PageLayout } from "../../../shared/ui/PageLayout";
 import { CatalogFilters } from "../components/CatalogFilters";
-import { CatalogCourseCard } from "../components/CatalogCourseCard";
+import { CourseCard } from "../../../components/courses/CourseCard";
 import { Drawer } from "../../../shared/ui/Drawer";
 import { Button } from "../../../shared/ui/Button";
-
-// Mock data until we have the service
-const MOCK_CATEGORIES = [
-  { $id: "1", name: "Desarrollo" },
-  { $id: "2", name: "Diseño" },
-  { $id: "3", name: "Negocios" },
-  { $id: "4", name: "Marketing" },
-];
-
-const MOCK_COURSES = [
-  {
-    $id: "c1",
-    title: "Master en React 2024: De Cero a Experto",
-    subtitle: "Aprende Hooks, Context, Redux y crea aplicaciones reales.",
-    category: "Desarrollo",
-    level: "advanced",
-    priceCents: 19999,
-    rating: 4.9,
-    studentsCount: 1540,
-    coverUrl:
-      "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    $id: "c2",
-    title: "UI/UX Design Bootcamp",
-    subtitle:
-      "Diseña interfaces modernas y experiencias de usuario increíbles.",
-    category: "Diseño",
-    level: "beginner",
-    priceCents: 24900,
-    rating: 4.7,
-    studentsCount: 890,
-    coverUrl:
-      "https://images.unsplash.com/photo-1586717791821-3f44a5638d48?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    $id: "c3",
-    title: "Marketing Digital para Emprendedores",
-    subtitle: "Estrategias de crecimiento, SEO y redes sociales.",
-    category: "Marketing",
-    level: "intermediate",
-    priceCents: 0,
-    rating: 4.5,
-    studentsCount: 3200,
-    coverUrl:
-      "https://images.unsplash.com/photo-1557838923-2985c318be48?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    $id: "c4",
-    title: "Finanzas Personales 101",
-    subtitle: "Toma el control de tu dinero e invierte inteligentemente.",
-    category: "Negocios",
-    level: "beginner",
-    priceCents: 14900,
-    rating: 4.8,
-    studentsCount: 500,
-    coverUrl:
-      "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=600",
-  },
-];
+import {
+  listPublishedCourses,
+  getCourseById,
+} from "../../../shared/data/courses";
+import { CategoryService } from "../../../shared/data/categories";
 
 export function CatalogView() {
   const { t } = useTranslation();
   const [showMobileFilters, setShowMobileFilters] = React.useState(false);
+
+  // Data states
+  const [categories, setCategories] = React.useState([]);
+  const [courses, setCourses] = React.useState([]);
+  const [totalCourses, setTotalCourses] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
+
+  // Filters state
   const [filters, setFilters] = React.useState({
     search: "",
     categories: [],
+    // Levels logic would require backend support or client-side filter if small dataset
+    // For now we will keep the UI but maybe disable functionality or implementing client-side if needed.
+    // The user request focused on API integration.
     levels: [],
   });
 
-  // Filter logic (simple client-side for now)
-  const filteredCourses = React.useMemo(() => {
-    return MOCK_COURSES.filter((course) => {
-      // Search
-      if (
-        filters.search &&
-        !course.title.toLowerCase().includes(filters.search.toLowerCase())
-      ) {
-        return false;
+  const [page, setPage] = React.useState(1);
+  const LIMIT = 12;
+
+  // Fetch Categories
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await CategoryService.list({ limit: 100 });
+        setCategories(res.documents);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
       }
-      // Categories (using name match for mock simplicity, purely by chance if IDs matched)
-      // In real app compare IDs. Here mock has category names.
-      if (
-        filters.categories.length > 0 &&
-        !filters.categories.includes(
-          MOCK_CATEGORIES.find((c) => c.name === course.category)?.$id,
-        )
-      ) {
-        return false;
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch Courses
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      setLoading(true);
+      try {
+        // Prepare API params
+        // Note: Our modified service supports single categoryId, but UI supports multiple.
+        // We will fetch by the first category selected for now, or consider strict filtering.
+        // If we want multiple categories OR logic, we need advanced Appwrite queries or multiple requests.
+        // For simplicity and matching typical patterns, let's filter by the first selected category if any.
+        const categoryId =
+          filters.categories.length > 0 ? filters.categories[0] : "";
+
+        // Debounce search could be added here, but relying on effect for now
+        const { documents, total } = await listPublishedCourses({
+          q: filters.search,
+          categoryId,
+          page,
+          limit: LIMIT,
+        });
+
+        // If client-side level filtering is desired, we could do it here,
+        // but pagination complicates it. Ideally levels are a query param.
+        // Checking if we should filter client side for levels:
+        let displayDocs = documents;
+        if (filters.levels.length > 0) {
+          displayDocs = documents.filter((doc) =>
+            filters.levels.includes(doc.level),
+          );
+        }
+
+        setCourses(displayDocs);
+        setTotalCourses(total);
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+      } finally {
+        setLoading(false);
       }
-      // Levels
-      if (filters.levels.length > 0 && !filters.levels.includes(course.level)) {
-        return false;
-      }
-      return true;
-    });
-  }, [filters]);
+    };
+
+    // Debounce search slightly
+    const timeoutId = setTimeout(fetchCourses, 300);
+    return () => clearTimeout(timeoutId);
+  }, [filters.search, filters.categories, filters.levels, page]);
+
+  // Reset page on filter change
+  React.useEffect(() => {
+    setPage(1);
+  }, [filters.search, filters.categories, filters.levels]);
+
+  const totalPages = Math.ceil(totalCourses / LIMIT);
 
   return (
     <div className="min-h-dvh bg-[rgb(var(--bg-base))] pb-20">
-      {/* Header / Hero specific to Catalog if not using generic PageLayout title only */}
+      {/* Header / Hero */}
       <div className="bg-[rgb(var(--bg-surface))] border-b border-[rgb(var(--border-base))] px-6 py-12 md:py-16">
         <div className="mx-auto max-w-7xl">
           <motion.h1
@@ -139,7 +141,7 @@ export function CatalogView() {
             <CatalogFilters
               filters={filters}
               onChange={setFilters}
-              categories={MOCK_CATEGORIES}
+              categories={categories}
             />
           </aside>
 
@@ -171,34 +173,72 @@ export function CatalogView() {
               </Button>
             </div>
 
-            {/* Results Grid */}
-            {filteredCourses.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredCourses.map((course) => (
-                  <CatalogCourseCard key={course.$id} course={course} />
-                ))}
+            {/* Loading State */}
+            {loading ? (
+              <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-[rgb(var(--brand-primary))]" />
               </div>
             ) : (
-              <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl bg-[rgb(var(--bg-surface))] p-8 text-center border border-[rgb(var(--border-base))] border-dashed">
-                <div className="mb-4 rounded-full bg-[rgb(var(--bg-muted))] p-4 text-[rgb(var(--text-muted))]">
-                  <Search className="h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
-                  No se encontraron cursos
-                </h3>
-                <p className="mt-2 text-[rgb(var(--text-secondary))]">
-                  Intenta ajustar tus filtros o búsqueda.
-                </p>
-                <Button
-                  variant="ghost"
-                  className="mt-4"
-                  onClick={() =>
-                    setFilters({ search: "", categories: [], levels: [] })
-                  }
-                >
-                  Limpiar filtros
-                </Button>
-              </div>
+              <>
+                {/* Results Grid */}
+                {courses.length > 0 ? (
+                  <div className="space-y-8">
+                    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                      {courses.map((course) => (
+                        <CourseCard key={course.$id} course={course} />
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          disabled={page === 1}
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Anterior
+                        </Button>
+                        <span className="text-sm font-medium text-[rgb(var(--text-secondary))]">
+                          Página {page} de {totalPages}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          disabled={page === totalPages}
+                          onClick={() =>
+                            setPage((p) => Math.min(totalPages, p + 1))
+                          }
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl bg-[rgb(var(--bg-surface))] p-8 text-center border border-[rgb(var(--border-base))] border-dashed">
+                    <div className="mb-4 rounded-full bg-[rgb(var(--bg-muted))] p-4 text-[rgb(var(--text-muted))]">
+                      <Search className="h-8 w-8" />
+                    </div>
+                    <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
+                      No se encontraron cursos
+                    </h3>
+                    <p className="mt-2 text-[rgb(var(--text-secondary))]">
+                      Intenta ajustar tus filtros o búsqueda.
+                    </p>
+                    <Button
+                      variant="ghost"
+                      className="mt-4"
+                      onClick={() =>
+                        setFilters({ search: "", categories: [], levels: [] })
+                      }
+                    >
+                      Limpiar filtros
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -214,14 +254,14 @@ export function CatalogView() {
           <CatalogFilters
             filters={filters}
             onChange={setFilters}
-            categories={MOCK_CATEGORIES}
+            categories={categories}
           />
           <div className="mt-8">
             <Button
               className="w-full"
               onClick={() => setShowMobileFilters(false)}
             >
-              Ver {filteredCourses.length} cursos
+              Ver {courses.length} resultados
             </Button>
           </div>
         </div>

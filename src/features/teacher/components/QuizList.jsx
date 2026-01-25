@@ -13,6 +13,8 @@ import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
 import { Badge } from "../../../shared/ui/Badge";
 import { QuizService } from "../../../shared/data/quizzes-teacher";
+import { useToast } from "../../../app/providers/ToastProvider";
+import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
 
 /**
  * QuizList - List and manage quizzes for a course
@@ -22,8 +24,21 @@ import { QuizService } from "../../../shared/data/quizzes-teacher";
  */
 export function QuizList({ courseId, onEdit, onCreate }) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [quizzes, setQuizzes] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const [confirmation, setConfirmation] = React.useState({
+    open: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+    variant: "default",
+    confirmText: "",
+  });
+
+  const closeConfirmation = () => {
+    setConfirmation((prev) => ({ ...prev, open: false }));
+  };
 
   React.useEffect(() => {
     loadQuizzes();
@@ -41,15 +56,27 @@ export function QuizList({ courseId, onEdit, onCreate }) {
     }
   };
 
-  const handleDelete = async (quiz) => {
-    if (!confirm(t("teacher.quiz.deleteQuizConfirm"))) return;
-    try {
-      await QuizService.delete(quiz.$id);
-      setQuizzes(quizzes.filter((q) => q.$id !== quiz.$id));
-    } catch (error) {
-      console.error("Failed to delete quiz:", error);
-      alert(t("teacher.errors.deleteFailed"));
-    }
+  const handleDelete = (quiz) => {
+    setConfirmation({
+      open: true,
+      title: t("teacher.quiz.deleteQuizConfirm"),
+      description:
+        t("teacher.quiz.deleteQuizDesc") ||
+        "¿Estás seguro de eliminar este examen?",
+      variant: "destructive",
+      confirmText: t("common.delete"),
+      onConfirm: async () => {
+        try {
+          await QuizService.delete(quiz.$id);
+          setQuizzes(quizzes.filter((q) => q.$id !== quiz.$id));
+          closeConfirmation();
+        } catch (error) {
+          console.error("Failed to delete quiz:", error);
+          showToast(t("teacher.errors.deleteFailed"), "error");
+          closeConfirmation();
+        }
+      },
+    });
   };
 
   const formatTime = (seconds) => {
@@ -139,6 +166,16 @@ export function QuizList({ courseId, onEdit, onCreate }) {
           ))}
         </div>
       )}
+
+      <ConfirmationModal
+        open={confirmation.open}
+        onClose={closeConfirmation}
+        onConfirm={confirmation.onConfirm}
+        title={confirmation.title}
+        description={confirmation.description}
+        variant={confirmation.variant}
+        confirmText={confirmation.confirmText}
+      />
     </div>
   );
 }

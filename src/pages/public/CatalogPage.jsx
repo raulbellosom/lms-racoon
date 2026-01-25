@@ -15,7 +15,7 @@ export function CatalogPage() {
     const t = setTimeout(() => {
       setLoading(true);
       listPublishedCourses({ q })
-        .then((data) => setCourses(data))
+        .then((data) => setCourses(data.documents))
         .finally(() => setLoading(false));
 
       const next = new URLSearchParams(params);
@@ -51,7 +51,10 @@ export function CatalogPage() {
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-64 animate-pulse rounded-[var(--radius)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))]" />
+            <div
+              key={i}
+              className="h-64 animate-pulse rounded-(--radius) border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))]"
+            />
           ))
         ) : courses.length ? (
           courses.map((c) => (
@@ -60,7 +63,7 @@ export function CatalogPage() {
             </Link>
           ))
         ) : (
-          <div className="col-span-full rounded-[var(--radius)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-6 text-sm text-[rgb(var(--text-secondary))]">
+          <div className="col-span-full rounded-(--radius) border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-6 text-sm text-[rgb(var(--text-secondary))]">
             No encontramos cursos con ese texto.
           </div>
         )}

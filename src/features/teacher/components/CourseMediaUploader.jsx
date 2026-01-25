@@ -13,6 +13,7 @@ import { Card } from "../../../shared/ui/Card";
 import { BannerSelectionModal } from "./BannerSelectionModal";
 import { FileService } from "../../../shared/data/files";
 import { getBannerById } from "../../../shared/assets/banners";
+import { useToast } from "../../../app/providers/ToastProvider";
 
 /**
  * CourseMediaUploader - Cover image and promo video uploader
@@ -30,6 +31,7 @@ export function CourseMediaUploader({
   courseId,
 }) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [previewUrl, setPreviewUrl] = React.useState(null);
   const [bannerModalOpen, setBannerModalOpen] = React.useState(false);
 
@@ -119,13 +121,16 @@ export function CourseMediaUploader({
     const isValidExtension = validExtensions.includes(extension);
 
     if (!isValidType && !isValidExtension) {
-      alert(t("teacher.errors.uploadFailed") + " (Formato no soportado)");
+      showToast(
+        t("teacher.errors.uploadFailed") + " (Formato no soportado)",
+        "error",
+      );
       return;
     }
 
     // Validate file size (max 8MB - increased for high res mobile photos)
     if (file.size > 8 * 1024 * 1024) {
-      alert(`${t("teacher.errors.uploadFailed")} (max 8MB)`);
+      showToast(`${t("teacher.errors.uploadFailed")} (max 8MB)`, "error");
       return;
     }
 
@@ -148,7 +153,7 @@ export function CourseMediaUploader({
       setPreviewUrl(localUrl);
     } catch (error) {
       console.error("Cover upload failed:", error);
-      alert(t("teacher.errors.uploadFailed"));
+      showToast(t("teacher.errors.uploadFailed"), "error");
     } finally {
       setUploading?.(false);
     }
@@ -182,25 +187,53 @@ export function CourseMediaUploader({
       setFormData((prev) => ({
         ...prev,
         promoVideoFileId: selection.value,
+        promoVideoCoverFileId: selection.coverId || "",
         bannerFileId: "", // Clear banner, video takes priority
       }));
     } else {
       // Selecting a banner (image or pattern)
+      // If there was a previous banner file (not a pattern), delete it
+      const oldBannerId = formData.bannerFileId;
+      if (
+        oldBannerId &&
+        !getBannerById(oldBannerId) &&
+        oldBannerId !== selection.value
+      ) {
+        try {
+          await FileService.deleteCourseCover(oldBannerId);
+        } catch (e) {
+          console.warn("Failed to delete replaced banner:", e);
+        }
+      }
+
       // We do NOT delete the promo video file here, as per instructions
       // just clear the ID from the form so banner takes priority
       setFormData((prev) => ({
         ...prev,
         bannerFileId: selection.value,
         promoVideoFileId: "", // Clear video ID so banner is displayed
+        promoVideoCoverFileId: "",
       }));
     }
   };
 
-  const handleRemoveBanner = () => {
+  const handleRemoveBanner = async () => {
+    // Only delete banner file physically (if it's not a pattern)
+    // NEVER delete promo video file physically (it belongs to a lesson)
+    const oldBannerId = formData.bannerFileId;
+    if (oldBannerId && !getBannerById(oldBannerId)) {
+      try {
+        await FileService.deleteCourseCover(oldBannerId);
+      } catch (e) {
+        console.warn("Failed to delete removed banner:", e);
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       bannerFileId: "",
       promoVideoFileId: "",
+      promoVideoCoverFileId: "",
     }));
   };
 

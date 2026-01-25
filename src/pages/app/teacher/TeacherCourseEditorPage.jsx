@@ -25,6 +25,7 @@ import { Badge } from "../../../shared/ui/Badge";
 import { Modal } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
 import { Dropdown, DropdownItem } from "../../../shared/ui/Dropdown";
+import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
 
 // Modular components
 import {
@@ -69,13 +70,32 @@ export function TeacherCourseEditorPage() {
   const { auth } = useAuth();
   const { t } = useTranslation();
   const { showToast } = useToast();
+
+  const [confirmation, setConfirmation] = React.useState({
+    open: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+    variant: "default",
+    confirmText: "",
+  });
+
+  const closeConfirmation = () => {
+    setConfirmation((prev) => ({ ...prev, open: false }));
+  };
   const isNew = courseId === "new";
 
   const [course, setCourse] = React.useState(null);
   const [loading, setLoading] = React.useState(!isNew);
   const [saving, setSaving] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
-  const [tab, setTab] = React.useState("details");
+  const [tab, setTab] = React.useState(
+    () => localStorage.getItem("teacher_course_editor_tab") || "details",
+  );
+
+  React.useEffect(() => {
+    localStorage.setItem("teacher_course_editor_tab", tab);
+  }, [tab]);
   const [categories, setCategories] = React.useState([]);
 
   // Curriculum State
@@ -144,6 +164,9 @@ export function TeacherCourseEditorPage() {
         currency: "MXN",
         language: "es",
         coverFileId: "",
+        bannerFileId: "",
+        promoVideoFileId: "",
+        promoVideoCoverFileId: "",
       });
     }
   }, [courseId]);
@@ -211,6 +234,9 @@ export function TeacherCourseEditorPage() {
         currency: data.currency || "MXN",
         language: data.language || "es",
         coverFileId: data.coverFileId || "",
+        bannerFileId: data.bannerFileId || "",
+        promoVideoFileId: data.promoVideoFileId || "",
+        promoVideoCoverFileId: data.promoVideoCoverFileId || "",
       };
       setFormData(loadedData);
       setInitialFormData(loadedData);
@@ -300,15 +326,27 @@ export function TeacherCourseEditorPage() {
     }
   };
 
-  const handleDeleteSection = async (section) => {
-    if (!confirm(t("teacher.curriculum.deleteSectionConfirm"))) return;
-    try {
-      await SectionService.delete(section.$id);
-      setSections(sections.filter((s) => s.$id !== section.$id));
-    } catch (e) {
-      console.error(e);
-      showToast(t("teacher.errors.deleteFailed"), "error");
-    }
+  const handleDeleteSection = (section) => {
+    setConfirmation({
+      open: true,
+      title: t("teacher.curriculum.deleteSectionConfirm"),
+      description:
+        t("teacher.curriculum.deleteSectionDesc") ||
+        "¿Estás seguro de que quieres eliminar esta sección? Esta acción no se puede deshacer.",
+      variant: "destructive",
+      confirmText: t("common.delete"),
+      onConfirm: async () => {
+        try {
+          await SectionService.delete(section.$id);
+          setSections(sections.filter((s) => s.$id !== section.$id));
+          closeConfirmation();
+        } catch (e) {
+          console.error(e);
+          showToast(t("teacher.errors.deleteFailed"), "error");
+          closeConfirmation();
+        }
+      },
+    });
   };
 
   // Lesson handlers
@@ -351,37 +389,71 @@ export function TeacherCourseEditorPage() {
     }
   };
 
-  const handleDeleteLesson = async (lesson) => {
-    if (!confirm(t("teacher.curriculum.deleteLessonConfirm"))) return;
-    try {
-      await LessonService.delete(lesson.$id);
-      setLessonsBySection({
-        ...lessonsBySection,
-        [lesson.sectionId]: lessonsBySection[lesson.sectionId].filter(
-          (l) => l.$id !== lesson.$id,
-        ),
-      });
-    } catch (e) {
-      console.error(e);
-      showToast(t("teacher.errors.deleteFailed"), "error");
-    }
+  const handleDeleteLesson = (lesson) => {
+    setConfirmation({
+      open: true,
+      title: t("teacher.curriculum.deleteLessonConfirm"),
+      description:
+        t("teacher.curriculum.deleteLessonDesc") ||
+        "¿Estás seguro de que quieres eliminar esta lección?",
+      variant: "destructive",
+      confirmText: t("common.delete"),
+      onConfirm: async () => {
+        try {
+          await LessonService.delete(lesson.$id);
+          setLessonsBySection({
+            ...lessonsBySection,
+            [lesson.sectionId]: lessonsBySection[lesson.sectionId].filter(
+              (l) => l.$id !== lesson.$id,
+            ),
+          });
+          closeConfirmation();
+        } catch (e) {
+          console.error(e);
+          showToast(t("teacher.errors.deleteFailed"), "error");
+          closeConfirmation();
+        }
+      },
+    });
   };
 
   // Publish handlers
-  const handleTogglePublish = async () => {
+  const handleTogglePublish = () => {
     const newState = !course?.isPublished;
-    const msg = newState
-      ? t("teacher.publish.confirmPublish")
-      : t("teacher.publish.confirmUnpublish");
-    if (!confirm(msg)) return;
 
-    try {
-      const updated = await TeacherCoursesService.publish(courseId, newState);
-      setCourse(updated);
-    } catch (e) {
-      console.error(e);
-      showToast(t("teacher.errors.statusChangeFailed"), "error");
-    }
+    setConfirmation({
+      open: true,
+      title: newState
+        ? t("teacher.publish.confirmPublish")
+        : t("teacher.publish.confirmUnpublish"),
+      description: newState
+        ? t("teacher.publish.confirmPublishDesc") ||
+          "El curso será visible para todos los estudiantes."
+        : t("teacher.publish.confirmUnpublishDesc") ||
+          "El curso dejará de ser visible para los estudiantes.",
+      variant: newState ? "default" : "destructive",
+      confirmText: newState
+        ? t("teacher.publish.publishNow")
+        : t("teacher.publish.unpublishNow"),
+      onConfirm: async () => {
+        try {
+          const updated = await TeacherCoursesService.publish(
+            courseId,
+            newState,
+          );
+          setCourse(updated);
+          showToast(
+            newState ? t("teacher.published") : t("teacher.unpublished"),
+            "success",
+          );
+          closeConfirmation();
+        } catch (e) {
+          console.error(e);
+          showToast(t("teacher.errors.statusChangeFailed"), "error");
+          closeConfirmation();
+        }
+      },
+    });
   };
 
   if (loading) {
@@ -669,6 +741,17 @@ export function TeacherCourseEditorPage() {
         section={lessonSection}
         courseId={courseId}
         onSave={handleSaveLesson}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        open={confirmation.open}
+        onClose={closeConfirmation}
+        onConfirm={confirmation.onConfirm}
+        title={confirmation.title}
+        description={confirmation.description}
+        variant={confirmation.variant}
+        confirmText={confirmation.confirmText}
       />
     </div>
   );

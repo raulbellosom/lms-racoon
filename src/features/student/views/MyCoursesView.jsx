@@ -11,6 +11,7 @@ import { Button } from "../../../shared/ui/Button";
 import { ListItemSkeleton } from "../../../shared/ui/Skeleton";
 import { listMyEnrollments } from "../../../shared/data/enrollments";
 import { getCourseById } from "../../../shared/data/courses";
+import { CourseCard } from "../../../components/courses/CourseCard";
 
 /**
  * My Courses view - shows enrolled courses with progress
@@ -65,61 +66,42 @@ export function MyCoursesView() {
           </motion.div>
         ) : (
           // Course cards
-          courses.map((course, index) => (
-            <motion.div
-              key={course.$id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-            >
-              <Card className="overflow-hidden transition-shadow hover:shadow-lg">
-                <div className="flex gap-4 p-4">
-                  {/* Course thumbnail */}
-                  <div className="relative h-20 w-28 flex-shrink-0 overflow-hidden rounded-xl">
-                    {course.coverUrl ? (
-                      <img
-                        src={course.coverUrl}
-                        alt={course.title}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[rgb(var(--bg-muted))]">
-                        <BookOpen className="h-8 w-8 text-[rgb(var(--text-muted))]" />
-                      </div>
-                    )}
-                  </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {courses.map((course, index) => (
+              <motion.div
+                key={course.$id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <div className="relative group">
+                  {/* 
+                         CourseCard links to public view by default.
+                         For 'My Courses', we usually want to go to 'Continue Learning' or Learn Page.
+                         The User said "usarlo en todas partes", implying consistency is key.
+                         
+                         If we use CourseCard, clicking title goes to /courses/:id.
+                         The previous implementation had "Continue" button -> /app/learn/:id
+                         
+                         Let's wrap CourseCard or overlay the "Continue" button.
+                         Similar to Teacher view, we can overlay action buttons.
+                     */}
+                  <CourseCard course={course} />
 
-                  {/* Course info */}
-                  <div className="flex min-w-0 flex-1 flex-col justify-between">
-                    <div>
-                      <h3 className="line-clamp-2 text-sm font-bold leading-tight">
-                        {course.title}
-                      </h3>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-[rgb(var(--text-secondary))]">
-                        {course.teacherName}
-                      </p>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="mt-2 flex gap-2">
-                      <Link to={`/app/learn/${course.$id}`}>
-                        <Button size="sm">
-                          <PlayCircle className="h-4 w-4" />
-                          {t("student.continue")}
-                        </Button>
-                      </Link>
-                      <Link to={`/courses/${course.$id}`}>
-                        <Button size="sm" variant="ghost">
-                          <BookOpen className="h-4 w-4" />
-                          {t("common.view")}
-                        </Button>
-                      </Link>
-                    </div>
+                  <div className="absolute top-3 right-3 z-20 flex gap-2">
+                    <Link to={`/app/learn/${course.$id}`}>
+                      <Button
+                        size="sm"
+                        className="shadow-lg backdrop-blur-md bg-white/90 hover:bg-white text-black"
+                      >
+                        <PlayCircle className="h-4 w-4 mr-1" /> Continuar
+                      </Button>
+                    </Link>
                   </div>
                 </div>
-              </Card>
-            </motion.div>
-          ))
+              </motion.div>
+            ))}
+          </div>
         )}
       </div>
     </PageLayout>
