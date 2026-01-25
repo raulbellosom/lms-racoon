@@ -45,6 +45,7 @@ export function Modal({
   size = "md",
   showClose = true,
   className,
+  footer,
 }) {
   // Close on Escape key
   React.useEffect(() => {
@@ -97,7 +98,7 @@ export function Modal({
             animate="visible"
             exit="exit"
             className={cn(
-              "relative w-full rounded-[var(--radius-lg)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-6 shadow-xl",
+              "relative w-full rounded-[var(--radius-lg)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] shadow-xl flex flex-col max-h-[85vh] sm:max-h-[90vh]", // Updated layout
               sizeClasses[size],
               className,
             )}
@@ -107,17 +108,19 @@ export function Modal({
             {showClose && (
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 rounded-full p-1.5 text-[rgb(var(--text-muted))] transition hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]"
+                className="absolute right-4 top-4 z-20 rounded-full p-1.5 text-[rgb(var(--text-muted))] transition hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))]"
               >
                 <X className="h-5 w-5" />
               </button>
             )}
 
-            {/* Header */}
+            {/* Header - Fixed */}
             {(title || description) && (
-              <div className="mb-4 pr-8">
+              <div className="shrink-0 px-6 pt-6 pb-4 border-b border-[rgb(var(--border-base))]">
                 {title && (
-                  <h2 className="text-lg font-bold tracking-tight">{title}</h2>
+                  <h2 className="text-lg font-bold tracking-tight pr-6">
+                    {title}
+                  </h2>
                 )}
                 {description && (
                   <p className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
@@ -127,8 +130,16 @@ export function Modal({
               </div>
             )}
 
-            {/* Content */}
-            {children}
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">{children}</div>
+
+            {/* Footer - Fixed (Optional) */}
+            {/* Footer - Fixed (Optional) */}
+            {footer && (
+              <div className="shrink-0 px-6 py-4 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] rounded-b-[var(--radius-lg)]">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </div>
       )}

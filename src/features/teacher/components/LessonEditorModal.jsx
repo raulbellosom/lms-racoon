@@ -305,7 +305,6 @@ export function LessonEditorModal({
         videoCoverFileId,
         durationSec: formData.durationSec,
         attachments: attachments.map((a) => a.id), // Send ID array
-        // attachmentsJson: JSON.stringify(attachments), // Removed
       };
 
       await onSave?.(lessonData, lesson?.$id);
@@ -326,6 +325,20 @@ export function LessonEditorModal({
         isNew ? t("teacher.lesson.createTitle") : t("teacher.lesson.editTitle")
       }
       maxWidth="max-w-4xl"
+      footer={
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            disabled={saving || uploading}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={handleSave} disabled={saving || uploading}>
+            {saving ? t("teacher.form.saving") : t("common.save")}
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-4">
         {/* Lesson Type Selector */}
@@ -581,20 +594,6 @@ export function LessonEditorModal({
             onChange={handleAttachmentUpload}
           />
         </div>
-      </div>
-
-      {/* Footer Actions */}
-      <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-        <Button
-          variant="secondary"
-          onClick={onClose}
-          disabled={saving || uploading}
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button onClick={handleSave} disabled={saving || uploading}>
-          {saving ? t("teacher.form.saving") : t("common.save")}
-        </Button>
       </div>
     </Modal>
   );

@@ -36,20 +36,11 @@ export const LessonService = {
     return await db.createDocument(databaseId, lessons, ID.unique(), {
       ...data,
       enabled: true,
-      attachmentsJson: JSON.stringify(data.attachmentsJson || []),
     });
   },
 
   async update(lessonId, data) {
-    // Handle JSON serialization if attachments are passed
-    const payload = { ...data };
-    if (
-      payload.attachmentsJson &&
-      typeof payload.attachmentsJson !== "string"
-    ) {
-      payload.attachmentsJson = JSON.stringify(payload.attachmentsJson);
-    }
-    return await db.updateDocument(databaseId, lessons, lessonId, payload);
+    return await db.updateDocument(databaseId, lessons, lessonId, data);
   },
 
   async delete(lessonId) {
