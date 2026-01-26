@@ -137,6 +137,7 @@
 | videoFileId      | string   |       ❌ | false   | ""      | min=0 max=36     | bucket `lessonVideos`      |
 | videoCoverFileId | string   |       ❌ | false   | ""      | min=0 max=36     | bucket `lessonVideos`      |
 | attachments      | string[] |       ❌ | true    | []      | size=36          | bucket `lessonAttachments` |
+| isFreePreview    | boolean  |       ❌ | false   | false   | —                |                            |
 | enabled          | boolean  |       ❌ | false   | true    | —                |                            |
 
 **Enum values**
@@ -427,6 +428,102 @@
 
 - `uniq_user_course` — unique — `userId`, `courseId`
 - `idx_courseId` — key — `courseId` (asc)
+
+---
+
+### 19) `userPreferences`
+
+| Attribute | Type   | Required | Default  | Constraints     | Notes |
+| --------- | ------ | -------: | -------- | --------------- | ----- |
+| userId    | string |       ✅ | —        | min=1 max=36    |       |
+| language  | string |       ❌ | "es"     | min=2 max=5     |       |
+| theme     | enum   |       ❌ | "system" | —               |       |
+| prefsJson | string |       ❌ | "{}"     | min=0 max=10000 |       |
+
+**Enum values**
+
+- `theme`: `light`, `dark`, `system`
+
+**Indexes**
+
+- `uniq_userId` — unique — `userId`
+
+---
+
+### 20) `notifications`
+
+| Attribute | Type     | Required | Default | Constraints    | Notes      |
+| --------- | -------- | -------: | ------- | -------------- | ---------- |
+| userId    | string   |       ✅ | —       | min=1 max=36   |            |
+| type      | enum     |       ✅ | —       | —              |            |
+| title     | string   |       ✅ | —       | min=1 max=120  |            |
+| body      | string   |       ✅ | —       | min=1 max=500  |            |
+| dataJson  | string   |       ❌ | "{}"    | min=0 max=2000 | extra data |
+| read      | boolean  |       ❌ | false   | —              |            |
+| readedAt  | datetime |       ❌ | —       | —              |            |
+
+**Enum values**
+
+- `type`: `system`, `sale`, `review`, `assignment`, `course_update`
+
+**Indexes**
+
+- `idx_user_read` — key — `userId` (asc), `read` (asc)
+- `idx_read` — key — `read` (asc)
+
+---
+
+### 21) `cart`
+
+| Attribute | Type     | Required | Default | Constraints  | Notes |
+| --------- | -------- | -------: | ------- | ------------ | ----- |
+| userId    | string   |       ✅ | —       | min=1 max=36 |       |
+| courseId  | string   |       ✅ | —       | min=1 max=36 |       |
+| addedAt   | datetime |       ✅ | —       | —            |       |
+
+**Indexes**
+
+- `uniq_user_course` — unique — `userId` (asc), `courseId` (asc)
+- `idx_userId` — key — `userId` (asc)
+
+---
+
+### 22) `coupons`
+
+| Attribute | Type     | Required | Default | Constraints  | Notes            |
+| --------- | -------- | -------: | ------- | ------------ | ---------------- |
+| code      | string   |       ✅ | —       | min=3 max=20 | uppercase unique |
+| type      | enum     |       ✅ | —       | —            |                  |
+| value     | float    |       ✅ | —       | min=0        |                  |
+| courseId  | string   |       ❌ | ""      | min=0 max=36 | global si vacío  |
+| maxUses   | integer  |       ❌ | 0       | min=0        | 0 = ilimitado    |
+| usedCount | integer  |       ❌ | 0       | min=0        |                  |
+| expiresAt | datetime |       ❌ | —       | —            |                  |
+| enabled   | boolean  |       ❌ | true    | —            |                  |
+
+**Enum values**
+
+- `type`: `percent`, `fixed`
+
+**Indexes**
+
+- `uniq_code` — unique — `code`
+- `idx_enabled` — key — `enabled` (asc)
+
+---
+
+### 23) `couponRedemptions`
+
+| Attribute  | Type     | Required | Default | Constraints  | Notes |
+| ---------- | -------- | -------: | ------- | ------------ | ----- |
+| couponId   | string   |       ✅ | —       | min=1 max=36 |       |
+| userId     | string   |       ✅ | —       | min=1 max=36 |       |
+| redeemedAt | datetime |       ✅ | —       | —            |       |
+| orderId    | string   |       ❌ | ""      | min=0 max=36 |       |
+
+**Indexes**
+
+- `uniq_coupon_user` — unique — `couponId`, `userId` (si es 1 user per coupon) or key
 
 ---
 

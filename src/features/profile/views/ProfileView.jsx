@@ -11,6 +11,7 @@ import { ProfileService } from "../../../shared/data/profiles";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { functions } from "../../../shared/appwrite/client";
 import { APPWRITE } from "../../../shared/appwrite/ids";
+import { PreferencesCard } from "../components/PreferencesCard";
 
 export function ProfileView() {
   const { t } = useTranslation();
@@ -364,6 +365,9 @@ export function ProfileView() {
             </div>
           </div>
         </Card>
+
+        {/* Preferences Card */}
+        <PreferencesCard />
       </div>
     </PageLayout>
   );

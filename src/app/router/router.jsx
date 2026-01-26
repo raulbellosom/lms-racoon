@@ -25,6 +25,7 @@ import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
 import { TeacherCourseEditorPage } from "../../pages/app/teacher/TeacherCourseEditorPage";
 import { AdminUsersPage } from "../../pages/app/admin/AdminUsersPage";
 import { AdminCategoriesPage } from "../../pages/app/admin/AdminCategoriesPage";
+import { NotificationsPage } from "../../pages/app/notifications/NotificationsPage";
 
 import {
   requireAuthLoader,
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
           { path: "profile", element: <ProfileView /> },
           { path: "settings", element: <SettingsView /> },
           { path: "favorites", element: <FavoritesView /> },
+          { path: "notifications", element: <NotificationsPage /> },
 
           {
             path: "teach",

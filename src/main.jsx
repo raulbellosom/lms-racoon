@@ -40,15 +40,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       >
         <ThemeProvider defaultTheme="system" storageKey="racoon-lms-theme">
           <ToastProvider>
-            <CartProvider>
-              <AuthProvider>
+            <AuthProvider>
+              <CartProvider>
                 <RouterProvider
                   router={router}
                   fallbackElement={<LoadingScreen />}
                 />
                 <PWAInstallPrompt />
-              </AuthProvider>
-            </CartProvider>
+              </CartProvider>
+            </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
       </PersistQueryClientProvider>

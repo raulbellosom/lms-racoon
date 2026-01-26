@@ -11,6 +11,7 @@ import {
   HelpCircle,
   ClipboardList,
   MessageSquare,
+  Ticket,
 } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useToast } from "../../../app/providers/ToastProvider";
@@ -40,6 +41,7 @@ import {
   MarkdownDescriptionEditor,
   TeacherQuizGrades,
   TeacherAssignmentGrading,
+  TeacherCouponsManager,
 } from "../../../features/teacher";
 
 // Tab Button Component
@@ -636,6 +638,14 @@ export function TeacherCourseEditorPage() {
             {t("teacher.tabs.assignments")}
           </TabButton>
           <TabButton
+            active={tab === "coupons"}
+            onClick={() => !isNew && setTab("coupons")}
+            icon={Ticket}
+            disabled={isNew}
+          >
+            {t("teacher.tabs.coupons")}
+          </TabButton>
+          <TabButton
             active={tab === "reviews"}
             onClick={() => !isNew && setTab("reviews")}
             icon={MessageSquare}
@@ -734,6 +744,9 @@ export function TeacherCourseEditorPage() {
         {tab === "assignments" && (
           <TeacherAssignmentGrading courseId={courseId} />
         )}
+
+        {/* === COUPONS TAB === */}
+        {tab === "coupons" && <TeacherCouponsManager courseId={courseId} />}
 
         {/* === REVIEWS TAB === */}
         {tab === "reviews" && (

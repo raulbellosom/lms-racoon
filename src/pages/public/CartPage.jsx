@@ -10,7 +10,8 @@ import { FileService } from "../../shared/data/files";
 
 export function CartPage() {
   const { cartItems, removeFromCart, getCartTotal } = useCart();
-  const { user } = useAuth();
+  const { auth } = useAuth();
+  const user = auth?.user;
   const navigate = useNavigate();
   const { t } = useTranslation();
 

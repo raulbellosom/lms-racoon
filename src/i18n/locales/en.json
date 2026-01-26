@@ -256,6 +256,7 @@
       "curriculum": "Content",
       "quizzes": "Quizzes",
       "assignments": "Assignments",
+      "coupons": "Coupons",
       "reviews": "Reviews",
       "settings": "Settings"
     },
@@ -395,6 +396,30 @@
       "deleteAssignmentConfirm": "Delete this assignment?",
       "deleteAssignmentDesc": "All student submissions will be deleted.",
       "createInCurriculum": "To create an assignment, go to the 'Content' tab and add a new 'Assignment' lesson."
+    },
+    "coupons": {
+      "title": "Course Coupons",
+      "subtitle": "Manage discount codes for this course",
+      "add": "Create Coupon",
+      "empty": "No coupons",
+      "emptyDesc": "Create the first discount code to attract students.",
+      "discount": "discount",
+      "used": "Used:",
+      "expires": "Expires:",
+      "edit": "Edit Coupon",
+      "create": "Create Coupon",
+      "code": "Code",
+      "type": "Type",
+      "typePercent": "Percentage (%)",
+      "typeFixed": "Fixed Amount ($)",
+      "value": "Value",
+      "maxUses": "Usage Limit (0=∞)",
+      "expiresAt": "Expiration (Optional)",
+      "validationError": "Invalid code or value",
+      "created": "Coupon created successfully",
+      "updated": "Coupon updated successfully",
+      "deleted": "Coupon deleted",
+      "updateFailed": "Failed to update status"
     },
     "reviews": {
       "title": "Course reviews",
@@ -550,5 +575,29 @@
     "categories": "Categories",
     "levels": "Levels",
     "results": "View {{count}} results"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your personal preferences",
+    "editProfile": "Edit Profile",
+    "tabs": {
+      "general": "General",
+      "appearance": "Appearance",
+      "notifications": "Notifications"
+    },
+    "language": {
+      "title": "Language",
+      "desc": "Select the interface language."
+    },
+    "theme": {
+      "title": "Theme",
+      "desc": "Customize how Racoon LMS looks on your device."
+    },
+    "notifications": {
+      "title": "Notification Settings",
+      "desc": "Choose how you want to receive alerts.",
+      "sound": "Notification Sound",
+      "soundDesc": "Play a sound when a new notification arrives."
+    }
   }
 }

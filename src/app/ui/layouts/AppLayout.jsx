@@ -43,7 +43,9 @@ import {
 import { ThemeSelect } from "../../../shared/theme/ThemeSelect";
 import { LanguageSelector } from "../../../shared/ui/LanguageSelector";
 import { ProfileService } from "../../../shared/data/profiles";
+
 import { CartDropdown } from "../../../features/cart/components/CartDropdown";
+import { NotificationsPopover } from "../../../shared/components/NotificationsPopover";
 
 /**
  * NavItem with precise fixed-width icon aligned.
@@ -311,6 +313,7 @@ export function AppLayout() {
 
         {/* Right Actions: User Profile */}
         <div className="flex items-center gap-4">
+          <NotificationsPopover />
           <CartDropdown />
           <div className="h-8 w-px bg-[rgb(var(--border-base))]" />
           <Dropdown
@@ -425,7 +428,10 @@ export function AppLayout() {
             <span className="font-bold">Racoon LMS</span>
           </div>
 
-          <CartDropdown />
+          <div className="flex items-center gap-3">
+            <NotificationsPopover />
+            <CartDropdown />
+          </div>
         </div>
       </header>
 

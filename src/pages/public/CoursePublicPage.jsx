@@ -21,7 +21,7 @@ import {
   createComment,
 } from "../../shared/data/comments";
 import { listAssignmentsForCourse } from "../../shared/data/assignments";
-import { Tabs, Tab } from "../../shared/ui/Tabs";
+import { Tabs, TabsList, TabsTrigger } from "../../shared/ui/Tabs";
 import { Textarea } from "../../shared/ui/Textarea";
 import { useAuth } from "../../app/providers/AuthProvider";
 import { enrollInCourse } from "../../shared/data/enrollments";
@@ -239,21 +239,19 @@ export function CoursePublicPage() {
           </Card>
 
           <div className="mt-6">
-            <Tabs
-              value={tab}
-              onChange={setTab}
-              className="sticky top-16 z-10 -mx-4 px-4 py-2 bg-[rgb(var(--bg-base))]/80 backdrop-blur-soft"
-            >
-              <Tab value="about" label="Contenido" />
-              <Tab
-                value="assignments"
-                label={`Tareas (${assignments.length})`}
-              />
-              <Tab
-                value="qa"
-                label={`Q&A (${comments.filter((c) => !c.parentId).length})`}
-              />
-              <Tab value="reviews" label={`Reviews (${reviews.length})`} />
+            <Tabs value={tab} onValueChange={setTab}>
+              <TabsList className="sticky top-16 z-10 -mx-4 px-4 py-2 bg-[rgb(var(--bg-base))]/80 backdrop-blur-soft">
+                <TabsTrigger value="about">Contenido</TabsTrigger>
+                <TabsTrigger value="assignments">
+                  Tareas ({assignments.length})
+                </TabsTrigger>
+                <TabsTrigger value="qa">
+                  Q&A ({comments.filter((c) => !c.parentId).length})
+                </TabsTrigger>
+                <TabsTrigger value="reviews">
+                  Reviews ({reviews.length})
+                </TabsTrigger>
+              </TabsList>
             </Tabs>
 
             {tab === "about" && (

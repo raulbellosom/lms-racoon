@@ -2,7 +2,7 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import { CheckCircle2, ListVideo, PlayCircle } from "lucide-react";
 import { Card } from "../../../shared/ui/Card";
-import { Tabs, Tab } from "../../../shared/ui/Tabs";
+import { Tabs, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { Textarea } from "../../../shared/ui/Textarea";
 import {
   listCommentsForCourse,
@@ -150,18 +150,22 @@ export function LearnPage() {
           )}
 
           <div className="p-4">
-            <Tabs value={lessonTab} onChange={setLessonTab} className="mb-3">
-              <Tab value="overview" label="Resumen" />
-              <Tab value="chapters" label="Capítulos" />
-              <Tab
-                value="assignments"
-                label={`Tareas (${assignments.length})`}
-              />
-              <Tab
-                value="qa"
-                label={`Q&A (${comments.filter((c) => !c.parentId).length})`}
-              />
-              <Tab value="quiz" label="Quiz" />
+            <Tabs
+              value={lessonTab}
+              onValueChange={setLessonTab}
+              className="mb-3"
+            >
+              <TabsList>
+                <TabsTrigger value="overview">Resumen</TabsTrigger>
+                <TabsTrigger value="chapters">Capítulos</TabsTrigger>
+                <TabsTrigger value="assignments">
+                  Tareas ({assignments.length})
+                </TabsTrigger>
+                <TabsTrigger value="qa">
+                  Q&A ({comments.filter((c) => !c.parentId).length})
+                </TabsTrigger>
+                <TabsTrigger value="quiz">Quiz</TabsTrigger>
+              </TabsList>
             </Tabs>
 
             {lessonTab === "overview" && (

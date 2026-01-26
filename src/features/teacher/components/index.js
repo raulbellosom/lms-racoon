@@ -1,4 +1,3 @@
-// Teacher Components Index
 export { CourseBasicInfoForm } from "./CourseBasicInfoForm";
 export { CourseMediaUploader } from "./CourseMediaUploader";
 export { CoursePricingForm } from "./CoursePricingForm";
@@ -15,3 +14,4 @@ export { CharacterCountCircle } from "./CharacterCountCircle";
 export { BannerSelectionModal } from "./BannerSelectionModal";
 export { TeacherQuizGrades } from "./TeacherQuizGrades";
 export { TeacherAssignmentGrading } from "./TeacherAssignmentGrading";
+export { TeacherCouponsManager } from "./TeacherCouponsManager";

@@ -1,46 +1,81 @@
-import React from "react";
+import React, { createContext, useContext, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "./cn";
 
-export function Tabs({ value, onChange, children, className = "" }) {
+const TabsContext = createContext(null);
+
+export function Tabs({
+  defaultValue,
+  value,
+  onValueChange,
+  children,
+  className,
+}) {
+  const [localValue, setLocalValue] = useState(defaultValue);
+  const actualValue = value !== undefined ? value : localValue;
+
+  const handleChange = (val) => {
+    if (value === undefined) setLocalValue(val);
+    onValueChange?.(val);
+  };
+
+  return (
+    <TabsContext.Provider
+      value={{ value: actualValue, onChange: handleChange }}
+    >
+      <div className={cn("w-full", className)}>{children}</div>
+    </TabsContext.Provider>
+  );
+}
+
+export function TabsList({ children, className }) {
   return (
     <div
       className={cn(
         "scrollbar-hide flex gap-2 overflow-x-auto py-1",
-        className
+        className,
       )}
     >
-      {React.Children.map(children, (child) => {
-        if (!React.isValidElement(child)) return null;
-        return React.cloneElement(child, {
-          active: child.props.value === value,
-          onSelect: () => onChange?.(child.props.value),
-        });
-      })}
+      {children}
     </div>
   );
 }
 
-export function Tab({ label, active, onSelect, className = "" }) {
+export function TabsTrigger({ value, children, className }) {
+  const { value: selectedValue, onChange } = useContext(TabsContext);
+  const isActive = selectedValue === value;
+
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={() => onChange(value)}
       className={cn(
         "relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold",
         "border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))]",
-        "active:scale-[0.98] transition",
-        className
+        "hover:text-[rgb(var(--text-primary))] active:scale-[0.98] transition-all",
+        isActive && "text-white hover:text-white border-transparent",
+        className,
       )}
     >
-      {active ? (
-        <motion.span
-          layoutId="tab-pill"
+      {isActive && (
+        <motion.div
+          layoutId="active-tab"
           className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))]"
-          transition={{ type: "spring", stiffness: 500, damping: 40 }}
+          initial={false}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
-      ) : null}
-      <span className={cn("relative", active ? "text-white" : "")}>{label}</span>
+      )}
+      <span className="relative z-10">{children}</span>
     </button>
+  );
+}
+
+export function TabsContent({ value, children, className }) {
+  const { value: selectedValue } = useContext(TabsContext);
+  if (selectedValue !== value) return null;
+  return (
+    <div className={cn("mt-2 outline-none", className)} role="tabpanel">
+      {children}
+    </div>
   );
 }

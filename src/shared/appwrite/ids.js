@@ -25,6 +25,11 @@ export const APPWRITE = {
     quizQuestions: pick("VITE_APPWRITE_COL_QUIZ_QUESTIONS", "quizQuestions"),
     quizAttempts: pick("VITE_APPWRITE_COL_QUIZ_ATTEMPTS", "quizAttempts"),
     favorites: pick("VITE_APPWRITE_COL_FAVORITES", "favorites"),
+    userPreferences: pick(
+      "VITE_APPWRITE_COL_USER_PREFERENCES",
+      "userPreferences",
+    ),
+    notifications: pick("VITE_APPWRITE_COL_NOTIFICATIONS", "notifications"),
   },
   buckets: {
     avatars: pick("VITE_APPWRITE_BUCKET_AVATARS", "avatars"),

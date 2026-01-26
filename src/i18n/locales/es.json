@@ -255,6 +255,7 @@
       "curriculum": "Contenido",
       "quizzes": "Evaluaciones",
       "assignments": "Tareas",
+      "coupons": "Cupones",
       "reviews": "Reseñas",
       "settings": "Ajustes"
     },
@@ -404,6 +405,30 @@
       "deleteAssignmentDesc": "Se eliminarán todas las entregas asociadas.",
       "settings": "Configuración de la tarea",
       "configure": "Configurar instrucciones"
+    },
+    "coupons": {
+      "title": "Cupones del Curso",
+      "subtitle": "Gestiona códigos de descuento para este curso",
+      "add": "Crear Cupón",
+      "empty": "No hay cupones",
+      "emptyDesc": "Crea el primer código de descuento para atraer alumnos.",
+      "discount": "de descuento",
+      "used": "Usado:",
+      "expires": "Expira:",
+      "edit": "Editar Cupón",
+      "create": "Crear Cupón",
+      "code": "Código",
+      "type": "Tipo",
+      "typePercent": "Porcentaje (%)",
+      "typeFixed": "Monto Fijo ($)",
+      "value": "Valor",
+      "maxUses": "Límite de Usos (0=∞)",
+      "expiresAt": "Vencimiento (Opcional)",
+      "validationError": "Código inválido o valor incorrecto",
+      "created": "Cupón creado correctamente",
+      "updated": "Cupón actualizado correctamente",
+      "deleted": "Cupón eliminado",
+      "updateFailed": "Error al actualizar estado"
     },
     "reviews": {
       "title": "Reseñas del curso",
@@ -584,5 +609,29 @@
     "categories": "Categorías",
     "levels": "Niveles",
     "results": "Ver {{count}} resultados"
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Gestiona tus preferencias personales",
+    "editProfile": "Editar Perfil",
+    "tabs": {
+      "general": "General",
+      "appearance": "Apariencia",
+      "notifications": "Notificaciones"
+    },
+    "language": {
+      "title": "Idioma",
+      "desc": "Selecciona el idioma de la interfaz."
+    },
+    "theme": {
+      "title": "Tema",
+      "desc": "Personaliza cómo se ve Racoon LMS en tu dispositivo."
+    },
+    "notifications": {
+      "title": "Configuración de Notificaciones",
+      "desc": "Elige cómo quieres recibir las alertas.",
+      "sound": "Sonido de notificación",
+      "soundDesc": "Reproducir un sonido cuando llegue una nueva notificación."
+    }
   }
 }
