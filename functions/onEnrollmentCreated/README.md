@@ -11,13 +11,17 @@
 
 ## Required env vars
 
-| Variable                              | Description                                            |
-| ------------------------------------- | ------------------------------------------------------ |
-| `APPWRITE_ENDPOINT`                   | Appwrite API endpoint                                  |
-| `APPWRITE_PROJECT_ID`                 | Project ID                                             |
-| `APPWRITE_API_KEY`                    | API Key with `databases.write` permissions             |
-| `APPWRITE_DATABASE_ID`                | Database ID (default: `lms`)                           |
-| `APPWRITE_COURSE_STATS_COLLECTION_ID` | Collection ID for courseStats (default: `courseStats`) |
+| Variable                               | Description                                                 |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `APPWRITE_ENDPOINT`                    | Appwrite API endpoint                                       |
+| `APPWRITE_PROJECT_ID`                  | Project ID                                                  |
+| `APPWRITE_API_KEY`                     | API Key with `databases.write` permissions                  |
+| `APPWRITE_DATABASE_ID`                 | Database ID (default: `lms`)                                |
+| `APPWRITE_COURSE_STATS_COLLECTION_ID`  | Collection ID for courseStats (default: `courseStats`)      |
+| `APPWRITE_COURSES_COLLECTION_ID`       | Collection ID for courses (default: `courses`)              |
+| `APPWRITE_NOTIFICATIONS_COLLECTION_ID` | Collection ID for notifications (default: `notifications`)  |
+| `APPWRITE_USER_PREFS_COLLECTION_ID`    | Collection ID for userPrefs (default: `userPreferences`)    |
+| `FIREBASE_SERVICE_ACCOUNT_JSON`        | **Required**. File content of Firebase Service Account JSON |
 
 ## Appwrite Configuration
 

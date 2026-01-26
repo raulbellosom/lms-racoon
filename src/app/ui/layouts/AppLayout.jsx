@@ -145,7 +145,10 @@ function MobileNavItem({ to, icon: Icon, label }) {
   );
 }
 
+import { usePushNotifications } from "../../../features/notifications/hooks/usePushNotifications";
+
 export function AppLayout() {
+  usePushNotifications(); // Initialize Push Notifications logic
   const { t } = useTranslation();
   const { auth, authStore } = useAuth();
   const { cartItems } = useCart();

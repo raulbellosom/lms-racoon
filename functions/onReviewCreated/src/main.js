@@ -1,4 +1,5 @@
 const sdk = require("node-appwrite");
+const admin = require("firebase-admin");
 
 /**
  * Racoon LMS — onReviewCreated
@@ -89,6 +90,102 @@ module.exports = async ({ req, res, log, error }) => {
     log(
       `courseStats/${courseId} ratingAvg=${ratingAvg}, ratingCount=${ratingCount}`,
     );
+
+    // --- NOTIFICATION LOGIC START ---
+    if (!admin.apps.length) {
+      const serviceAccountParams = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+      if (serviceAccountParams) {
+        try {
+          const serviceAccount = JSON.parse(serviceAccountParams);
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+          });
+        } catch (e) {
+          error("Firebase init failed: " + e.message);
+        }
+      }
+    }
+
+    if (admin.apps.length) {
+      const coursesCollectionId =
+        process.env.APPWRITE_COURSES_COLLECTION_ID || "courses";
+      const notificationsCollectionId =
+        process.env.APPWRITE_NOTIFICATIONS_COLLECTION_ID || "notifications";
+      const userPrefsCollectionId =
+        process.env.APPWRITE_USER_PREFS_COLLECTION_ID || "userPreferences";
+
+      try {
+        const course = await db.getDocument(
+          databaseId,
+          coursesCollectionId,
+          courseId,
+        );
+        const teacherId = course.teacherId;
+
+        if (teacherId) {
+          const notificationTitle = "Nueva reseña recibida";
+          const notificationBody = `Tu curso "${course.title}" ha recibido una nueva calificación.`;
+
+          // Create Notification
+          try {
+            await db.createDocument(
+              databaseId,
+              notificationsCollectionId,
+              sdk.ID.unique(),
+              {
+                userId: teacherId,
+                title: notificationTitle,
+                body: notificationBody,
+                read: false,
+                type: "review",
+                entityId: courseId,
+                createdAt: new Date().toISOString(),
+              },
+            );
+          } catch (e) {
+            error("Failed to create notification doc: " + e.message);
+          }
+
+          // Send Push
+          const prefsList = await db.listDocuments(
+            databaseId,
+            userPrefsCollectionId,
+            [sdk.Query.equal("userId", teacherId), sdk.Query.limit(1)],
+          );
+
+          if (prefsList.documents.length > 0) {
+            const prefs = prefsList.documents[0];
+            if (prefs.prefsJson) {
+              const parsed = JSON.parse(prefs.prefsJson);
+              const tokens = parsed.fcmTokens || [];
+
+              if (tokens.length > 0) {
+                const message = {
+                  notification: {
+                    title: notificationTitle,
+                    body: notificationBody,
+                  },
+                  data: {
+                    url: `/app/teach/courses/${courseId}`,
+                    type: "review",
+                  },
+                  tokens: tokens, // Multicast
+                };
+                const response = await admin.messaging().sendMulticast(message);
+                if (response.failureCount > 0) {
+                  // Handle failures
+                  error(`FCM Code: ${response.failureCount} failed.`);
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        error("Notification logic failed: " + e.message);
+      }
+    }
+    // --- NOTIFICATION LOGIC END ---
+
     return res.json({ success: true, courseId, ratingAvg, ratingCount });
   } catch (err) {
     error("onReviewCreated failed: " + err.message);
