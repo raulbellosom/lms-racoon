@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { usePreferences } from "../../../shared/hooks/usePreferences";
+import { usePushNotifications } from "../../../features/notifications/hooks/usePushNotifications";
 import { useTheme } from "../../../shared/theme/ThemeProvider";
 import { PageLayout } from "../../../shared/ui/PageLayout";
 import { Card } from "../../../shared/ui/Card";
@@ -32,6 +33,7 @@ export function SettingsView() {
   const { auth } = useAuth();
   const { preferences, updateTheme, updateLanguage, updateSettings } =
     usePreferences();
+  const { subscribe, permissionStatus } = usePushNotifications();
   const { resolved } = useTheme();
   const [activeTab, setActiveTab] = useState("general");
 
@@ -361,6 +363,43 @@ export function SettingsView() {
                     checked={marketingWhatsapp}
                     onChange={handleToggleWhatsapp}
                   />
+                </div>
+
+                {/* Push Notifications Manual Trigger */}
+                <div className="flex items-center justify-between pt-4">
+                  <div className="flex gap-3">
+                    <div className="mt-1">
+                      <Bell className="h-5 w-5 text-[rgb(var(--text-primary))]" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm text-[rgb(var(--text-primary))]">
+                        Notificaciones Push
+                      </div>
+                      <div className="text-xs text-[rgb(var(--text-secondary))]">
+                        Activar notificaciones en este dispositivo.
+                        {permissionStatus === "granted" && (
+                          <span className="text-green-500 ml-2 font-bold">
+                            (Activado)
+                          </span>
+                        )}
+                        {permissionStatus === "denied" && (
+                          <span className="text-red-500 ml-2 font-bold">
+                            (Bloqueado)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={
+                      permissionStatus === "granted" ? "outline" : "primary"
+                    }
+                    onClick={subscribe}
+                    disabled={permissionStatus === "granted"}
+                  >
+                    {permissionStatus === "granted" ? "Activado" : "Activar"}
+                  </Button>
                 </div>
               </div>
             </Card>
