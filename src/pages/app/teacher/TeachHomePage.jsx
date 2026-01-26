@@ -301,7 +301,7 @@ export function TeachHomePage() {
             <TrendingUp className="h-5 w-5 text-brand-primary" />
             {t("teacher.dashboard.quickActions")}
           </h2>
-          <Card className="overflow-hidden p-0 border-border-base bg-bg-surface shadow-sm">
+          <Card className="overflow-hidden p-0 border border-gray-200 dark:border-gray-800 bg-bg-surface shadow-sm">
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               <Link
                 to="/app/teach/courses"

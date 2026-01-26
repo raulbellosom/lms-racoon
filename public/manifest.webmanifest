@@ -3,7 +3,7 @@
   "short_name": "Racoon",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#e11d48",
   "theme_color": "#e11d48",
   "description": "Plataforma de aprendizaje moderna, rápida y adaptable.",
   "icons": [

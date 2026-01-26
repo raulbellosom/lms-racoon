@@ -25,7 +25,7 @@ export default defineConfig({
         short_name: "Racoon LMS",
         description: "Plataforma moderna de cursos — mobile-first.",
         theme_color: "#e11d48",
-        background_color: "#09090b",
+        background_color: "#e11d48",
         display: "standalone",
         start_url: "/",
         scope: "/",
