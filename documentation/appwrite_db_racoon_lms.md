@@ -415,6 +415,21 @@
 
 ---
 
+### 18) `favorites`
+
+| Attribute | Type     | Required | Default | Constraints  | Notes              |
+| --------- | -------- | -------: | ------- | ------------ | ------------------ |
+| userId    | string   |       ✅ | —       | min=1 max=36 | FK -> profiles.$id |
+| courseId  | string   |       ✅ | —       | min=1 max=36 | FK -> courses.$id  |
+| createdAt | datetime |       ❌ | —       | —            |                    |
+
+**Indexes**
+
+- `uniq_user_course` — unique — `userId`, `courseId`
+- `idx_courseId` — key — `courseId` (asc)
+
+---
+
 ## Buckets
 
 - `avatars` — foto de perfil

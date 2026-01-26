@@ -73,19 +73,33 @@ export function VideoPlayer({
 
   // Handle fullscreen
   const toggleFullscreen = () => {
+    // iOS Safari specific: video.webkitEnterFullscreen()
+    if (videoRef.current && videoRef.current.webkitEnterFullscreen) {
+      if (videoRef.current.webkitDisplayingFullscreen) {
+        videoRef.current.webkitExitFullscreen?.();
+      } else {
+        videoRef.current.webkitEnterFullscreen();
+      }
+      return;
+    }
+
     if (!containerRef.current) return;
 
     if (!fullscreen) {
       if (containerRef.current.requestFullscreen) {
         containerRef.current.requestFullscreen();
       } else if (containerRef.current.webkitRequestFullscreen) {
-        containerRef.current.webkitRequestFullscreen();
+        containerRef.current.webkitRequestFullscreen(); // Safari/Chrome
+      } else if (containerRef.current.msRequestFullscreen) {
+        containerRef.current.msRequestFullscreen(); // IE11
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
       }
     }
     setFullscreen(!fullscreen);

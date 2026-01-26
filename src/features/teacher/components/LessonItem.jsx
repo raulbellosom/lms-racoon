@@ -62,6 +62,7 @@ export function LessonItem({
   onDelete,
   onPreview,
   isDragging = false,
+  dragHandleProps, // New prop
 }) {
   const { t } = useTranslation();
   const Icon = getLessonIcon(lesson.kind);
@@ -108,7 +109,7 @@ export function LessonItem({
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Drag handle */}
-        <div className="cursor-grab touch-none">
+        <div className="cursor-grab touch-none p-1" {...dragHandleProps}>
           <GripVertical className="h-4 w-4 text-[rgb(var(--text-muted))]" />
         </div>
 

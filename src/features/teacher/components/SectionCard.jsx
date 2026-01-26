@@ -1,19 +1,58 @@
+// Imports updated to remove DndContext hooks if unused
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, Trash2, Edit2, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  Edit2,
+  Plus,
+  GripVertical,
+} from "lucide-react";
+// Remove DndContext imports if not used, keep Sortable imports
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import { Button } from "../../../shared/ui/Button";
 import { LessonItem } from "./LessonItem";
 
 /**
+ * SortableLessonItem - Wrapper for LessonItem to make it sortable
+ */
+function SortableLessonItem({ lesson, ...props }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: lesson.$id, data: { type: "LESSON", lesson } }); // Added data type
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <LessonItem
+        lesson={lesson}
+        dragHandleProps={{ ...attributes, ...listeners }}
+        {...props}
+      />
+    </div>
+  );
+}
+
+/**
  * SectionCard - Collapsible section with its lessons
- * @param {Object} section - Section data
- * @param {number} index - Section index (for display)
- * @param {Array} lessons - Lessons in this section
- * @param {Function} onEditSection - Edit section callback
- * @param {Function} onDeleteSection - Delete section callback
- * @param {Function} onAddLesson - Add lesson callback
- * @param {Function} onEditLesson - Edit lesson callback
- * @param {Function} onDeleteLesson - Delete lesson callback
  */
 export function SectionCard({
   section,
@@ -24,19 +63,32 @@ export function SectionCard({
   onAddLesson,
   onEditLesson,
   onDeleteLesson,
+  onReorderLessons, // Passed but unused for drag event now, parent handles it
+  dragHandleProps, // Props for dragging the section itself
   ...props
 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = React.useState(true);
 
+  // No internal DndContext or sensors needed
+
   return (
     <div className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] overflow-hidden">
       {/* Section Header */}
       <div
-        className="flex items-center justify-between bg-[rgb(var(--bg-muted))] px-3 sm:px-4 py-3 cursor-pointer"
+        className="flex items-center justify-between bg-[rgb(var(--bg-muted))] px-3 sm:px-4 py-3 cursor-pointer group"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          {/* Drag Handle for Section */}
+          <div
+            className="cursor-move p-1 text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-primary))]"
+            onClick={(e) => e.stopPropagation()}
+            {...dragHandleProps}
+          >
+            <GripVertical className="h-5 w-5" />
+          </div>
+
           {/* Expand/collapse icon */}
           <button className="p-1 rounded hover:bg-[rgb(var(--bg-surface))] transition-colors shrink-0">
             {expanded ? (
@@ -93,15 +145,27 @@ export function SectionCard({
         <div className="p-3 sm:p-4 bg-[rgb(var(--bg-surface))]">
           {/* Lessons list */}
           <div className="space-y-2">
-            {lessons.map((lesson) => (
-              <LessonItem
-                key={lesson.$id}
-                lesson={lesson}
-                onEdit={onEditLesson}
-                onDelete={onDeleteLesson}
-                onPreview={props.onPreviewLesson}
-              />
-            ))}
+            <SortableContext
+              items={lessons.map((l) => l.$id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {lessons.map((lesson) => (
+                <SortableLessonItem
+                  key={lesson.$id}
+                  lesson={lesson}
+                  onEdit={onEditLesson}
+                  onDelete={onDeleteLesson}
+                  onPreview={props.onPreviewLesson}
+                />
+              ))}
+            </SortableContext>
+
+            {/* Placeholder/Empty State for empty sections to allow dropping */}
+            {lessons.length === 0 && (
+              <div className="text-sm text-center py-4 border-2 border-dashed border-gray-200 rounded-lg text-gray-400">
+                Arrastra lecciones aquí
+              </div>
+            )}
           </div>
 
           {/* Add Lesson Button */}

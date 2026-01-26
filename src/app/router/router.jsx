@@ -6,7 +6,11 @@ import { PublicLayout } from "../ui/layouts/PublicLayout";
 import { AppLayout } from "../ui/layouts/AppLayout";
 
 import { LandingView } from "../../features/public";
-import { CatalogView, CourseDetailView } from "../../features/catalog";
+import {
+  CatalogView,
+  CourseDetailView,
+  FavoritesView,
+} from "../../features/catalog";
 import { LoginView, RegisterView } from "../../features/auth";
 import {
   StudentHomeView,
@@ -77,6 +81,7 @@ export const router = createBrowserRouter([
           { path: "learn/:courseId/:lessonId?", element: <LearnPage /> },
           { path: "profile", element: <ProfileView /> },
           { path: "settings", element: <SettingsView /> },
+          { path: "favorites", element: <FavoritesView /> },
 
           {
             path: "teach",

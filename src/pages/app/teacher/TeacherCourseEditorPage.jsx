@@ -450,6 +450,60 @@ export function TeacherCourseEditorPage() {
     });
   };
 
+  // Reorder Handlers
+  const handleReorderSections = async (newSections) => {
+    // Optimistic update
+    setSections(newSections);
+
+    try {
+      await Promise.all(
+        newSections.map((section, index) => {
+          if (section.order !== index) {
+            return SectionService.update(section.$id, { order: index });
+          }
+          return Promise.resolve();
+        }),
+      );
+    } catch (e) {
+      console.error("Failed to reorder sections", e);
+      showToast(
+        t("teacher.errors.reorderFailed") || "Error al reordenar",
+        "error",
+      );
+      // Revert on error (could reload curriculum)
+      loadCurriculum();
+    }
+  };
+
+  const handleReorderLessons = async (sectionId, newLessons) => {
+    // Optimistic update
+    setLessonsBySection((prev) => ({
+      ...prev,
+      [sectionId]: newLessons,
+    }));
+
+    try {
+      await Promise.all(
+        newLessons.map((lesson, index) => {
+          if (lesson.order !== index) {
+            return LessonService.update(lesson.$id, {
+              order: index,
+              sectionId,
+            }); // Ensure sectionId is kept
+          }
+          return Promise.resolve();
+        }),
+      );
+    } catch (e) {
+      console.error("Failed to reorder lessons", e);
+      showToast(
+        t("teacher.errors.reorderFailed") || "Error al reordenar",
+        "error",
+      );
+      loadCurriculum();
+    }
+  };
+
   // Publish handlers
   const handleTogglePublish = () => {
     const newState = !course?.isPublished;
@@ -533,7 +587,7 @@ export function TeacherCourseEditorPage() {
           <Button
             variant="secondary"
             size="sm"
-            className="hidden sm:flex"
+            className="flex"
             onClick={() => window.open(`/app/courses/${courseId}`, "_blank")}
           >
             <Eye className="mr-2 h-4 w-4" /> {t("teacher.lesson.preview")}
@@ -662,6 +716,8 @@ export function TeacherCourseEditorPage() {
             onEditLesson={handleEditLesson}
             onDeleteLesson={handleDeleteLesson}
             onPreviewLesson={handlePreviewLesson}
+            onReorderSections={handleReorderSections}
+            onReorderLessons={handleReorderLessons}
           />
         )}
 

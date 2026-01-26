@@ -1,3 +1,4 @@
+import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, User2 } from "lucide-react";
 import { useTranslation } from "react-i18next";

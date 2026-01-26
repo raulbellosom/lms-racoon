@@ -9,6 +9,9 @@ import {
   Upload,
   Trash2,
   File,
+  Check,
+  Edit2,
+  Image,
 } from "lucide-react";
 import { Modal } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
@@ -50,6 +53,83 @@ const LESSON_TYPES = [
 ];
 
 /**
+ * Helper to get file icon and color
+ */
+const getFileStyle = (filename) => {
+  const ext = filename.split(".").pop().toLowerCase();
+
+  if (["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(ext)) {
+    return {
+      icon: Image,
+      color: "text-blue-500",
+      bg: "bg-blue-100 dark:bg-blue-900/30",
+    };
+  }
+  if (["pdf"].includes(ext)) {
+    return {
+      icon: FileText,
+      color: "text-red-500",
+      bg: "bg-red-100 dark:bg-red-900/30",
+    };
+  }
+  if (["doc", "docx", "txt", "md"].includes(ext)) {
+    return {
+      icon: FileText,
+      color: "text-blue-600",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+    };
+  }
+  if (["xls", "xlsx", "csv"].includes(ext)) {
+    return {
+      icon: FileText,
+      color: "text-green-600",
+      bg: "bg-green-100 dark:bg-green-900/30",
+    };
+  }
+  if (["ppt", "pptx"].includes(ext)) {
+    return {
+      icon: FileText,
+      color: "text-orange-500",
+      bg: "bg-orange-100 dark:bg-orange-900/30",
+    };
+  }
+  if (["zip", "rar", "7z"].includes(ext)) {
+    return {
+      icon: File,
+      color: "text-yellow-600",
+      bg: "bg-yellow-100 dark:bg-yellow-900/30",
+    };
+  }
+  if (["mp4", "webm", "mov", "mkv"].includes(ext)) {
+    return {
+      icon: Video,
+      color: "text-purple-500",
+      bg: "bg-purple-100 dark:bg-purple-900/30",
+    };
+  }
+  if (["mp3", "wav", "ogg"].includes(ext)) {
+    return {
+      icon: File,
+      color: "text-pink-500",
+      bg: "bg-pink-100 dark:bg-pink-900/30",
+    };
+  }
+  if (["js", "css", "html", "json", "ts", "jsx"].includes(ext)) {
+    return {
+      icon: FileText,
+      color: "text-slate-500",
+      bg: "bg-slate-100 dark:bg-slate-800",
+    };
+  }
+
+  return {
+    icon: File,
+    color: "text-gray-500",
+    bg: "bg-gray-100 dark:bg-gray-800",
+  };
+};
+
+/**
  * LessonEditorModal - Modal for creating/editing a lesson
  * @param {boolean} open - Modal open state
  * @param {Function} onClose - Close callback
@@ -85,6 +165,30 @@ export function LessonEditorModal({
   const [videoFile, setVideoFile] = React.useState(null);
   const [coverFile, setCoverFile] = React.useState(null); // New state for cover upload
   const [attachments, setAttachments] = React.useState([]);
+
+  // Inline editing state
+  const [editingAttachmentId, setEditingAttachmentId] = React.useState(null);
+  const [editingName, setEditingName] = React.useState("");
+
+  const startEditing = (att) => {
+    setEditingAttachmentId(att.id);
+    setEditingName(att.name);
+  };
+
+  const saveEditing = (attId) => {
+    if (!editingName.trim()) return;
+    setAttachments((prev) =>
+      prev.map((a) =>
+        a.id === attId ? { ...a, name: editingName.trim() } : a,
+      ),
+    );
+    setEditingAttachmentId(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingAttachmentId(null);
+    setEditingName("");
+  };
 
   // Load lesson data when editing
   React.useEffect(() => {
@@ -324,7 +428,7 @@ export function LessonEditorModal({
       title={
         isNew ? t("teacher.lesson.createTitle") : t("teacher.lesson.editTitle")
       }
-      maxWidth="max-w-4xl"
+      className="max-w-full! sm:max-w-5xl! md:max-w-6xl! lg:max-w-7xl!"
       footer={
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <Button
@@ -388,15 +492,18 @@ export function LessonEditorModal({
           />
         </div>
 
-        {/* Description */}
+        {/* Description / Content */}
+        {/* For Articles, this IS the main content. For videos it's description. */}
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {t("teacher.lesson.description")}
+              {formData.kind === "article"
+                ? t("teacher.lesson.content") || "Contenido de la lectura"
+                : t("teacher.lesson.description")}
             </label>
             <CharacterCountCircle
               current={formData.description.length}
-              max={2000}
+              max={formData.kind === "article" ? 15000 : 2000}
               size={18}
             />
           </div>
@@ -530,21 +637,6 @@ export function LessonEditorModal({
           </div>
         )}
 
-        {/* Article Content (for article type) */}
-        {formData.kind === "article" && (
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {t("teacher.lesson.articleContent")}
-            </label>
-            <Textarea
-              placeholder={t("teacher.lesson.articlePlaceholder")}
-              value={formData.description}
-              onChange={(e) => updateField("description", e.target.value)}
-              rows={8}
-            />
-          </div>
-        )}
-
         {/* Attachments */}
         <div>
           <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
@@ -553,24 +645,112 @@ export function LessonEditorModal({
 
           {/* Attachments list */}
           {attachments.length > 0 && (
-            <ul className="mb-2 space-y-1">
-              {attachments.map((att) => (
-                <li
-                  key={att.id}
-                  className="flex items-center justify-between rounded-lg bg-[rgb(var(--bg-muted))] px-3 py-2"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <File className="h-4 w-4 text-[rgb(var(--text-muted))] shrink-0" />
-                    <span className="text-sm truncate">{att.name}</span>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveAttachment(att.id)}
-                    className="p-1 rounded-full hover:bg-[rgb(var(--bg-surface))] text-red-500"
+            <ul className="mb-2 space-y-2">
+              {attachments.map((att) => {
+                const { icon: FileIcon, color, bg } = getFileStyle(att.name);
+                const isEditing = editingAttachmentId === att.id;
+
+                return (
+                  <li
+                    key={att.id}
+                    className="flex items-center justify-between rounded-lg bg-[rgb(var(--bg-muted))] px-3 py-2 border border-transparent hover:border-[rgb(var(--border-base))]"
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div
+                        className={`h-8 w-8 flex items-center justify-center rounded ${bg} ${color} shrink-0`}
+                      >
+                        <FileIcon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              className="h-7 text-sm py-1"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") saveEditing(att.id);
+                                if (e.key === "Escape") cancelEditing();
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="font-medium text-sm truncate"
+                            title={att.name}
+                          >
+                            {att.name}
+                          </div>
+                        )}
+                        {!isEditing && (
+                          <div className="text-xs text-[rgb(var(--text-secondary))]">
+                            {(att.size / 1024).toFixed(0)} KB
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {/* Editing Controls */}
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={() => saveEditing(att.id)}
+                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-green-500"
+                            title={t("common.save")}
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-red-500"
+                            title={t("common.cancel")}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {/* Download/View */}
+                          <a
+                            href={
+                              FileService.getLessonAttachmentDownloadUrl
+                                ? FileService.getLessonAttachmentDownloadUrl(
+                                    att.id,
+                                  )
+                                : "#"
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))]"
+                            title={t("common.download")}
+                          >
+                            <Upload className="h-4 w-4 rotate-180" />
+                          </a>
+
+                          {/* Edit Name */}
+                          <button
+                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))]"
+                            onClick={() => startEditing(att)}
+                            title="Renombrar"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => handleRemoveAttachment(att.id)}
+                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-red-500"
+                            title={t("common.delete")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
 
@@ -582,6 +762,7 @@ export function LessonEditorModal({
               document.getElementById("lesson-attachment-upload").click()
             }
             disabled={uploading}
+            className="w-full sm:w-auto"
           >
             {uploading
               ? t("common.loading")

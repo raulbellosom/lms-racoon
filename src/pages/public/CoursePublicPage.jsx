@@ -1,6 +1,16 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
-import { Clock3, Layers3, PlayCircle, Star } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Clock3,
+  Layers3,
+  PlayCircle,
+  Star,
+  SearchX,
+  Home,
+  LifeBuoy,
+  ArrowLeft,
+} from "lucide-react";
 import { Button } from "../../shared/ui/Button";
 import { Badge } from "../../shared/ui/Badge";
 import { Card } from "../../shared/ui/Card";
@@ -98,10 +108,85 @@ export function CoursePublicPage() {
 
   if (loading)
     return <div className="mx-auto max-w-6xl px-4 py-10">Cargando...</div>;
-  if (!course)
+
+  if (!course) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-10">Curso no encontrado.</div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative"
+        >
+          <div className="absolute inset-0 blur-3xl bg-[rgb(var(--brand-primary))]/20 rounded-full" />
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="relative bg-[rgb(var(--bg-muted))] p-6 rounded-4xl border border-[rgb(var(--border-base))]"
+          >
+            <SearchX
+              className="h-20 w-20 text-[rgb(var(--text-muted))]"
+              strokeWidth={1.5}
+            />
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="mt-8 max-w-md"
+        >
+          <h1 className="text-3xl font-black tracking-tight text-[rgb(var(--text-primary))]">
+            Curso no encontrado
+          </h1>
+          <p className="mt-3 text-[rgb(var(--text-secondary))] text-lg leading-relaxed">
+            Parece que el curso que buscas no existe, fue eliminado o el enlace
+            está roto.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="mt-8 flex flex-col sm:flex-row gap-3 w-full max-w-sm"
+        >
+          <Link to="/catalog" className="flex-1">
+            <Button className="w-full gap-2 h-12 text-base">
+              <Home className="h-4 w-4" />
+              Explorar Cursos
+            </Button>
+          </Link>
+          <Link to="/contact" className="flex-1">
+            <Button variant="secondary" className="w-full gap-2 h-12 text-base">
+              <LifeBuoy className="h-4 w-4" />
+              Ayuda
+            </Button>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="mt-12"
+        >
+          <Link
+            to={-1}
+            className="inline-flex items-center gap-2 text-sm font-medium text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Regresar a la página anterior
+          </Link>
+        </motion.div>
+      </div>
     );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
