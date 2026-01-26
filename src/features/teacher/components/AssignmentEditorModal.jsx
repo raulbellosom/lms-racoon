@@ -20,6 +20,7 @@ export function AssignmentEditorModal({
   onClose,
   assignment,
   courseId,
+  lessonId,
   onSave,
 }) {
   const { t } = useTranslation();
@@ -68,6 +69,7 @@ export function AssignmentEditorModal({
     try {
       const data = {
         courseId,
+        lessonId,
         title: formData.title.trim(),
         description: formData.description.trim(),
         dueAt: formData.dueAt ? new Date(formData.dueAt).toISOString() : null,

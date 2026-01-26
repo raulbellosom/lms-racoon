@@ -12,16 +12,21 @@ import {
   Check,
   Edit2,
   Image,
+  Settings,
 } from "lucide-react";
 import { Modal } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
 import { Textarea } from "../../../shared/ui/Textarea";
 import { Button } from "../../../shared/ui/Button";
 import { FileService } from "../../../shared/data/files";
+import { QuizService } from "../../../shared/data/quizzes-teacher";
+import { AssignmentService } from "../../../shared/data/assignments-teacher";
 import { useToast } from "../../../app/providers/ToastProvider";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import { CharacterCountCircle } from "./CharacterCountCircle";
+import { QuizEditorModal } from "./QuizEditorModal";
+import { AssignmentEditorModal } from "./AssignmentEditorModal";
 
 /**
  * Lesson type options
@@ -131,12 +136,6 @@ const getFileStyle = (filename) => {
 
 /**
  * LessonEditorModal - Modal for creating/editing a lesson
- * @param {boolean} open - Modal open state
- * @param {Function} onClose - Close callback
- * @param {Object} lesson - Lesson data (null for new)
- * @param {Object} section - Parent section
- * @param {string} courseId - Parent course ID
- * @param {Function} onSave - Save callback with lesson data
  */
 export function LessonEditorModal({
   open,
@@ -155,18 +154,26 @@ export function LessonEditorModal({
     description: "",
     kind: "video",
     videoFileId: "",
-    videoCoverFileId: "", // New field
+    videoCoverFileId: "",
     durationSec: 0,
-    // attachmentsJson: "[]", // Deprecated
   });
 
   const [uploading, setUploading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [videoFile, setVideoFile] = React.useState(null);
-  const [coverFile, setCoverFile] = React.useState(null); // New state for cover upload
+  const [coverFile, setCoverFile] = React.useState(null);
   const [attachments, setAttachments] = React.useState([]);
 
-  // Inline editing state
+  // Child Modals State
+  const [quizModalOpen, setQuizModalOpen] = React.useState(false);
+  const [assignmentModalOpen, setAssignmentModalOpen] = React.useState(false);
+
+  // Data for Child Modals
+  // If we have a connected quiz/assignment, we store it here
+  const [relatedEntity, setRelatedEntity] = React.useState(null);
+  const [loadingRelated, setLoadingRelated] = React.useState(false);
+
+  // Inline editing state for attachments
   const [editingAttachmentId, setEditingAttachmentId] = React.useState(null);
   const [editingName, setEditingName] = React.useState("");
 
@@ -190,7 +197,7 @@ export function LessonEditorModal({
     setEditingName("");
   };
 
-  // Load lesson data when editing
+  // Load lesson data
   React.useEffect(() => {
     const loadData = async () => {
       if (lesson) {
@@ -203,7 +210,7 @@ export function LessonEditorModal({
           durationSec: lesson.durationSec || 0,
         });
 
-        // Load attachments (string[] -> objects)
+        // Load attachments
         if (lesson.attachments && Array.isArray(lesson.attachments)) {
           const loadedAttachments = await Promise.all(
             lesson.attachments.map(async (id) => {
@@ -222,7 +229,6 @@ export function LessonEditorModal({
           );
           setAttachments(loadedAttachments);
         } else {
-          // Fallback for old JSON format if exists (cleanup)
           try {
             const oldJson = JSON.parse(lesson.attachmentsJson || "[]");
             setAttachments(oldJson);
@@ -230,6 +236,9 @@ export function LessonEditorModal({
             setAttachments([]);
           }
         }
+
+        // Load related entity (Quiz or Assignment)
+        fetchRelatedEntity(lesson.$id, lesson.kind);
       } else {
         setFormData({
           title: "",
@@ -240,12 +249,37 @@ export function LessonEditorModal({
           durationSec: 0,
         });
         setAttachments([]);
+        setRelatedEntity(null);
       }
       setVideoFile(null);
       setCoverFile(null);
     };
-    loadData();
+    if (open) loadData();
   }, [lesson, open]);
+
+  // When kind changes, clear related entity if mismatched?
+  // Actually if we switch from Quiz to Video, we ignore the quiz.
+  // But if we switch back to Quiz, we should try to re-fetch?
+  // For now, simpler: Only fetch on load or after save.
+
+  const fetchRelatedEntity = async (lessonId, kind) => {
+    if (!lessonId) return;
+    setLoadingRelated(true);
+    setRelatedEntity(null);
+    try {
+      if (kind === "quiz") {
+        const quizzes = await QuizService.listByLesson(lessonId);
+        if (quizzes.length > 0) setRelatedEntity(quizzes[0]);
+      } else if (kind === "assignment") {
+        const assignments = await AssignmentService.listByLesson(lessonId);
+        if (assignments.length > 0) setRelatedEntity(assignments[0]);
+      }
+    } catch (e) {
+      console.error("Failed to load related entity", e);
+    } finally {
+      setLoadingRelated(false);
+    }
+  };
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -273,20 +307,17 @@ export function LessonEditorModal({
     [t],
   );
 
-  // Handle video upload
+  // Handlers for file uploads (video/cover/attachments)...
+  // (Same as before, abbreviated here for clarity but keeping logic)
   const handleVideoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    // Validate type
     const validTypes = ["video/mp4", "video/webm", "video/quicktime"];
     if (!validTypes.includes(file.type)) {
       showToast(t("teacher.errors.uploadFailed"), "error");
       return;
     }
-
     setVideoFile(file);
-    // Optionally get duration from video metadata
     const video = document.createElement("video");
     video.preload = "metadata";
     video.onloadedmetadata = () => {
@@ -296,24 +327,19 @@ export function LessonEditorModal({
     video.src = URL.createObjectURL(file);
   };
 
-  // Handle cover upload
   const handleCoverUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
       showToast(t("teacher.errors.uploadFailed") + " (Solo imágenes)", "error");
       return;
     }
-
     setCoverFile(file);
   };
 
-  // Handle attachment upload
   const handleAttachmentUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setUploading(true);
     try {
       const attachment = await FileService.uploadLessonAttachment(file);
@@ -326,7 +352,6 @@ export function LessonEditorModal({
     }
   };
 
-  // Remove attachment
   const handleRemoveAttachment = async (attachmentId) => {
     try {
       await FileService.deleteLessonAttachment(attachmentId);
@@ -337,7 +362,7 @@ export function LessonEditorModal({
   };
 
   // Save lesson
-  const handleSave = async () => {
+  const handleSave = async (andOpenConfig = false) => {
     if (!formData.title.trim()) {
       showToast(t("teacher.form.titleRequired"), "error");
       return;
@@ -348,55 +373,19 @@ export function LessonEditorModal({
       let videoFileId = formData.videoFileId;
       let videoCoverFileId = formData.videoCoverFileId;
 
-      // Upload video if new file selected
+      // Upload files if needed
       if (videoFile) {
-        setUploading(true);
-        try {
-          if (formData.videoFileId) {
-            await FileService.deleteLessonVideo(formData.videoFileId);
-          }
-          videoFileId = await FileService.uploadLessonVideo(videoFile);
-        } finally {
-          setUploading(false);
-        }
+        if (formData.videoFileId)
+          await FileService.deleteLessonVideo(formData.videoFileId);
+        videoFileId = await FileService.uploadLessonVideo(videoFile);
       }
-
-      // Upload cover if new file selected
       if (coverFile) {
-        setUploading(true);
-        try {
-          // Reuse course cover bucket or need a new one?
-          // Users request: bucket `lessonVideos` (for video), bucket `lessonAttachments`.
-          // The prompt table says: videoCoverFileId... bucket `lessonVideos`.
-          // Wait, usually covers go to images bucket.
-          // Prompt: | videoCoverFileId | ... | bucket `lessonVideos` |
-          // This implies the cover is stored in `lessonVideos` bucket? Or just listed there in documentation?
-          // Actually typically covers are images. `lessonVideos` usually accepts videos.
-          // Maybe the user means `videoCoverFileId` is just a string ID, and I should use a suitable bucket.
-          // I will use `courseCovers` bucket (generic images) or `lessonAttachments`?
-          // `courseCovers` seems safest for images.
-          // Or I will use `uploadCourseCover` (which goes to `courseCovers`) as a generic "public image".
-          // Re-reading prompt: "videoCoverFileId ... bucket lessonVideos" <- This might be a mistake in user doc or implies it's stored alongside videos.
-          // BUT `lessonVideos` might have file restrictions.
-          // I will assume `courseCovers` is fine as it allows public read usually for covers.
-          // Or I can put it in `lessonAttachments`.
-          // Let's use `uploadCourseCover` as it handles images.
-          // Update: The prompt explicitly says bucket `lessonVideos` for `videoCoverFileId` in the table row.
-          // Typically you don't put images in a video bucket if restricted by mime type.
-          // If I must follow the prompt 100%, I should try to upload to `lessonVideos`.
-          // But if that fails, I'll fallback. I'll stick to `courseCovers` logic for now as it makes more sense for "Covers".
-          // Actually, `lessonImages` or similar would be better.
-          // Let's us `uploadCourseCover` (bucket `courseCovers`) for now, assuming it's a general "Covers" bucket.
-
-          if (formData.videoCoverFileId) {
-            try {
-              await FileService.deleteCourseCover(formData.videoCoverFileId);
-            } catch {}
-          }
-          videoCoverFileId = await FileService.uploadCourseCover(coverFile);
-        } finally {
-          setUploading(false);
+        if (formData.videoCoverFileId) {
+          try {
+            await FileService.deleteCourseCover(formData.videoCoverFileId);
+          } catch {}
         }
+        videoCoverFileId = await FileService.uploadCourseCover(coverFile);
       }
 
       const lessonData = {
@@ -408,262 +397,286 @@ export function LessonEditorModal({
         videoFileId,
         videoCoverFileId,
         durationSec: formData.durationSec,
-        attachments: attachments.map((a) => a.id), // Send ID array
+        attachments: attachments.map((a) => a.id),
       };
 
-      await onSave?.(lessonData, lesson?.$id);
-      onClose();
+      // We need to return the ID after saving to use it for linked entities
+      const savedLesson = await onSave?.(lessonData, lesson?.$id);
+
+      // If we want to open config immediately
+      if (andOpenConfig && savedLesson?.$id) {
+        if (formData.kind === "quiz") {
+          setQuizModalOpen(true);
+          // Reuse existing related entity if exists, or pass partial data
+        } else if (formData.kind === "assignment") {
+          setAssignmentModalOpen(true);
+        }
+        // Don't close this modal yet if configuring?
+        // Actually user experience: Save Lesson -> Open Config Modal.
+        // When Config Modal closes -> Come back here? Or close everything?
+        // Typically: Close Lesson Modal -> Open Config Modal?
+        // OR: Keep Lesson Modal open, overlay Config Modal.
+        // Let's keep Lesson Modal open.
+      } else if (!andOpenConfig) {
+        onClose();
+      }
+
+      // Refresh related data in case we just created the lesson
+      if (savedLesson?.$id) {
+        fetchRelatedEntity(savedLesson.$id, formData.kind);
+      }
     } catch (error) {
       console.error("Failed to save lesson:", error);
       showToast(t("teacher.errors.saveFailed"), "error");
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
+  const handleOpenConfig = () => {
+    // If lesson exists, open. If not, ask to save.
+    if (isNew) {
+      // Trigger save first?
+      showToast(t("teacher.errors.saveFirst"), "info");
+    } else {
+      if (formData.kind === "quiz") setQuizModalOpen(true);
+      if (formData.kind === "assignment") setAssignmentModalOpen(true);
+    }
+  };
+
+  const handleConfigSaved = () => {
+    // Refresh related entity
+    if (lesson?.$id) fetchRelatedEntity(lesson.$id, formData.kind);
+    showToast(t("common.saved"), "success");
+  };
+
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={
-        isNew ? t("teacher.lesson.createTitle") : t("teacher.lesson.editTitle")
-      }
-      className="max-w-full! sm:max-w-5xl! md:max-w-6xl! lg:max-w-7xl!"
-      footer={
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button
-            variant="secondary"
-            onClick={onClose}
-            disabled={saving || uploading}
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button onClick={handleSave} disabled={saving || uploading}>
-            {saving ? t("teacher.form.saving") : t("common.save")}
-          </Button>
-        </div>
-      }
-    >
-      <div className="space-y-4">
-        {/* Lesson Type Selector */}
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-            {t("teacher.curriculum.lessonType")}
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {LESSON_TYPES.map(({ value, icon: Icon, color }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => updateField("kind", value)}
-                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                  formData.kind === value
-                    ? `${color} ring-2 ring-[rgb(var(--brand-primary))]`
-                    : "bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))/0.8]"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">
-                  {t(`teacher.curriculum.${value}`)}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Title */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {t("teacher.curriculum.lessonTitle")}{" "}
-              <span className="text-red-500">*</span>
-            </label>
-            <CharacterCountCircle
-              current={formData.title.length}
-              max={80}
-              size={18}
-            />
-          </div>
-          <Input
-            placeholder={t("teacher.curriculum.lessonTitlePlaceholder")}
-            value={formData.title}
-            onChange={(e) => updateField("title", e.target.value)}
-            maxLength={80}
-          />
-        </div>
-
-        {/* Description / Content */}
-        {/* For Articles, this IS the main content. For videos it's description. */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {formData.kind === "article"
-                ? t("teacher.lesson.content") || "Contenido de la lectura"
-                : t("teacher.lesson.description")}
-            </label>
-            <CharacterCountCircle
-              current={formData.description.length}
-              max={formData.kind === "article" ? 15000 : 2000}
-              size={18}
-            />
-          </div>
-          <div className="markdown-editor-wrapper">
-            <SimpleMDE
-              value={formData.description}
-              onChange={(val) => updateField("description", val)}
-              options={mdeOptions}
-            />
-          </div>
-        </div>
-
-        {/* Video Upload (for video type) */}
-        {formData.kind === "video" && (
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-              {t("teacher.lesson.uploadVideo")}
-            </label>
-            <div
-              className="flex items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-4 cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors"
-              onClick={() =>
-                document.getElementById("lesson-video-upload").click()
-              }
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        title={
+          isNew
+            ? t("teacher.lesson.createTitle")
+            : t("teacher.lesson.editTitle")
+        }
+        className="max-w-full! sm:max-w-5xl! md:max-w-6xl! lg:max-w-7xl!"
+        footer={
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={onClose}
+              disabled={saving || uploading}
             >
-              {videoFile ? (
-                <div className="flex items-center gap-2">
-                  <Video className="h-5 w-5 text-blue-500" />
-                  <span className="text-sm truncate max-w-[200px]">
-                    {videoFile.name}
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={() => handleSave(false)}
+              disabled={saving || uploading}
+            >
+              {saving ? t("teacher.form.saving") : t("common.save")}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* Lesson Type Selector */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              {t("teacher.curriculum.lessonType")}
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {LESSON_TYPES.map(({ value, icon: Icon, color }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => updateField("kind", value)}
+                  className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                    formData.kind === value
+                      ? `${color} ring-2 ring-[rgb(var(--brand-primary))]`
+                      : "bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))/0.8]"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {t(`teacher.curriculum.${value}`)}
                   </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setVideoFile(null);
-                    }}
-                    className="p-1 rounded-full hover:bg-[rgb(var(--bg-surface))]"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : formData.videoFileId ? (
-                <div className="flex items-center gap-2 text-green-500">
-                  <Video className="h-5 w-5" />
-                  <span className="text-sm">
-                    {t("teacher.lesson.videoUploaded")}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-1 text-[rgb(var(--text-muted))]">
-                  <Upload className="h-6 w-6" />
-                  <span className="text-xs">
-                    {t("teacher.lesson.videoFormats")}
-                  </span>
-                </div>
-              )}
-              <input
-                id="lesson-video-upload"
-                type="file"
-                className="hidden"
-                accept="video/*"
-                onChange={handleVideoUpload}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                {t("teacher.curriculum.lessonTitle")}{" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <CharacterCountCircle
+                current={formData.title.length}
+                max={80}
+                size={18}
               />
             </div>
-            {formData.durationSec > 0 && (
-              <p className="mt-1 text-xs text-[rgb(var(--text-secondary))]">
-                {t("teacher.curriculum.duration")}:{" "}
-                {Math.floor(formData.durationSec / 60)}:
-                {(formData.durationSec % 60).toString().padStart(2, "0")}
-              </p>
-            )}
+            <Input
+              placeholder={t("teacher.curriculum.lessonTitlePlaceholder")}
+              value={formData.title}
+              onChange={(e) => updateField("title", e.target.value)}
+              maxLength={80}
+            />
+          </div>
 
-            {/* Video Cover Image */}
-            <div className="mt-4">
-              <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                {t("teacher.lesson.videoCover")} (Poster)
-              </label>
-              <div className="flex items-start gap-4">
+          {/* CONTENT BASED ON TYPE */}
+          {formData.kind === "video" && (
+            <div className="space-y-4">
+              {/* Video specific fields (Upload, Cover) */}
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                  {t("teacher.lesson.uploadVideo")}
+                </label>
                 <div
-                  className="relative flex aspect-video w-40 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] hover:bg-[rgb(var(--bg-muted))/0.8] overflow-hidden"
+                  className="flex items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-4 cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors"
                   onClick={() =>
-                    document.getElementById("lesson-cover-upload").click()
+                    document.getElementById("lesson-video-upload").click()
                   }
                 >
-                  {coverFile ? (
-                    <img
-                      src={URL.createObjectURL(coverFile)}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : formData.videoCoverFileId ? (
-                    <img
-                      src={FileService.getCourseCoverUrl(
-                        formData.videoCoverFileId,
-                      )}
-                      className="h-full w-full object-cover"
-                    />
+                  {videoFile ? (
+                    <div className="flex items-center gap-2">
+                      <Video className="h-5 w-5 text-blue-500" />
+                      <span className="text-sm truncate max-w-[200px]">
+                        {videoFile.name}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setVideoFile(null);
+                        }}
+                        className="p-1 rounded-full hover:bg-[rgb(var(--bg-surface))]"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : formData.videoFileId ? (
+                    <div className="flex items-center gap-2 text-green-500">
+                      <Video className="h-5 w-5" />
+                      <span className="text-sm">
+                        {t("teacher.lesson.videoUploaded")}
+                      </span>
+                    </div>
                   ) : (
-                    <div className="flex flex-col items-center p-2 text-center">
-                      <Upload className="h-4 w-4 mb-1" />
-                      <span className="text-[10px]">Subir Imagen</span>
+                    <div className="flex flex-col items-center gap-1 text-[rgb(var(--text-muted))]">
+                      <Upload className="h-6 w-6" />
+                      <span className="text-xs">
+                        {t("teacher.lesson.videoFormats")}
+                      </span>
                     </div>
                   )}
+                  <input
+                    id="lesson-video-upload"
+                    type="file"
+                    className="hidden"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                  />
                 </div>
-                <div className="text-xs text-[rgb(var(--text-secondary))]">
-                  <p className="mb-2">
-                    Sube una imagen de portada para este video.
-                  </p>
-                  {(coverFile || formData.videoCoverFileId) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 text-red-500 hover:text-red-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCoverFile(null);
-                        updateField("videoCoverFileId", "");
-                      }}
-                    >
-                      Eliminar portada
-                    </Button>
-                  )}
-                </div>
-                <input
-                  id="lesson-cover-upload"
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleCoverUpload}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                  {t("teacher.lesson.description")}
+                </label>
+                <SimpleMDE
+                  value={formData.description}
+                  onChange={(val) => updateField("description", val)}
+                  options={mdeOptions}
                 />
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Attachments */}
-        <div>
-          <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-            {t("teacher.lesson.attachments")}
-          </label>
+          {formData.kind === "article" && (
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                {t("teacher.lesson.content")}
+              </label>
+              <SimpleMDE
+                value={formData.description}
+                onChange={(val) => updateField("description", val)}
+                options={mdeOptions}
+              />
+            </div>
+          )}
 
-          {/* Attachments list */}
-          {attachments.length > 0 && (
-            <ul className="mb-2 space-y-2">
-              {attachments.map((att) => {
-                const { icon: FileIcon, color, bg } = getFileStyle(att.name);
-                const isEditing = editingAttachmentId === att.id;
+          {(formData.kind === "quiz" || formData.kind === "assignment") && (
+            <div className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))/0.3] p-6 text-center space-y-4">
+              <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-[rgb(var(--bg-surface))] shadow-sm">
+                {formData.kind === "quiz" ? (
+                  <HelpCircle className="h-6 w-6 text-purple-500" />
+                ) : (
+                  <ClipboardList className="h-6 w-6 text-green-500" />
+                )}
+              </div>
+              <div>
+                <h4 className="font-semibold text-lg">
+                  {formData.kind === "quiz"
+                    ? t("teacher.quiz.settings")
+                    : t("teacher.assignment.settings")}
+                </h4>
+                <p className="text-sm text-[rgb(var(--text-secondary))] max-w-md mx-auto mt-1">
+                  {isNew
+                    ? t("teacher.errors.saveFirstToConfig")
+                    : t("teacher.errors.configureContent")}
+                </p>
+              </div>
 
-                return (
-                  <li
-                    key={att.id}
-                    className="flex items-center justify-between rounded-lg bg-[rgb(var(--bg-muted))] px-3 py-2 border border-transparent hover:border-[rgb(var(--border-base))]"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div
-                        className={`h-8 w-8 flex items-center justify-center rounded ${bg} ${color} shrink-0`}
-                      >
-                        <FileIcon className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        {isEditing ? (
-                          <div className="flex items-center gap-2">
+              {!isNew ? (
+                <div className="flex justify-center gap-3">
+                  <Button onClick={handleOpenConfig} className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    {formData.kind === "quiz"
+                      ? t("teacher.quiz.configure")
+                      : t("teacher.assignment.configure")}
+                  </Button>
+                  {relatedEntity && (
+                    <span className="flex items-center gap-1 text-sm text-green-600 font-medium px-3 py-1 bg-green-100 dark:bg-green-900/20 rounded-full">
+                      <Check className="h-3 w-3" />{" "}
+                      {t("teacher.status.configured")}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-[rgb(var(--text-muted))] italic">
+                  {t("teacher.errors.saveToEnableConfig")}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Attachments Section (Always available) */}
+          <div className="pt-4 border-t border-[rgb(var(--border-base))]">
+            <label className="mb-2 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+              {t("teacher.lesson.attachments")}
+            </label>
+            {attachments.length > 0 && (
+              <ul className="mb-3 space-y-2">
+                {attachments.map((att) => {
+                  const { icon: FileIcon, color, bg } = getFileStyle(att.name);
+                  const isEditing = editingAttachmentId === att.id;
+                  return (
+                    <li
+                      key={att.id}
+                      className="flex items-center justify-between rounded-lg bg-[rgb(var(--bg-muted))] px-3 py-2 border border-transparent hover:border-[rgb(var(--border-base))]"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div
+                          className={`h-8 w-8 flex items-center justify-center rounded ${bg} ${color} shrink-0`}
+                        >
+                          <FileIcon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          {isEditing ? (
                             <Input
                               value={editingName}
                               onChange={(e) => setEditingName(e.target.value)}
@@ -674,108 +687,105 @@ export function LessonEditorModal({
                                 if (e.key === "Escape") cancelEditing();
                               }}
                             />
-                          </div>
+                          ) : (
+                            <div
+                              className="font-medium text-sm truncate"
+                              title={att.name}
+                            >
+                              {att.name}
+                            </div>
+                          )}
+                          {!isEditing && (
+                            <div className="text-xs text-[rgb(var(--text-secondary))]">
+                              {(att.size / 1024).toFixed(0)} KB
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {isEditing ? (
+                          <>
+                            <button
+                              onClick={() => saveEditing(att.id)}
+                              className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-green-500"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={cancelEditing}
+                              className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-red-500"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </>
                         ) : (
-                          <div
-                            className="font-medium text-sm truncate"
-                            title={att.name}
-                          >
-                            {att.name}
-                          </div>
-                        )}
-                        {!isEditing && (
-                          <div className="text-xs text-[rgb(var(--text-secondary))]">
-                            {(att.size / 1024).toFixed(0)} KB
-                          </div>
+                          <>
+                            <button
+                              onClick={() => startEditing(att)}
+                              className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))]"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRemoveAttachment(att.id)}
+                              className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
                         )}
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {/* Editing Controls */}
-                      {isEditing ? (
-                        <>
-                          <button
-                            onClick={() => saveEditing(att.id)}
-                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-green-500"
-                            title={t("common.save")}
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={cancelEditing}
-                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-red-500"
-                            title={t("common.cancel")}
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {/* Download/View */}
-                          <a
-                            href={
-                              FileService.getLessonAttachmentDownloadUrl
-                                ? FileService.getLessonAttachmentDownloadUrl(
-                                    att.id,
-                                  )
-                                : "#"
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))]"
-                            title={t("common.download")}
-                          >
-                            <Upload className="h-4 w-4 rotate-180" />
-                          </a>
-
-                          {/* Edit Name */}
-                          <button
-                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))]"
-                            onClick={() => startEditing(att)}
-                            title="Renombrar"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-
-                          <button
-                            onClick={() => handleRemoveAttachment(att.id)}
-                            className="p-1.5 rounded-full hover:bg-[rgb(var(--bg-surface))] text-red-500"
-                            title={t("common.delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {/* Add attachment button */}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              document.getElementById("lesson-attachment-upload").click()
-            }
-            disabled={uploading}
-            className="w-full sm:w-auto"
-          >
-            {uploading
-              ? t("common.loading")
-              : t("teacher.lesson.addAttachment")}
-          </Button>
-          <input
-            id="lesson-attachment-upload"
-            type="file"
-            className="hidden"
-            onChange={handleAttachmentUpload}
-          />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                document.getElementById("lesson-attachment-upload").click()
+              }
+              disabled={uploading}
+              className="w-full sm:w-auto"
+            >
+              {uploading
+                ? t("common.loading")
+                : t("teacher.lesson.addAttachment")}
+            </Button>
+            <input
+              id="lesson-attachment-upload"
+              type="file"
+              className="hidden"
+              onChange={handleAttachmentUpload}
+            />
+          </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      {/* QUIZ EDITOR SUB-MODAL */}
+      {quizModalOpen && (
+        <QuizEditorModal
+          open={quizModalOpen}
+          onClose={() => setQuizModalOpen(false)}
+          quiz={relatedEntity} // Pass existing quiz if found
+          courseId={courseId}
+          lessonId={lesson?.$id}
+          onSave={handleConfigSaved}
+        />
+      )}
+
+      {/* ASSIGNMENT EDITOR SUB-MODAL */}
+      {assignmentModalOpen && (
+        <AssignmentEditorModal
+          open={assignmentModalOpen}
+          onClose={() => setAssignmentModalOpen(false)}
+          assignment={relatedEntity}
+          courseId={courseId}
+          lessonId={lesson?.$id}
+          onSave={handleConfigSaved}
+        />
+      )}
+    </>
   );
 }

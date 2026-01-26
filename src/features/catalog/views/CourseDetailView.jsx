@@ -15,6 +15,8 @@ import {
   Users,
   AlertCircle,
   ArrowLeft,
+  ShoppingCart,
+  ShoppingBag,
 } from "lucide-react";
 
 import { Button } from "../../../shared/ui/Button";
@@ -499,45 +501,53 @@ export function CourseDetailView() {
                   {formattedPrice}
                 </div>
 
-                {/* Primary Action Button (Buy/Access) */}
-                <Button
-                  className="mb-3 w-full"
-                  size="lg"
-                  disabled={!canEnroll && !isOwner}
-                  onClick={() => {
-                    if (isOwner) {
-                      navigate(`/app/teach/courses/${id}`);
-                      return;
-                    }
-                    if (!auth.user) {
-                      navigate("/auth/register", {
-                        state: { returnUrl: location.pathname },
-                      });
-                      return;
-                    }
-                    // handleEnroll();
-                  }}
-                >
-                  {isOwner
-                    ? t("courses.manage")
-                    : isDraft
-                      ? t("courses.unavailable")
-                      : t("courses.buyCourse") || "Comprar curso"}
-                </Button>
+                <div className="flex gap-3">
+                  {/* Secondary Action (Add to Cart) - Icon Button */}
+                  {!isOwner && !isDraft && (
+                    <Button
+                      variant="outline"
+                      className="h-12 w-16 shrink-0 border-border-base hover:bg-bg-surface-hover"
+                      title={t("courses.addToCart")}
+                      onClick={() => {
+                        // Handle Add to Cart
+                        console.log("Add to cart");
+                      }}
+                    >
+                      <ShoppingCart className="h-5 w-5" />
+                    </Button>
+                  )}
 
-                {/* Secondary Action (Add to Cart) */}
-                {!isOwner && !isDraft && (
+                  {/* Primary Action Button (Buy/Access) */}
                   <Button
-                    variant="outline"
-                    className="w-full"
+                    className="h-12 w-full flex-1 shadow-lg shadow-brand-primary/20"
+                    size="lg"
+                    disabled={!canEnroll && !isOwner}
                     onClick={() => {
-                      // Handle Add to Cart
-                      console.log("Add to cart");
+                      if (isOwner) {
+                        navigate(`/app/teach/courses/${id}`);
+                        return;
+                      }
+                      if (!auth.user) {
+                        navigate("/auth/register", {
+                          state: { returnUrl: location.pathname },
+                        });
+                        return;
+                      }
+                      // handleEnroll();
                     }}
                   >
-                    {t("courses.addToCart") || "Añadir al carrito"}
+                    {isOwner ? (
+                      t("courses.manage")
+                    ) : isDraft ? (
+                      t("courses.unavailable")
+                    ) : (
+                      <>
+                        <ShoppingBag className="mr-2 h-5 w-5" />
+                        {t("courses.buyCourse") || "Comprar curso"}
+                      </>
+                    )}
                   </Button>
-                )}
+                </div>
 
                 <div className="mt-6 space-y-3 text-sm text-[rgb(var(--text-secondary))]">
                   <div className="flex items-center gap-2">
@@ -577,23 +587,25 @@ export function CourseDetailView() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              {/* Add to Cart (Mobile) */}
+            <div className="flex gap-3 items-center">
+              {/* Add to Cart (Mobile) - Icon Only */}
               {!isOwner && !isDraft && (
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  size="icon"
+                  className="h-12 w-12 shrink-0 rounded-xl border-border-base bg-bg-surface text-text-primary hover:bg-bg-surface-hover"
                   onClick={() => {
                     console.log("Add to cart");
                   }}
+                  title={t("courses.addToCart")}
                 >
-                  {t("courses.addToCart") || "Carrito"}
+                  <ShoppingCart className="h-5 w-5" />
                 </Button>
               )}
 
               {/* Buy Button (Mobile) */}
               <Button
-                className="flex-[2]"
+                className="flex-1 h-12 rounded-xl text-base font-bold shadow-lg shadow-brand-primary/25"
                 size="lg"
                 disabled={!canEnroll && !isOwner}
                 onClick={() => {
@@ -605,9 +617,14 @@ export function CourseDetailView() {
                   // handleEnroll();
                 }}
               >
-                {isOwner
-                  ? t("courses.manage")
-                  : t("courses.buyCourse") || "Comprar curso"}
+                {isOwner ? (
+                  t("courses.manage")
+                ) : (
+                  <>
+                    <ShoppingBag className="mr-2 h-5 w-5" />
+                    {t("courses.buyCourse") || "Comprar curso"}
+                  </>
+                )}
               </Button>
             </div>
           </div>

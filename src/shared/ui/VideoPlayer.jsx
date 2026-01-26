@@ -262,7 +262,7 @@ export function VideoPlayer({
 
       {/* Controls Bar */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8 transition-opacity duration-300 ${
+        className={`absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-black/80 to-transparent flex items-end px-4 pb-2 select-none transition-opacity duration-300 ${
           showControls ? "opacity-100" : "opacity-0"
         }`}
       >

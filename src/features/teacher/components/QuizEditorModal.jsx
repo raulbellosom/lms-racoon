@@ -24,7 +24,14 @@ const QUESTION_TYPES = [
  * @param {string} courseId - Parent course ID
  * @param {Function} onSave - Save callback
  */
-export function QuizEditorModal({ open, onClose, quiz, courseId, onSave }) {
+export function QuizEditorModal({
+  open,
+  onClose,
+  quiz,
+  courseId,
+  lessonId,
+  onSave,
+}) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const isNew = !quiz?.$id;
@@ -160,6 +167,7 @@ export function QuizEditorModal({ open, onClose, quiz, courseId, onSave }) {
       if (isNew) {
         const newQuiz = await QuizService.create({
           courseId,
+          lessonId,
           ...formData,
           order: 0,
         });

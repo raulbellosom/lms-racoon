@@ -12,3 +12,6 @@ export { AssignmentList } from "./AssignmentList";
 export { AssignmentEditorModal } from "./AssignmentEditorModal";
 export { MarkdownDescriptionEditor } from "./MarkdownDescriptionEditor";
 export { CharacterCountCircle } from "./CharacterCountCircle";
+export { BannerSelectionModal } from "./BannerSelectionModal";
+export { TeacherQuizGrades } from "./TeacherQuizGrades";
+export { TeacherAssignmentGrading } from "./TeacherAssignmentGrading";

@@ -208,8 +208,23 @@
     "quizPlaceholder": "Conecta quizzes, quizQuestions y quizAttempts."
   },
   "teacher": {
+    "dashboard": {
+      "welcome": "Bienvenido, {{name}}. Gestiona tus cursos y estudiantes.",
+      "totalCourses": "Total Cursos",
+      "activeStudents": "Estudiantes Activos",
+      "totalRevenue": "Ingresos Totales",
+      "recentCourses": "Cursos Recientes",
+      "viewAll": "Ver todos",
+      "quickActions": "Acciones Rápidas",
+      "noActivity": "No hay actividad reciente",
+      "noActivityDesc": "Tus cursos creados aparecerán aquí.",
+      "startCourse": "Comenzar un curso",
+      "editProfile": "Editar Perfil",
+      "draft": "Borrador",
+      "published": "Publicado"
+    },
     "panelTitle": "Panel del instructor",
-    "dashboard": "Dashboard",
+
     "myCourses": "Mis cursos",
     "createCourse": "Crear nuevo curso",
     "editCourse": "Editar curso",
@@ -275,14 +290,14 @@
       "sectionTitlePlaceholder": "Ej: Introducción al curso",
       "editSection": "Editar sección",
       "deleteSection": "Eliminar sección",
-      "deleteSectionConfirm": "¿Eliminar sección y sus lecciones?",
-      "deleteSectionDesc": "Esto eliminará permanentemente la sección y todas sus lecciones.",
+      "deleteSectionConfirm": "Eliminar Sección",
+      "deleteSectionDesc": "¿Estás seguro de que quieres eliminar esta sección? Esta acción no se puede deshacer.",
       "lessonTitle": "Título de la lección",
       "lessonTitlePlaceholder": "Ej: Bienvenida al curso",
       "editLesson": "Editar lección",
       "deleteLesson": "Eliminar lección",
-      "deleteLessonConfirm": "¿Eliminar lección?",
-      "deleteLessonDesc": "Esta acción no se puede deshacer.",
+      "deleteLessonConfirm": "Eliminar Lección",
+      "deleteLessonDesc": "¿Estás seguro de que quieres eliminar esta lección?",
       "lessonType": "Tipo de lección",
       "video": "Video",
       "article": "Artículo/Lectura",
@@ -290,12 +305,18 @@
       "assignment": "Tarea",
       "duration": "Duración",
       "durationMinutes": "minutos",
-      "reorderHint": "Arrastra para reordenar"
+      "reorderHint": "Arrastra para reordenar",
+      "reorderFailed": "Error al reordenar",
+      "emptyStateTitle": "Empieza a crear tu curso",
+      "emptyStateDesc": "Añade tu primera sección para organizar las lecciones.",
+      "unsavedChanges": "Tienes cambios sin guardar. ¿Salir sin guardar?",
+      "deleteItem": "¿Estás seguro de que deseas eliminar este elemento?"
     },
     "lesson": {
       "editTitle": "Editar Lección",
       "createTitle": "Nueva Lección",
       "description": "Descripción",
+      "content": "Contenido",
       "descriptionPlaceholder": "Describe el contenido de esta lección...",
       "uploadVideo": "Subir Video",
       "videoFormats": "MP4, WebM, MOV (máx. 2GB)",
@@ -310,13 +331,17 @@
       "timestamps": "Marcadores de tiempo",
       "addTimestamp": "Añadir marcador",
       "timestampTitle": "Título del marcador",
-      "timestampTime": "Tiempo (segundos)"
+      "timestampTime": "Tiempo (segundos)",
+      "uploadImage": "Subir Imagen",
+      "removeCover": "Eliminar portada",
+      "videoCoverDesc": "Sube una imagen de portada para este video."
     },
     "quiz": {
       "title": "Evaluaciones",
       "createQuiz": "Crear evaluación",
       "editQuiz": "Editar evaluación",
       "noQuizzes": "No hay evaluaciones creadas",
+      "createInCurriculum": "Para crear una evaluación, ve a la pestaña 'Contenido' y añade una nueva lección tipo 'Evaluación'.",
       "quizTitle": "Título de la evaluación",
       "quizTitlePlaceholder": "Ej: Examen del módulo 1",
       "quizDescription": "Descripción",
@@ -344,13 +369,16 @@
       "saveQuiz": "Guardar evaluación",
       "deleteQuiz": "Eliminar evaluación",
       "deleteQuizConfirm": "¿Eliminar esta evaluación?",
-      "deleteQuizDesc": "Se eliminarán todos los intentos de los estudiantes."
+      "deleteQuizDesc": "Se eliminarán todos los intentos de los estudiantes.",
+      "settings": "Configuración de la evaluación",
+      "configure": "Configurar preguntas"
     },
     "assignment": {
       "title": "Tareas",
       "createAssignment": "Crear tarea",
       "editAssignment": "Editar tarea",
       "noAssignments": "No hay tareas creadas",
+      "createInCurriculum": "Para crear una tarea, ve a la pestaña 'Contenido' y añade una nueva lección tipo 'Tarea'.",
       "assignmentTitle": "Título de la tarea",
       "assignmentTitlePlaceholder": "Ej: Proyecto final del módulo",
       "assignmentDescription": "Descripción e instrucciones",
@@ -373,11 +401,15 @@
       "saveGrade": "Guardar calificación",
       "deleteAssignment": "Eliminar tarea",
       "deleteAssignmentConfirm": "¿Eliminar esta tarea?",
-      "deleteAssignmentDesc": "Se eliminarán todas las entregas asociadas."
+      "deleteAssignmentDesc": "Se eliminarán todas las entregas asociadas.",
+      "settings": "Configuración de la tarea",
+      "configure": "Configurar instrucciones"
     },
     "reviews": {
       "title": "Reseñas del curso",
       "noReviews": "Este curso aún no tiene reseñas",
+      "noReviewsTitle": "Sin reseñas todavía",
+      "noReviewsDesc": "Cuando publiques tu curso, las reseñas de los estudiantes aparecerán aquí.",
       "averageRating": "Calificación promedio",
       "totalReviews": "reseñas totales",
       "ratingBreakdown": "Desglose de calificaciones",
@@ -411,7 +443,8 @@
     },
     "status": {
       "published": "Publicado",
-      "draft": "Borrador"
+      "draft": "Borrador",
+      "configured": "Configurado"
     },
     "banner": {
       "selectModalTitle": "Seleccionar Banner / Trailer",
@@ -429,11 +462,24 @@
       "saveFailed": "Error al guardar. Revisa la consola.",
       "deleteFailed": "Error al eliminar",
       "uploadFailed": "Error al subir archivo",
-      "statusChangeFailed": "Error al cambiar estado"
+      "statusChangeFailed": "Error al cambiar estado",
+      "saveFirstToConfig": "Guarda la lección primero para configurar preguntas y opciones.",
+      "configureContent": "Configura el contenido, preguntas y opciones de esta evaluación.",
+      "saveToEnableConfig": "(Presiona Guardar para habilitar la configuración)",
+      "saveFirst": "Guarda la lección primero"
     },
-    "confirm": {
-      "unsavedChanges": "Tienes cambios sin guardar. ¿Salir sin guardar?",
-      "deleteItem": "¿Estás seguro de que deseas eliminar este elemento?"
+    "grades": {
+      "totalQuizzes": "Total Evaluaciones",
+      "totalAttempts": "Intentos Totales",
+      "recentAttempts": "Intentos Recientes",
+      "noAttempts": "No hay intentos registrados aún.",
+      "studentId": "Estudiante ID",
+      "date": "Fecha",
+      "score": "Puntaje",
+      "status": "Estado",
+      "passed": "Aprobado",
+      "failed": "Reprobado",
+      "createInCurriculum": "Para crear una evaluación, ve a la pestaña 'Contenido' y añade una nueva lección tipo 'Evaluación'."
     }
   },
   "videoPlayer": {

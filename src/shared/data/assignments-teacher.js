@@ -29,6 +29,20 @@ export async function listAssignmentsByCourse(courseId, { limit = 50 } = {}) {
 }
 
 /**
+ * List assignments by lesson ID
+ */
+export async function listAssignmentsByLesson(lessonId) {
+  if (!hasAppwrite()) return [];
+
+  const res = await db.listDocuments(
+    APPWRITE.databaseId,
+    APPWRITE.collections.assignments,
+    [Query.equal("lessonId", lessonId), Query.equal("enabled", true)],
+  );
+  return res.documents;
+}
+
+/**
  * Get a single assignment by ID
  */
 export async function getAssignmentById(assignmentId) {
@@ -121,6 +135,7 @@ export async function reorderAssignments(assignments) {
 
 export const AssignmentService = {
   listByCourse: listAssignmentsByCourse,
+  listByLesson: listAssignmentsByLesson,
   getById: getAssignmentById,
   create: createAssignment,
   update: updateAssignment,

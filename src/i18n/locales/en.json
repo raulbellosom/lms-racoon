@@ -209,8 +209,23 @@
     "quizPlaceholder": "Connect quizzes, quizQuestions and quizAttempts."
   },
   "teacher": {
+    "dashboard": {
+      "welcome": "Welcome, {{name}}. Manage your courses and students.",
+      "totalCourses": "Total Courses",
+      "activeStudents": "Active Students",
+      "totalRevenue": "Total Revenue",
+      "recentCourses": "Recent Courses",
+      "viewAll": "View all",
+      "quickActions": "Quick Actions",
+      "noActivity": "No recent activity",
+      "noActivityDesc": "Your created courses will appear here.",
+      "startCourse": "Start a course",
+      "editProfile": "Edit Profile",
+      "draft": "Draft",
+      "published": "Published"
+    },
     "panelTitle": "Instructor panel",
-    "dashboard": "Dashboard",
+
     "myCourses": "My courses",
     "createCourse": "Create new course",
     "editCourse": "Edit course",
@@ -291,7 +306,10 @@
       "assignment": "Assignment",
       "duration": "Duration",
       "durationMinutes": "minutes",
-      "reorderHint": "Drag to reorder"
+      "reorderHint": "Drag to reorder",
+      "reorderFailed": "Reorder failed",
+      "emptyStateTitle": "Start creating your course",
+      "emptyStateDesc": "Add your first section to start organizing your lessons."
     },
     "lesson": {
       "editTitle": "Edit Lesson",
@@ -345,7 +363,8 @@
       "saveQuiz": "Save quiz",
       "deleteQuiz": "Delete quiz",
       "deleteQuizConfirm": "Delete this quiz?",
-      "deleteQuizDesc": "All student attempts will be deleted."
+      "deleteQuizDesc": "All student attempts will be deleted.",
+      "createInCurriculum": "To create a quiz, go to the 'Content' tab and add a new 'Quiz' lesson."
     },
     "assignment": {
       "title": "Assignments",
@@ -374,11 +393,14 @@
       "saveGrade": "Save grade",
       "deleteAssignment": "Delete assignment",
       "deleteAssignmentConfirm": "Delete this assignment?",
-      "deleteAssignmentDesc": "All student submissions will be deleted."
+      "deleteAssignmentDesc": "All student submissions will be deleted.",
+      "createInCurriculum": "To create an assignment, go to the 'Content' tab and add a new 'Assignment' lesson."
     },
     "reviews": {
       "title": "Course reviews",
       "noReviews": "This course has no reviews yet",
+      "noReviewsTitle": "No reviews yet",
+      "noReviewsDesc": "When you publish your course, student reviews will appear here.",
       "averageRating": "Average rating",
       "totalReviews": "total reviews",
       "ratingBreakdown": "Rating breakdown",

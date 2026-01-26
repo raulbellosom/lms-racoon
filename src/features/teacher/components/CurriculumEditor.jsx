@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, GripVertical } from "lucide-react";
+import { Plus, GripVertical, Layers3 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -25,6 +25,7 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { SectionCard } from "./SectionCard";
 import { LessonItem } from "./LessonItem";
+import { EmptyState } from "../../../shared/components/EmptyState";
 
 /**
  * SortableSectionItem - Wrapper for SectionCard to make it sortable
@@ -232,9 +233,14 @@ export function CurriculumEditor({
       </div>
 
       {localSections.length === 0 ? (
-        <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
-          {t("teacher.curriculum.noSections")}
-        </Card>
+        <EmptyState
+          icon={Layers3}
+          title={t("teacher.curriculum.emptyStateTitle")}
+          description={t("teacher.curriculum.emptyStateDesc")}
+          actionLabel={t("teacher.addSection")}
+          onAction={onAddSection}
+          className="min-h-[400px] bg-[rgb(var(--bg-muted))]/0.3 border-2 border-dashed border-[rgb(var(--border-base))] rounded-2xl"
+        />
       ) : (
         <DndContext
           sensors={sensors}

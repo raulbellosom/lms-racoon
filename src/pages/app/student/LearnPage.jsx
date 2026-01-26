@@ -4,7 +4,10 @@ import { CheckCircle2, ListVideo, PlayCircle } from "lucide-react";
 import { Card } from "../../../shared/ui/Card";
 import { Tabs, Tab } from "../../../shared/ui/Tabs";
 import { Textarea } from "../../../shared/ui/Textarea";
-import { listCommentsForCourse, createComment } from "../../../shared/data/comments";
+import {
+  listCommentsForCourse,
+  createComment,
+} from "../../../shared/data/comments";
 import { listAssignmentsForCourse } from "../../../shared/data/assignments";
 import { Button } from "../../../shared/ui/Button";
 import { ProgressBar } from "../../../shared/ui/ProgressBar";
@@ -12,6 +15,8 @@ import { getCourseById } from "../../../shared/data/courses";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { upsertLessonProgress } from "../../../shared/data/enrollments";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { QuizView } from "../../../features/student/components/QuizView";
+import { AssignmentView } from "../../../features/student/components/AssignmentView";
 
 export function LearnPage() {
   const { courseId, lessonId } = useParams();
@@ -31,7 +36,9 @@ export function LearnPage() {
       setCourse(c);
       const first = c.sections?.[0]?.lessons?.[0];
       const target =
-        c.sections?.flatMap((s) => s.lessons || []).find((l) => l.$id === lessonId) || first;
+        c.sections
+          ?.flatMap((s) => s.lessons || [])
+          .find((l) => l.$id === lessonId) || first;
       setCurrent(target);
       Promise.all([
         listCommentsForCourse(c.$id).catch(() => []),
@@ -44,7 +51,9 @@ export function LearnPage() {
   }, [courseId, lessonId]);
 
   const lessons = course?.sections?.flatMap((s) => s.lessons || []) || [];
-  const pct = lessons.length ? (Object.keys(done).length / lessons.length) * 100 : 0;
+  const pct = lessons.length
+    ? (Object.keys(done).length / lessons.length) * 100
+    : 0;
 
   const markComplete = async () => {
     if (!current) return;
@@ -58,50 +67,100 @@ export function LearnPage() {
         completed: true,
       });
       setDone((p) => ({ ...p, [current.$id]: true }));
-      toast.push({ title: "Progreso guardado", message: "Lección marcada como completada.", variant: "success" });
+      toast.push({
+        title: "Progreso guardado",
+        message: "Lección marcada como completada.",
+        variant: "success",
+      });
     } catch (e) {
-      toast.push({ title: "Error", message: e?.message || "No se pudo guardar.", variant: "error" });
+      toast.push({
+        title: "Error",
+        message: e?.message || "No se pudo guardar.",
+        variant: "error",
+      });
     } finally {
       setBusy(false);
     }
   };
 
-  if (!course || !current) return <div className="mx-auto max-w-6xl px-4 py-6">Cargando...</div>;
+  if (!course || !current)
+    return <div className="mx-auto max-w-6xl px-4 py-6">Cargando...</div>;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-sm text-[rgb(var(--text-secondary))]">{course.title}</div>
+          <div className="text-sm text-[rgb(var(--text-secondary))]">
+            {course.title}
+          </div>
           <div className="mt-1 text-xl font-black tracking-tight line-clamp-2">
             {current.title}
           </div>
         </div>
         <div className="w-36">
-          <div className="text-xs text-[rgb(var(--text-secondary))] mb-1">Avance</div>
+          <div className="text-xs text-[rgb(var(--text-secondary))] mb-1">
+            Avance
+          </div>
           <ProgressBar value={pct} />
-          <div className="mt-1 text-xs text-[rgb(var(--text-muted))]">{Math.round(pct)}%</div>
+          <div className="mt-1 text-xs text-[rgb(var(--text-muted))]">
+            {Math.round(pct)}%
+          </div>
         </div>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
         <Card className="overflow-hidden">
           {/* Video placeholder (connect to Appwrite Storage URL when ready) */}
-          <div className="aspect-video bg-black/90 grid place-items-center">
-            <div className="text-center">
-              <PlayCircle className="mx-auto h-12 w-12 text-white/90" />
-              <div className="mt-2 text-sm text-white/80">
-                Video demo (conecta lesson.videoFileId en Appwrite)
-              </div>
+          {/* Main Content Area: Video, Quiz, or Assignment */}
+          {current.kind === "quiz" ? (
+            <QuizView
+              lessonId={current.$id}
+              courseId={courseId}
+              onComplete={markComplete}
+            />
+          ) : current.kind === "assignment" ? (
+            <AssignmentView lessonId={current.$id} courseId={courseId} />
+          ) : (
+            <div className="aspect-video bg-black/90 grid place-items-center">
+              {current.kind === "video" ? (
+                current.videoFileId ? (
+                  <video
+                    className="w-full h-full"
+                    controls
+                    src={`YOUR_APPWRITE_ENDPOINT/storage/buckets/lessonVideos/files/${current.videoFileId}/view?project=${"YOUR_PROJECT_ID"}`}
+                    /* TODO: Use FileService.getVideoUrl logic properly */
+                  />
+                ) : (
+                  <div className="text-center">
+                    <PlayCircle className="mx-auto h-12 w-12 text-white/90" />
+                    <div className="mt-2 text-sm text-white/80">
+                      Video no disponible
+                    </div>
+                  </div>
+                )
+              ) : (
+                /* Article Placeholder or dedicated Article View? */
+                /* Usually articles are read in the "Details" tab or we show a nice cover. */
+                <div className="text-center p-8 bg-gray-100 dark:bg-gray-800 text-gray-500 h-full flex flex-col items-center justify-center">
+                  <ListVideo className="h-12 w-12 mb-2" />
+                  <div>Lectura: Ver contenido abajo</div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           <div className="p-4">
             <Tabs value={lessonTab} onChange={setLessonTab} className="mb-3">
               <Tab value="overview" label="Resumen" />
               <Tab value="chapters" label="Capítulos" />
-              <Tab value="assignments" label={`Tareas (${assignments.length})`} />
-              <Tab value="qa" label={`Q&A (${comments.filter(c=>!c.parentId).length})`} />
+              <Tab
+                value="assignments"
+                label={`Tareas (${assignments.length})`}
+              />
+              <Tab
+                value="qa"
+                label={`Q&A (${comments.filter((c) => !c.parentId).length})`}
+              />
               <Tab value="quiz" label="Quiz" />
             </Tabs>
 
@@ -109,16 +168,21 @@ export function LearnPage() {
               <div>
                 <div className="text-sm font-extrabold">Descripción</div>
                 <div className="mt-2 text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">
-                  {current.description || "Esta lección incluye explicación, recursos y checklist práctico."}
+                  {current.description ||
+                    "Esta lección incluye explicación, recursos y checklist práctico."}
                 </div>
               </div>
             )}
 
             {lessonTab === "chapters" && (
               <div className="rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-3">
-                <div className="text-sm font-extrabold">Capítulos del video</div>
+                <div className="text-sm font-extrabold">
+                  Capítulos del video
+                </div>
                 <div className="mt-2 text-sm text-[rgb(var(--text-secondary))]">
-                  (UI lista) Conecta la colección <span className="font-semibold">lessonTimestamps</span> para saltar a timestamps.
+                  (UI lista) Conecta la colección{" "}
+                  <span className="font-semibold">lessonTimestamps</span> para
+                  saltar a timestamps.
                 </div>
               </div>
             )}
@@ -126,12 +190,19 @@ export function LearnPage() {
             {lessonTab === "assignments" && (
               <div className="space-y-2">
                 {assignments.length === 0 ? (
-                  <div className="text-sm text-[rgb(var(--text-secondary))]">No hay tareas publicadas.</div>
+                  <div className="text-sm text-[rgb(var(--text-secondary))]">
+                    No hay tareas publicadas.
+                  </div>
                 ) : (
                   assignments.map((a) => (
-                    <div key={a.$id} className="rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-3">
+                    <div
+                      key={a.$id}
+                      className="rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-3"
+                    >
                       <div className="text-sm font-extrabold">{a.title}</div>
-                      <div className="mt-1 text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">{a.description}</div>
+                      <div className="mt-1 text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">
+                        {a.description}
+                      </div>
                     </div>
                   ))
                 )}
@@ -171,8 +242,13 @@ export function LearnPage() {
                   .filter((c) => c.lessonId === current.$id && !c.parentId)
                   .slice(0, 20)
                   .map((c) => (
-                    <div key={c.$id} className="rounded-2xl border border-[rgb(var(--border-base))] p-3">
-                      <div className="text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">{c.body}</div>
+                    <div
+                      key={c.$id}
+                      className="rounded-2xl border border-[rgb(var(--border-base))] p-3"
+                    >
+                      <div className="text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">
+                        {c.body}
+                      </div>
                     </div>
                   ))}
               </div>
@@ -182,15 +258,26 @@ export function LearnPage() {
               <div className="rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-3">
                 <div className="text-sm font-extrabold">Quiz de la lección</div>
                 <div className="mt-2 text-sm text-[rgb(var(--text-secondary))]">
-                  (UI lista) Conecta <span className="font-semibold">quizzes</span>, <span className="font-semibold">quizQuestions</span> y <span className="font-semibold">quizAttempts</span>.
+                  (UI lista) Conecta{" "}
+                  <span className="font-semibold">quizzes</span>,{" "}
+                  <span className="font-semibold">quizQuestions</span> y{" "}
+                  <span className="font-semibold">quizAttempts</span>.
                 </div>
               </div>
             )}
 
             <div className="mt-4">
-              <Button onClick={markComplete} disabled={busy || !!done[current.$id]} className="w-full sm:w-auto">
+              <Button
+                onClick={markComplete}
+                disabled={busy || !!done[current.$id]}
+                className="w-full sm:w-auto"
+              >
                 <CheckCircle2 className="h-4 w-4" />
-                {done[current.$id] ? "Completada" : busy ? "Guardando..." : "Marcar como completada"}
+                {done[current.$id]
+                  ? "Completada"
+                  : busy
+                    ? "Guardando..."
+                    : "Marcar como completada"}
               </Button>
             </div>
           </div>
@@ -221,12 +308,16 @@ export function LearnPage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold line-clamp-1">{l.title}</div>
+                    <div className="text-sm font-semibold line-clamp-1">
+                      {l.title}
+                    </div>
                     <div className="text-xs text-[rgb(var(--text-secondary))]">
                       {Math.round((l.durationSec || 0) / 60)} min
                     </div>
                   </div>
-                  {done[l.$id] ? <CheckCircle2 className="h-4 w-4 text-[rgb(var(--success))]" /> : null}
+                  {done[l.$id] ? (
+                    <CheckCircle2 className="h-4 w-4 text-[rgb(var(--success))]" />
+                  ) : null}
                 </div>
               </button>
             ))}

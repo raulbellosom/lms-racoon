@@ -28,6 +28,7 @@ import { Modal } from "../../../shared/ui/Modal";
 import { Input } from "../../../shared/ui/Input";
 import { Dropdown, DropdownItem } from "../../../shared/ui/Dropdown";
 import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
+import { EmptyState } from "../../../shared/components/EmptyState";
 
 // Modular components
 import {
@@ -37,6 +38,8 @@ import {
   CurriculumEditor,
   LessonEditorModal,
   MarkdownDescriptionEditor,
+  TeacherQuizGrades,
+  TeacherAssignmentGrading,
 } from "../../../features/teacher";
 
 // Tab Button Component
@@ -91,13 +94,16 @@ export function TeacherCourseEditorPage() {
   const [loading, setLoading] = React.useState(!isNew);
   const [saving, setSaving] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
-  const [tab, setTab] = React.useState(
-    () => localStorage.getItem("teacher_course_editor_tab") || "details",
-  );
+  const [tab, setTab] = React.useState(() => {
+    if (isNew) return "details";
+    return localStorage.getItem("teacher_course_editor_tab") || "details";
+  });
 
   React.useEffect(() => {
-    localStorage.setItem("teacher_course_editor_tab", tab);
-  }, [tab]);
+    if (!isNew) {
+      localStorage.setItem("teacher_course_editor_tab", tab);
+    }
+  }, [tab, isNew]);
   const [categories, setCategories] = React.useState([]);
 
   // Curriculum State
@@ -722,31 +728,21 @@ export function TeacherCourseEditorPage() {
         )}
 
         {/* === QUIZZES TAB === */}
-        {tab === "quizzes" && (
-          <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
-            <HelpCircle className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p>{t("teacher.quiz.noQuizzes")}</p>
-            <Button className="mt-4">{t("teacher.quiz.createQuiz")}</Button>
-          </Card>
-        )}
+        {tab === "quizzes" && <TeacherQuizGrades courseId={courseId} />}
 
         {/* === ASSIGNMENTS TAB === */}
         {tab === "assignments" && (
-          <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
-            <ClipboardList className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p>{t("teacher.assignment.noAssignments")}</p>
-            <Button className="mt-4">
-              {t("teacher.assignment.createAssignment")}
-            </Button>
-          </Card>
+          <TeacherAssignmentGrading courseId={courseId} />
         )}
 
         {/* === REVIEWS TAB === */}
         {tab === "reviews" && (
-          <Card className="p-8 text-center text-[rgb(var(--text-secondary))]">
-            <MessageSquare className="mx-auto h-12 w-12 mb-4 opacity-50" />
-            <p>{t("teacher.reviews.noReviews")}</p>
-          </Card>
+          <EmptyState
+            icon={MessageSquare}
+            title={t("teacher.reviews.noReviewsTitle")}
+            description={t("teacher.reviews.noReviewsDesc")}
+            className="min-h-[50vh]"
+          />
         )}
 
         {/* === PUBLISH TAB === */}

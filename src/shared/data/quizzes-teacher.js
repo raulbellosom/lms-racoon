@@ -27,6 +27,21 @@ export async function listQuizzesByCourse(courseId, { limit = 50 } = {}) {
       Query.limit(limit),
     ],
   );
+
+  return res.documents;
+}
+
+/**
+ * List quizzes by lesson ID
+ */
+export async function listQuizzesByLesson(lessonId) {
+  if (!hasAppwrite()) return [];
+
+  const res = await db.listDocuments(
+    APPWRITE.databaseId,
+    APPWRITE.collections.quizzes,
+    [Query.equal("lessonId", lessonId), Query.equal("enabled", true)],
+  );
   return res.documents;
 }
 
@@ -246,6 +261,7 @@ export async function getQuizWithQuestions(quizId) {
 
 export const QuizService = {
   listByCourse: listQuizzesByCourse,
+  listByLesson: listQuizzesByLesson,
   getById: getQuizById,
   create: createQuiz,
   update: updateQuiz,
