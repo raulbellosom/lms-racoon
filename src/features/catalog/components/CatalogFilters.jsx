@@ -141,16 +141,39 @@ export function CatalogFilters({
 
       {/* Teacher Filter */}
       {isTeacherOrAdmin && (
-        <label className="flex cursor-pointer items-center gap-3">
+        <label className="flex cursor-pointer items-center gap-3 group">
+          <div
+            className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
+              filters.myCoursesOnly
+                ? "border-[rgb(var(--brand-primary))] bg-[rgb(var(--brand-primary))]"
+                : "border-[rgb(var(--border-input))] bg-[rgb(var(--bg-input))] group-hover:border-[rgb(var(--brand-primary))]"
+            }`}
+          >
+            {filters.myCoursesOnly && (
+              <svg
+                className="h-3.5 w-3.5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            )}
+          </div>
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-gray-300 text-[rgb(var(--brand-primary))] focus:ring-[rgb(var(--brand-primary))]"
+            className="hidden"
             checked={filters.myCoursesOnly || false}
             onChange={(e) =>
               onChange({ ...filters, myCoursesOnly: e.target.checked })
             }
           />
-          <span className="text-sm font-medium text-[rgb(var(--text-primary))]">
+          <span className="text-sm font-medium text-[rgb(var(--text-secondary))] group-hover:text-[rgb(var(--text-primary))] transition-colors">
             {t("catalog.myCourses", "Ver mis cursos")}
           </span>
         </label>

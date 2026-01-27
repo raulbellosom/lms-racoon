@@ -666,7 +666,10 @@
     "searchPlaceholder": "Buscar cursos...",
     "categories": "Categorías",
     "levels": "Niveles",
-    "results": "Ver {{count}} resultados"
+    "results": "Ver {{count}} resultados",
+    "noCourses": "No se encontraron cursos",
+    "tryAdjustingFilters": "Intenta ajustar tus filtros o búsqueda.",
+    "clearFilters": "Limpiar filtros"
   },
   "settings": {
     "title": "Configuración",

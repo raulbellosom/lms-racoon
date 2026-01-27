@@ -666,7 +666,10 @@
     "searchPlaceholder": "Search courses...",
     "categories": "Categories",
     "levels": "Levels",
-    "results": "View {{count}} results"
+    "results": "View {{count}} results",
+    "noCourses": "No courses found",
+    "tryAdjustingFilters": "Try adjusting your filters or search.",
+    "clearFilters": "Clear filters"
   },
   "settings": {
     "title": "Settings",
