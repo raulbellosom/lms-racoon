@@ -6,6 +6,7 @@
     "teacherPanel": "Panel de Instructor",
     "catalog": "Catálogo",
     "explore": "Explorar",
+    "users": "Usuarios",
     "search": "Buscar",
     "profile": "Mi Perfil"
   },
@@ -263,7 +264,6 @@
       "published": "Publicado"
     },
     "panelTitle": "Panel del instructor",
-
     "myCourses": "Mis cursos",
     "createCourse": "Crear nuevo curso",
     "editCourse": "Editar curso",
@@ -298,28 +298,6 @@
       "reviews": "Reseñas",
       "settings": "Ajustes"
     },
-    "quiz": {
-      "editQuiz": "Editar evaluación",
-      "settings": "Configuración de la evaluación",
-      "quizTitle": "Título de la evaluación",
-      "quizTitlePlaceholder": "Ingresa el título",
-      "quizDescription": "Descripción",
-      "timeLimit": "Límite de tiempo",
-      "timeLimitMinutes": "minutos (0 = sin límite)",
-      "attemptsAllowed": "Intentos permitidos",
-      "attemptsUnlimited": "(0 = ilimitado)",
-      "passingScore": "Puntuación para aprobar",
-      "questions": "Preguntas",
-      "addQuestion": "Añadir pregunta",
-      "noQuestions": "No hay preguntas en esta evaluación.",
-      "addOption": "Añadir opción",
-      "questionPrompt": "Escribe la pregunta...",
-      "singleChoice": "Opción única",
-      "multipleChoice": "Opción múltiple",
-      "trueFalse": "Verdadero / Falso",
-      "shortAnswer": "Respuesta corta",
-      "imageQuestion": "Pregunta con imagen"
-    },
     "form": {
       "generalInfo": "Información General",
       "courseTitlePlaceholder": "Ej: Curso Maestro de React",
@@ -352,13 +330,15 @@
       "sectionTitlePlaceholder": "Ej: Introducción al curso",
       "editSection": "Editar sección",
       "deleteSection": "Eliminar sección",
+      "deleteSectionConfirm": "¿Eliminar sección y sus lecciones?",
+      "deleteSectionDesc": "Esto eliminará permanentemente la sección y todas sus lecciones.",
       "isFreePreview": "Habilitar vista previa gratuita",
       "isFreePreviewDesc": "Permite que los estudiantes vean esta lección sin comprar el curso.",
+      "makeSectionFree": "Hacer gratuita toda la sección",
       "makeSectionFreeConfirm": "¿Hacer gratuita esta sección?",
       "makeSectionFreeDesc": "Todas las lecciones de esta sección serán accesibles gratuitamente.",
       "makeSectionPaidConfirm": "¿Quitar acceso gratuito?",
       "makeSectionPaidDesc": "Las lecciones de esta sección dejarán de ser gratuitas.",
-      "deleteSectionDesc": "¿Estás seguro de que quieres eliminar esta sección? Esta acción no se puede deshacer.",
       "lessonTitle": "Título de la lección",
       "lessonTitlePlaceholder": "Ej: Bienvenida al curso",
       "editLesson": "Editar lección",
@@ -376,11 +356,10 @@
       "reorderFailed": "Error al reordenar",
       "emptyStateTitle": "Empieza a crear tu curso",
       "emptyStateDesc": "Añade tu primera sección para organizar las lecciones.",
-      "unsavedChanges": "Tienes cambios sin guardar. ¿Salir sin guardar?",
-      "deleteItem": "¿Estás seguro de que deseas eliminar este elemento?"
+      "unsavedChanges": "Tienes cambios sin guardar. ¿Salir sin guardar?"
     },
     "lesson": {
-      "configuredStatus": "Configurado",
+      "configuredStatus": "Configured",
       "editTitle": "Editar Lección",
       "createTitle": "Nueva Lección",
       "description": "Descripción",
@@ -404,7 +383,10 @@
       "removeCover": "Eliminar portada",
       "videoCoverDesc": "Sube una imagen de portada para este video.",
       "isFreePreview": "Habilitar vista previa gratuita",
-      "isFreePreviewDesc": "Permite que los estudiantes vean esta lección sin comprar el curso."
+      "isFreePreviewDesc": "Permite que los estudiantes vean esta lección sin comprar el curso.",
+      "makeSectionFree": "Hacer gratuita toda la sección",
+      "makeSectionFreeConfirm": "¿Hacer gratuita esta sección?",
+      "makeSectionFreeDesc": "Todas las lecciones de esta sección serán accesibles gratuitamente."
     },
     "quiz": {
       "title": "Evaluaciones",
@@ -429,8 +411,9 @@
       "questionType": "Tipo de pregunta",
       "singleChoice": "Opción única",
       "multipleChoice": "Opción múltiple",
-      "trueFalse": "Verdadero/Falso",
+      "trueFalse": "Verdadero / Falso",
       "shortAnswer": "Respuesta corta",
+      "imageQuestion": "Pregunta con imagen",
       "options": "Opciones",
       "addOption": "Añadir opción",
       "correctAnswer": "Respuesta correcta",
@@ -574,6 +557,10 @@
       "passed": "Aprobado",
       "failed": "Reprobado",
       "createInCurriculum": "Para crear una evaluación, ve a la pestaña 'Contenido' y añade una nueva lección tipo 'Evaluación'."
+    },
+    "confirm": {
+      "unsavedChanges": "Tienes cambios sin guardar. ¿Salir sin guardar?",
+      "deleteItem": "¿Estás seguro de que deseas eliminar este elemento?"
     }
   },
   "videoPlayer": {
