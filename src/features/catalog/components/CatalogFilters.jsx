@@ -139,6 +139,96 @@ export function CatalogFilters({
         </div>
       </div>
 
+      {/* Price Filter */}
+      <div>
+        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-[rgb(var(--text-secondary))]">
+          {t("catalog.price", "Precio")}
+        </h3>
+        <div className="space-y-3">
+          {/* Free Toggle */}
+          <label className="flex cursor-pointer items-center gap-3 group">
+            <div
+              className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
+                filters.isFree === "true"
+                  ? "border-[rgb(var(--brand-primary))] bg-[rgb(var(--brand-primary))]"
+                  : "border-[rgb(var(--border-input))] bg-[rgb(var(--bg-input))] group-hover:border-[rgb(var(--brand-primary))]"
+              }`}
+            >
+              {filters.isFree === "true" && (
+                <svg
+                  className="h-3.5 w-3.5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={filters.isFree === "true"}
+              onChange={(e) => {
+                const isFree = e.target.checked ? "true" : null;
+                onChange({
+                  ...filters,
+                  isFree,
+                  priceMin: null,
+                  priceMax: null,
+                });
+              }}
+            />
+            <span className="text-sm font-medium text-[rgb(var(--text-secondary))] group-hover:text-[rgb(var(--text-primary))] transition-colors">
+              {t("catalog.onlyFree", "Solo cursos gratis")}
+            </span>
+          </label>
+
+          {/* Price Range */}
+          {filters.isFree !== "true" && (
+            <div className="pt-2">
+              <div className="text-xs mb-2 text-[rgb(var(--text-muted))]">
+                Rango de precio (MXN)
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  min="0"
+                  value={filters.priceMin ? filters.priceMin / 100 : ""}
+                  onChange={(e) => {
+                    const val = e.target.value
+                      ? parseFloat(e.target.value) * 100
+                      : null;
+                    onChange({ ...filters, priceMin: val });
+                  }}
+                  className="w-full rounded-lg border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-2 py-1.5 text-sm outline-none focus:border-[rgb(var(--brand-primary))]"
+                />
+                <span className="text-[rgb(var(--text-muted))]">-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  min="0"
+                  value={filters.priceMax ? filters.priceMax / 100 : ""}
+                  onChange={(e) => {
+                    const val = e.target.value
+                      ? parseFloat(e.target.value) * 100
+                      : null;
+                    onChange({ ...filters, priceMax: val });
+                  }}
+                  className="w-full rounded-lg border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-2 py-1.5 text-sm outline-none focus:border-[rgb(var(--brand-primary))]"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Teacher Filter */}
       {isTeacherOrAdmin && (
         <label className="flex cursor-pointer items-center gap-3 group">
@@ -177,6 +267,31 @@ export function CatalogFilters({
             {t("catalog.myCourses", "Ver mis cursos")}
           </span>
         </label>
+      )}
+      {/* Clear Filters Button */}
+      {(filters.categories.length > 0 ||
+        filters.levels.length > 0 ||
+        filters.isFree === "true" ||
+        filters.priceMin !== null ||
+        filters.priceMax !== null ||
+        (filters.search && filters.search.length > 0)) && (
+        <button
+          onClick={() =>
+            onChange({
+              search: "",
+              categories: [],
+              levels: [],
+              myCoursesOnly: false,
+              teacherId: "",
+              priceMin: null,
+              priceMax: null,
+              isFree: null,
+            })
+          }
+          className="mt-6 w-full rounded-lg border border-dashed border-[rgb(var(--border-base))] py-2 text-xs font-medium text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))] transition-colors"
+        >
+          {t("catalog.clearFilters", "Limpiar filtros")}
+        </button>
       )}
     </div>
   );

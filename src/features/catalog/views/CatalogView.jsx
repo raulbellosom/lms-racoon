@@ -41,6 +41,9 @@ export function CatalogView() {
         ? searchParams.get("levels").split(",")
         : [],
       myCoursesOnly: searchParams.get("myCourses") === "true",
+      priceMin: searchParams.get("priceMin") || null,
+      priceMax: searchParams.get("priceMax") || null,
+      isFree: searchParams.get("isFree"), // "true", "false", or null
     }),
     [searchParams],
   );
@@ -53,6 +56,10 @@ export function CatalogView() {
     if (newFilters.levels.length > 0)
       params.set("levels", newFilters.levels.join(","));
     if (newFilters.myCoursesOnly) params.set("myCourses", "true");
+    if (newFilters.priceMin) params.set("priceMin", newFilters.priceMin);
+    if (newFilters.priceMax) params.set("priceMax", newFilters.priceMax);
+    if (newFilters.isFree !== null && newFilters.isFree !== undefined)
+      params.set("isFree", newFilters.isFree);
 
     setSearchParams(params);
     setPage(1); // Reset page on filter change
@@ -110,6 +117,15 @@ export function CatalogView() {
           limit: LIMIT,
           teacherId,
           excludeTeacherId,
+          levels: filters.levels,
+          priceMin: filters.priceMin,
+          priceMax: filters.priceMax,
+          isFree:
+            filters.isFree === "true"
+              ? true
+              : filters.isFree === "false"
+                ? false
+                : null,
         });
 
         // Client-side level filtering
@@ -193,7 +209,8 @@ export function CatalogView() {
             </Button>
             <div className="hidden h-8 w-px bg-[rgb(var(--border-base)/0.5)] lg:block" />
             <span className="hidden whitespace-nowrap text-sm font-bold text-[rgb(var(--text-secondary))] lg:block">
-              {totalCourses} {t("catalog.results", "cursos encontrados")}
+              {totalCourses}{" "}
+              {t("catalog.resultsFound", "resultados encontrados")}
             </span>
           </div>
         </div>
@@ -281,6 +298,9 @@ export function CatalogView() {
                           categories: [],
                           levels: [],
                           myCoursesOnly: false,
+                          priceMin: null,
+                          priceMax: null,
+                          isFree: null,
                         })
                       }
                     >
@@ -311,7 +331,7 @@ export function CatalogView() {
               className="w-full"
               onClick={() => setShowMobileFilters(false)}
             >
-              Ver {courses.length} resultados
+              {t("catalog.results", { count: courses.length })}
             </Button>
           </div>
         </div>

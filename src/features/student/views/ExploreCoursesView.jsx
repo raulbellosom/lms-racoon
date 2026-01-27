@@ -36,6 +36,10 @@ export function ExploreCoursesView() {
         ? searchParams.get("levels").split(",")
         : [],
       myCoursesOnly: searchParams.get("myCourses") === "true",
+      teacherId: searchParams.get("teacherId") || "",
+      priceMin: searchParams.get("priceMin") || null,
+      priceMax: searchParams.get("priceMax") || null,
+      isFree: searchParams.get("isFree"), // "true", "false", or null
     }),
     [searchParams],
   );
@@ -48,6 +52,11 @@ export function ExploreCoursesView() {
     if (newFilters.levels.length > 0)
       params.set("levels", newFilters.levels.join(","));
     if (newFilters.myCoursesOnly) params.set("myCourses", "true");
+    if (newFilters.teacherId) params.set("teacherId", newFilters.teacherId);
+    if (newFilters.priceMin) params.set("priceMin", newFilters.priceMin);
+    if (newFilters.priceMax) params.set("priceMax", newFilters.priceMax);
+    if (newFilters.isFree !== null && newFilters.isFree !== undefined)
+      params.set("isFree", newFilters.isFree);
 
     setSearchParams(params);
     setPage(1); // Reset page on filter change
@@ -85,7 +94,12 @@ export function ExploreCoursesView() {
         // If user is teacher/admin:
         // - if myCoursesOnly is TRUE -> Show ONLY my courses (teacherId = me)
         // - if myCoursesOnly is FALSE -> Show all EXCEPT my courses (excludeTeacherId = me)
-        if (
+        // If explicit teacher filter overrides everything
+        if (filters.teacherId) {
+          teacherId = filters.teacherId;
+          // Reset exclude if we are explicitly looking for a teacher (even if it is me, though unusual flow)
+          excludeTeacherId = "";
+        } else if (
           auth.user &&
           (auth.profile?.role === "teacher" || auth.profile?.role === "admin")
         ) {
@@ -103,6 +117,15 @@ export function ExploreCoursesView() {
           limit: LIMIT,
           teacherId,
           excludeTeacherId,
+          levels: filters.levels,
+          priceMin: filters.priceMin,
+          priceMax: filters.priceMax,
+          isFree:
+            filters.isFree === "true"
+              ? true
+              : filters.isFree === "false"
+                ? false
+                : null,
         });
 
         // Client-side level filtering

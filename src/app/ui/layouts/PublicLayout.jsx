@@ -31,7 +31,7 @@ export function PublicLayout() {
 
       {/* ========== Main Content ========== */}
       <main className="pt-[calc(4rem+var(--safe-top))]">
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0 }}

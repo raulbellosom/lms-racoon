@@ -667,6 +667,7 @@
     "categories": "Categorías",
     "levels": "Niveles",
     "results": "Ver {{count}} resultados",
+    "resultsFound": "resultados encontrados",
     "noCourses": "No se encontraron cursos",
     "tryAdjustingFilters": "Intenta ajustar tus filtros o búsqueda.",
     "clearFilters": "Limpiar filtros"

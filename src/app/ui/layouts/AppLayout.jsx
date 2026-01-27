@@ -47,6 +47,8 @@ import { ProfileService } from "../../../shared/data/profiles";
 
 import { CartDropdown } from "../../../features/cart/components/CartDropdown";
 import { NotificationsPopover } from "../../../shared/components/NotificationsPopover";
+import { GlobalSearch } from "../../../features/search/components/GlobalSearch";
+import { SearchModal } from "../../../features/search/components/SearchModal";
 
 /**
  * NavItem with precise fixed-width icon aligned.
@@ -157,6 +159,7 @@ export function AppLayout() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [searchModalOpen, setSearchModalOpen] = React.useState(false);
 
   // Sidebar state
   const [collapsed, setCollapsed] = React.useState(() => {
@@ -312,14 +315,8 @@ export function AppLayout() {
         }`}
       >
         {/* Search Bar */}
-        <div className="flex w-96 items-center gap-2 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-base))] px-3 py-2 transition-colors hover:border-[rgb(var(--text-secondary))] focus-within:border-[rgb(var(--brand-primary))] focus-within:ring-1 focus-within:ring-[rgb(var(--brand-primary))]">
-          <Search className="h-4 w-4 text-[rgb(var(--text-secondary))]" />
-          <input
-            type="text"
-            placeholder={t("common.searchCourses", "Buscar cursos...")}
-            className="flex-1 border-none bg-transparent text-sm placeholder-[rgb(var(--text-secondary))] outline-none focus:outline-none focus:ring-0"
-          />
-        </div>
+        {/* Search Bar */}
+        <GlobalSearch className="w-96" />
 
         {/* Right Actions: User Profile */}
         <div className="flex items-center gap-4">
@@ -406,7 +403,7 @@ export function AppLayout() {
           collapsed ? "md:pl-16" : "md:pl-72"
         }`}
       >
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
             className="md:col-start-1 md:row-start-1 w-full"
@@ -458,6 +455,12 @@ export function AppLayout() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSearchModalOpen(true)}
+              className="rounded-full p-1 text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))]"
+            >
+              <Search className="h-5 w-5" />
+            </button>
             <NotificationsPopover />
             <CartDropdown />
           </div>
@@ -558,7 +561,7 @@ export function AppLayout() {
       </Drawer>
 
       <main className="min-h-dvh pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:hidden grid grid-cols-1 grid-rows-1 items-start">
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
             className="col-start-1 row-start-1 w-full min-h-full"
@@ -582,6 +585,10 @@ export function AppLayout() {
           ))}
         </div>
       </nav>
+      <SearchModal
+        open={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+      />
     </div>
   );
 }
