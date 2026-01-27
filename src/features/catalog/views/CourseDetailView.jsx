@@ -27,7 +27,13 @@ import {
   Github,
   Phone,
   Mail,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  ExternalLink,
+  Check,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Card } from "../../../shared/ui/Card";
 
@@ -48,6 +54,7 @@ import {
   TabsContent,
 } from "../../../shared/ui/Tabs";
 import { Avatar } from "../../../shared/ui/Avatar";
+import { Modal } from "../../../shared/ui/Modal";
 import { getRandomBanner, getBannerById } from "../../../shared/assets/banners";
 import { CategoryService } from "../../../shared/data/categories";
 import { FavoritesService } from "../../../shared/data/favorites";
@@ -67,6 +74,8 @@ const SOCIAL_ICONS = {
   discord: Globe,
   phone: Phone,
   email: Mail,
+  whatsapp: MessageCircle,
+  whatsappGroup: Users,
   other: Globe,
 };
 
@@ -83,7 +92,33 @@ export function CourseDetailView() {
   const [category, setCategory] = React.useState(null);
   const [instructor, setInstructor] = React.useState(null);
   const [activeTab, setActiveTab] = React.useState("description");
+  const [showAllSocials, setShowAllSocials] = React.useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] =
+    React.useState(false);
+  const [shouldShowShowMore, setShouldShowShowMore] = React.useState(false);
+  const [copiedKey, setCopiedKey] = React.useState(null);
   const reviewsRef = React.useRef(null);
+  const descriptionRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const checkHeight = () => {
+      if (descriptionRef.current) {
+        const height = descriptionRef.current.scrollHeight;
+        setShouldShowShowMore(height > 300);
+      }
+    };
+
+    // Use ResizeObserver for more robust height detection (handles content changes better)
+    const observer = new ResizeObserver(checkHeight);
+    if (descriptionRef.current) {
+      observer.observe(descriptionRef.current);
+    }
+
+    // Also check on mount
+    checkHeight();
+
+    return () => observer.disconnect();
+  }, [course?.description]);
 
   const handleScrollToReviews = () => {
     setActiveTab("reviews");
@@ -509,15 +544,72 @@ export function CourseDetailView() {
                 </TabsList>
 
                 <TabsContent value="description">
-                  <div className="markdown-content text-[rgb(var(--text-secondary))]">
-                    {course.description ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {(course.description || "")
-                          .replace(/\r\n/g, "\n")
-                          .replace(/\n(\* |\d+\. |> )/g, "\n\n$1")}
-                      </ReactMarkdown>
-                    ) : (
-                      <p>{t("courses.noDescription")}</p>
+                  <div className="relative">
+                    <motion.div
+                      initial={false}
+                      animate={{
+                        height:
+                          !isDescriptionExpanded && shouldShowShowMore
+                            ? 300
+                            : "auto",
+                      }}
+                      className="overflow-hidden relative"
+                      transition={{
+                        duration: 0.5,
+                        ease: [0.04, 0.62, 0.23, 0.98],
+                      }}
+                    >
+                      <div
+                        ref={descriptionRef}
+                        className="markdown-content text-[rgb(var(--text-secondary))]"
+                      >
+                        {course.description ? (
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {(course.description || "")
+                              .replace(/\r\n/g, "\n")
+                              .replace(/\n(\* |\d+\. |> )/g, "\n\n$1")}
+                          </ReactMarkdown>
+                        ) : (
+                          <p>{t("courses.noDescription")}</p>
+                        )}
+                      </div>
+
+                      {/* Fade Overlay - only show if collapsed AND content is long */}
+                      <AnimatePresence>
+                        {!isDescriptionExpanded && shouldShowShowMore && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-[rgb(var(--bg-base))] to-transparent pointer-events-none z-10"
+                          />
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+
+                    {shouldShowShowMore && (
+                      <div className="mt-4 flex justify-start">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setIsDescriptionExpanded(!isDescriptionExpanded)
+                          }
+                          className="text-[rgb(var(--brand-primary))] hover:text-[rgb(var(--brand-primary-light))] transition-colors gap-2 p-0 font-bold"
+                        >
+                          {isDescriptionExpanded ? (
+                            <>
+                              {t("common.showLess") || "Ver menos"}
+                              <ChevronUp className="h-4 w-4" />
+                            </>
+                          ) : (
+                            <>
+                              {t("common.showMore") || "Ver más"}
+                              <ChevronDown className="h-4 w-4" />
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     )}
                   </div>
 
@@ -529,7 +621,7 @@ export function CourseDetailView() {
                       </h3>
                       <Card className="p-6 bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border-base))]">
                         <div className="flex flex-col sm:flex-row gap-6">
-                          <div className="shrink-0 flex flex-col items-center sm:items-start gap-4">
+                          <div className="shrink-0 flex flex-col items-center gap-4">
                             <Avatar
                               src={ProfileService.getAvatarUrl(
                                 instructor.avatarFileId,
@@ -541,7 +633,7 @@ export function CourseDetailView() {
 
                             {/* Socials */}
                             {instructor.socials && (
-                              <div className="flex flex-wrap gap-2 justify-center sm:justify-start max-w-[200px]">
+                              <div className="flex flex-wrap gap-2 justify-center">
                                 {(() => {
                                   try {
                                     const socials =
@@ -549,29 +641,172 @@ export function CourseDetailView() {
                                         ? JSON.parse(instructor.socials)
                                         : instructor.socials;
 
-                                    return Object.entries(socials || {}).map(
+                                    const allItems = [];
+                                    // Standard
+                                    Object.entries(socials || {}).forEach(
                                       ([key, value]) => {
-                                        const Icon = SOCIAL_ICONS[key] || Globe;
-                                        const href =
-                                          key === "email"
-                                            ? `mailto:${value}`
-                                            : key === "phone"
-                                              ? `tel:${value}`
-                                              : value;
-
-                                        return (
-                                          <a
-                                            key={key}
-                                            href={href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-2 rounded-full bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--brand-primary))] hover:text-white transition-colors"
-                                            title={key}
-                                          >
-                                            <Icon className="h-4 w-4" />
-                                          </a>
-                                        );
+                                        if (key === "others" || !value) return;
+                                        allItems.push({
+                                          key,
+                                          value,
+                                          label:
+                                            t(
+                                              `profile.socials.networks.${key}`,
+                                            ) || key,
+                                          icon: SOCIAL_ICONS[key] || Globe,
+                                        });
                                       },
+                                    );
+                                    // Others
+                                    if (Array.isArray(socials.others)) {
+                                      socials.others.forEach((other, idx) => {
+                                        if (!other.value) return;
+                                        allItems.push({
+                                          key: `other-${idx}`,
+                                          value: other.value,
+                                          label: other.label,
+                                          icon: Globe,
+                                        });
+                                      });
+                                    }
+
+                                    const visibleItems = allItems.slice(0, 3);
+                                    const remainingCount = allItems.length - 3;
+
+                                    return (
+                                      <>
+                                        {visibleItems.map((item) => {
+                                          const Icon = item.icon;
+                                          const href =
+                                            item.key === "email"
+                                              ? `mailto:${item.value}`
+                                              : item.key === "phone"
+                                                ? `tel:${item.value}`
+                                                : item.value.startsWith("http")
+                                                  ? item.value
+                                                  : `https://${item.value}`;
+
+                                          return (
+                                            <a
+                                              key={item.key}
+                                              href={href}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="p-2 rounded-full bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--brand-primary))] hover:text-white transition-all hover:scale-110 active:scale-95"
+                                              title={item.label || item.key}
+                                            >
+                                              <Icon className="h-4 w-4" />
+                                            </a>
+                                          );
+                                        })}
+
+                                        {remainingCount > 0 && (
+                                          <button
+                                            onClick={() =>
+                                              setShowAllSocials(true)
+                                            }
+                                            className="px-3 py-1.5 rounded-full bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--brand-primary))] hover:text-white transition-all text-xs font-bold flex items-center justify-center hover:scale-110 active:scale-95"
+                                            title={t("common.viewAll")}
+                                          >
+                                            +{remainingCount}
+                                          </button>
+                                        )}
+
+                                        {/* Modal for all socials */}
+                                        <Modal
+                                          open={showAllSocials}
+                                          onClose={() =>
+                                            setShowAllSocials(false)
+                                          }
+                                          title={t("profile.socials.title")}
+                                          size="md"
+                                        >
+                                          <div className="space-y-4">
+                                            {allItems.map((item) => {
+                                              const Icon = item.icon;
+                                              const href =
+                                                item.key === "email"
+                                                  ? `mailto:${item.value}`
+                                                  : item.key === "phone"
+                                                    ? `tel:${item.value}`
+                                                    : item.value.startsWith(
+                                                          "http",
+                                                        )
+                                                      ? item.value
+                                                      : `https://${item.value}`;
+
+                                              const handleCopy = (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                navigator.clipboard.writeText(
+                                                  item.value,
+                                                );
+                                                setCopiedKey(item.key);
+                                                setTimeout(
+                                                  () => setCopiedKey(null),
+                                                  2000,
+                                                );
+                                              };
+
+                                              const handleOpen = (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                window.open(
+                                                  href,
+                                                  "_blank",
+                                                  "noopener,noreferrer",
+                                                );
+                                              };
+
+                                              return (
+                                                <div
+                                                  key={item.key}
+                                                  className="flex items-center gap-3 p-3 rounded-2xl bg-[rgb(var(--bg-muted))] border border-transparent hover:border-[rgb(var(--brand-primary))] hover:border-opacity-30 transition-all group"
+                                                >
+                                                  <div className="shrink-0 p-2.5 rounded-xl bg-[rgb(var(--bg-surface))] text-[rgb(var(--brand-primary))] shadow-sm">
+                                                    <Icon className="h-5 w-5" />
+                                                  </div>
+                                                  <div className="flex-1 min-w-0">
+                                                    <div className="text-[10px] font-black text-[rgb(var(--brand-primary))] uppercase tracking-widest opacity-80 mb-0.5">
+                                                      {item.label}
+                                                    </div>
+                                                    <div className="text-sm font-bold text-[rgb(var(--text-primary))] truncate mb-1">
+                                                      {item.value}
+                                                    </div>
+                                                    {/* Action Buttons */}
+                                                    <div className="flex gap-2">
+                                                      <button
+                                                        onClick={handleCopy}
+                                                        className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--brand-primary))] hover:text-white transition-all text-xs font-bold shadow-sm"
+                                                      >
+                                                        {copiedKey ===
+                                                        item.key ? (
+                                                          <>
+                                                            <Check className="h-3 w-3" />
+                                                            Copiado
+                                                          </>
+                                                        ) : (
+                                                          <>
+                                                            <Copy className="h-3 w-3" />
+                                                            Copiar
+                                                          </>
+                                                        )}
+                                                      </button>
+                                                      <button
+                                                        onClick={handleOpen}
+                                                        className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-[rgb(var(--bg-surface))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--brand-primary))] hover:text-white transition-all text-xs font-bold shadow-sm"
+                                                      >
+                                                        <ExternalLink className="h-3 w-3" />
+                                                        Abrir
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </Modal>
+                                      </>
                                     );
                                   } catch (e) {
                                     return null;
@@ -768,29 +1003,27 @@ export function CourseDetailView() {
         <div
           className={`fixed left-0 right-0 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4 shadow-top lg:hidden transition-all duration-300 ${
             auth.user
-              ? "z-30 bottom-[calc(3.8rem+env(safe-area-inset-bottom))]"
+              ? "z-30 bottom-[calc(3.85rem+env(safe-area-inset-bottom,0px))]"
               : "z-50 bottom-0 pb-safe"
           }`}
         >
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xl font-bold text-[rgb(var(--text-primary))]">
-                  {formattedPrice}
-                </div>
-                <div className="text-xs text-[rgb(var(--text-secondary))]">
-                  {isDraft ? t("status.draft") : "Oferta limitada"}
-                </div>
+          <div className="flex items-center gap-4">
+            <div className="shrink-0">
+              <div className="text-xl font-black text-[rgb(var(--text-primary))] leading-tight">
+                {formattedPrice}
+              </div>
+              <div className="text-[10px] font-medium text-[rgb(var(--text-muted))] italic">
+                {isDraft ? t("status.draft") : "Oferta limitada"}
               </div>
             </div>
 
-            <div className="flex gap-3 items-center">
+            <div className="flex flex-1 gap-2 items-center">
               {/* Add to Cart (Mobile) - Icon Only */}
               {!isOwner && !isDraft && (
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-12 w-12 shrink-0 rounded-xl border-border-base bg-bg-surface text-text-primary hover:bg-bg-surface-hover"
+                  className="h-11 w-11 shrink-0 rounded-xl border-border-base bg-bg-surface text-text-primary hover:bg-bg-surface-hover"
                   onClick={() => {
                     console.log("Add to cart");
                   }}
@@ -802,8 +1035,8 @@ export function CourseDetailView() {
 
               {/* Buy Button (Mobile) */}
               <Button
-                className="flex-1 h-12 rounded-xl text-base font-bold shadow-lg shadow-brand-primary/25"
-                size="lg"
+                className="flex-1 h-11 rounded-xl text-sm font-bold shadow-lg shadow-brand-primary/25"
+                size="sm"
                 disabled={!canEnroll && !isOwner}
                 onClick={() => {
                   if (isOwner) {
@@ -818,7 +1051,7 @@ export function CourseDetailView() {
                   t("courses.manage")
                 ) : (
                   <>
-                    <ShoppingBag className="mr-2 h-5 w-5" />
+                    <ShoppingBag className="mr-2 h-4 w-4" />
                     {t("courses.buyCourse") || "Comprar curso"}
                   </>
                 )}

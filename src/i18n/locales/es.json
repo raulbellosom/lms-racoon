@@ -63,9 +63,15 @@
         "website": "Sitio Web",
         "phone": "Teléfono (Público)",
         "email": "Email (Público)",
+        "whatsapp": "WhatsApp",
+        "whatsappGroup": "Grupo de WhatsApp",
         "discord": "Discord",
         "tiktok": "TikTok",
-        "other": "Otro"
+        "other": "Otro (Personalizado)",
+        "otherLabel": "Nombre del contacto",
+        "otherValue": "Enlace o información",
+        "otherLabelPlaceholder": "Ej: Telegram, Mi Blog...",
+        "otherValuePlaceholder": "Enlace o usuario..."
       }
     }
   },
@@ -573,6 +579,7 @@
     "error": "Error",
     "success": "Éxito",
     "save": "Guardar",
+    "saving": "Guardando...",
     "cancel": "Cancelar",
     "delete": "Eliminar",
     "edit": "Editar",

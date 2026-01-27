@@ -401,19 +401,19 @@ export function AppLayout() {
         </div>
       </header>
 
-      {/* ========== Desktop Main ========== */}
       <main
-        className={`hidden min-h-dvh pt-16 pb-12 transition-all duration-300 ease-in-out md:block ${
+        className={`hidden min-h-dvh pt-16 pb-12 transition-all duration-300 ease-in-out md:grid md:grid-cols-1 md:grid-rows-1 md:items-start ${
           collapsed ? "md:pl-16" : "md:pl-72"
         }`}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
+            className="md:col-start-1 md:row-start-1 w-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
           >
             <Outlet />
           </motion.div>
@@ -437,7 +437,7 @@ export function AppLayout() {
       </div>
 
       {/* ========== Mobile Header ========== */}
-      <header className="fixed left-0 right-0 top-0 z-40 flex h-[calc(3.5rem+constant(safe-area-inset-top))] h-[calc(3.5rem+env(safe-area-inset-top))] items-start justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 pt-safe backdrop-blur-lg md:hidden">
+      <header className="fixed left-0 right-0 top-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-top,0px))] items-start justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))/0.9] px-4 pt-safe backdrop-blur-lg md:hidden">
         <div className="flex h-14 w-full items-center justify-between">
           <button
             onClick={() => setDrawerOpen(true)}
@@ -557,15 +557,15 @@ export function AppLayout() {
         </DrawerSection>
       </Drawer>
 
-      {/* ========== Mobile Main ========== */}
-      <main className="min-h-dvh pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:hidden">
-        <AnimatePresence mode="wait">
+      <main className="min-h-dvh pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:hidden grid grid-cols-1 grid-rows-1 items-start">
+        <AnimatePresence>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
+            className="col-start-1 row-start-1 w-full min-h-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
           >
             <Outlet />
           </motion.div>

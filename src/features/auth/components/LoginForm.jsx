@@ -57,15 +57,18 @@ export function LoginForm() {
       });
 
       // Check for returnUrl
-      // Check for returnUrl
       const searchParams = new URLSearchParams(window.location.search);
       let returnUrl =
         searchParams.get("redirect") ||
+        localStorage.getItem("racoon-return-url") ||
         location.state?.returnUrl ||
         "/app/home";
 
+      // Clear the stored return URL
+      localStorage.removeItem("racoon-return-url");
+
       // Ensure returnUrl is absolute path relative to root if it starts with /
-      if (!returnUrl.startsWith("/")) {
+      if (!returnUrl.startsWith("/") && !returnUrl.startsWith("http")) {
         returnUrl = "/" + returnUrl;
       }
 

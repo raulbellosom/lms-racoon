@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { motion } from "framer-motion";
-import { Search, Filter, ChevronRight } from "lucide-react";
+import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 import { PageLayout } from "../../../shared/ui/PageLayout";
@@ -135,31 +135,70 @@ export function CatalogView() {
   return (
     <div className="min-h-dvh bg-[rgb(var(--bg-base))] pb-20">
       {/* Header / Hero */}
-      <div className="bg-[rgb(var(--bg-surface))] border-b border-[rgb(var(--border-base))] px-6 py-12 md:py-16">
-        <div className="mx-auto max-w-7xl">
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
+      <div className="relative overflow-hidden bg-[rgb(var(--bg-surface))] pt-16 pb-24 md:pt-24 md:pb-32">
+        {/* Background Image / Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=2000"
+            alt="Students learning"
+            className="h-full w-full object-cover opacity-20 dark:opacity-10"
+          />
+          <div className="absolute inset-0 bg-linear-to-b from-transparent via-[rgb(var(--bg-surface)/0.8)] to-[rgb(var(--bg-base))]" />
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-7xl px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-extrabold tracking-tight text-[rgb(var(--text-primary))] md:text-5xl"
+            className="flex flex-col items-center text-center md:items-start md:text-left"
           >
-            {t("catalog.title", "Explora Cursos")}
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mt-4 max-w-2xl text-lg text-[rgb(var(--text-secondary))]"
-          >
-            {t(
-              "catalog.subtitle",
-              "Descubre contenido de clase mundial para llevar tu carrera al siguiente nivel.",
-            )}
-          </motion.p>
+            <span className="mb-4 inline-flex items-center rounded-full bg-[rgb(var(--brand-primary)/0.1)] px-3 py-1 text-sm font-bold text-[rgb(var(--brand-primary))] border border-[rgb(var(--brand-primary)/0.2)]">
+              {t("catalog.exploreLabel", "Nuevas oportunidades")}
+            </span>
+            <h1 className="text-4xl font-black tracking-tight text-[rgb(var(--text-primary))] sm:text-5xl md:text-6xl lg:text-7xl">
+              {t("catalog.title", "Explora Cursos")}
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg font-medium text-[rgb(var(--text-secondary))] md:text-xl">
+              {t(
+                "catalog.subtitle",
+                "Descubre contenido de clase mundial para llevar tu carrera al siguiente nivel.",
+              )}
+            </p>
+          </motion.div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        <div className="flex flex-col gap-8 lg:flex-row">
+      <div className="relative z-20 mx-auto -mt-10 max-w-7xl px-4 md:px-6">
+        {/* Glassmorphism Toolbar */}
+        <div className="mb-12 flex flex-col gap-4 rounded-2xl border border-[rgb(var(--border-base)/0.5)] bg-[rgb(var(--bg-surface)/0.6)] p-3 backdrop-blur-xl shadow-2xl sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[rgb(var(--text-muted))]" />
+            <input
+              type="text"
+              placeholder={t("catalog.searchPlaceholder", "Buscar cursos...")}
+              value={filters.search}
+              onChange={(e) =>
+                updateFilters({ ...filters, search: e.target.value })
+              }
+              className="w-full rounded-xl border-0 bg-transparent py-4 pl-12 pr-4 text-base font-medium outline-none placeholder:text-[rgb(var(--text-muted))] transition focus:ring-0"
+            />
+          </div>
+          <div className="flex items-center gap-2 px-2">
+            <Button
+              variant="secondary"
+              className="lg:hidden"
+              onClick={() => setShowMobileFilters(true)}
+            >
+              <Filter className="mr-2 h-4 w-4" /> Filtros
+            </Button>
+            <div className="hidden h-8 w-px bg-[rgb(var(--border-base)/0.5)] lg:block" />
+            <span className="hidden whitespace-nowrap text-sm font-bold text-[rgb(var(--text-secondary))] lg:block">
+              {totalCourses} {t("catalog.results", "cursos encontrados")}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-10 lg:flex-row">
           {/* Sidebar Filters (Desktop) */}
           <aside className="hidden w-64 shrink-0 lg:block">
             <CatalogFilters
@@ -171,32 +210,6 @@ export function CatalogView() {
 
           {/* Main Content */}
           <div className="flex-1">
-            {/* Toolbar */}
-            <div className="mb-6 flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[rgb(var(--text-muted))]" />
-                <input
-                  type="text"
-                  placeholder={t(
-                    "catalog.searchPlaceholder",
-                    "Buscar cursos...",
-                  )}
-                  value={filters.search}
-                  onChange={(e) =>
-                    updateFilters({ ...filters, search: e.target.value })
-                  }
-                  className="w-full rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] py-3 pl-10 pr-4 outline-none transition focus:border-[rgb(var(--brand-primary))] focus:ring-2 focus:ring-[rgb(var(--brand-primary))/0.2]"
-                />
-              </div>
-              <Button
-                variant="secondary"
-                className="lg:hidden"
-                onClick={() => setShowMobileFilters(true)}
-              >
-                <Filter className="mr-2 h-4 w-4" /> Filtros
-              </Button>
-            </div>
-
             {/* Loading State */}
             {loading ? (
               <LoadingContent />
@@ -213,45 +226,55 @@ export function CatalogView() {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="mt-12 flex items-center justify-center gap-2">
                         <Button
                           variant="ghost"
                           disabled={page === 1}
                           onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          className="hover:bg-[rgb(var(--brand-primary)/0.1)] hover:text-[rgb(var(--brand-primary))]"
                         >
                           <ChevronLeft className="h-4 w-4 mr-2" />
-                          Anterior
+                          {t("common.previous", "Anterior")}
                         </Button>
-                        <span className="text-sm font-medium text-[rgb(var(--text-secondary))]">
-                          Página {page} de {totalPages}
-                        </span>
+                        <div className="flex items-center gap-1 mx-4">
+                          <span className="text-sm font-bold text-[rgb(var(--text-primary))]">
+                            {page}
+                          </span>
+                          <span className="text-sm text-[rgb(var(--text-secondary))]">
+                            / {totalPages}
+                          </span>
+                        </div>
                         <Button
                           variant="ghost"
                           disabled={page === totalPages}
                           onClick={() =>
                             setPage((p) => Math.min(totalPages, p + 1))
                           }
+                          className="hover:bg-[rgb(var(--brand-primary)/0.1)] hover:text-[rgb(var(--brand-primary))]"
                         >
-                          Siguiente
+                          {t("common.next", "Siguiente")}
                           <ChevronRight className="h-4 w-4 ml-2" />
                         </Button>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl bg-[rgb(var(--bg-surface))] p-8 text-center border border-[rgb(var(--border-base))] border-dashed">
-                    <div className="mb-4 rounded-full bg-[rgb(var(--bg-muted))] p-4 text-[rgb(var(--text-muted))]">
-                      <Search className="h-8 w-8" />
+                  <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl bg-[rgb(var(--bg-surface))] p-12 text-center border border-[rgb(var(--border-base))] shadow-sm mt-4">
+                    <div className="mb-6 rounded-2xl bg-[rgb(var(--brand-primary)/0.05)] p-5 text-[rgb(var(--brand-primary))]">
+                      <Search className="h-10 w-10" />
                     </div>
-                    <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
-                      No se encontraron cursos
+                    <h3 className="text-2xl font-black text-[rgb(var(--text-primary))]">
+                      {t("catalog.noCoursesFound", "No se encontraron cursos")}
                     </h3>
-                    <p className="mt-2 text-[rgb(var(--text-secondary))]">
-                      Intenta ajustar tus filtros o búsqueda.
+                    <p className="mt-3 max-w-sm text-[rgb(var(--text-secondary))]">
+                      {t(
+                        "catalog.noResultsDesc",
+                        "Intenta ajustar tus filtros o búsqueda para encontrar lo que necesitas.",
+                      )}
                     </p>
                     <Button
-                      variant="ghost"
-                      className="mt-4"
+                      variant="outline"
+                      className="mt-8 border-[rgb(var(--brand-primary))] text-[rgb(var(--brand-primary))] hover:bg-[rgb(var(--brand-primary))] hover:text-white"
                       onClick={() =>
                         updateFilters({
                           search: "",
@@ -261,7 +284,7 @@ export function CatalogView() {
                         })
                       }
                     >
-                      Limpiar filtros
+                      {t("catalog.clearFilters", "Limpiar filtros")}
                     </Button>
                   </div>
                 )}

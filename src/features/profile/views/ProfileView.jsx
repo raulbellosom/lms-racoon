@@ -24,6 +24,8 @@ import {
   Github,
   Phone,
   Mail as MailIcon,
+  MessageCircle,
+  Users as UsersIcon,
 } from "lucide-react";
 
 const SOCIAL_NETWORKS = [
@@ -88,6 +90,18 @@ const SOCIAL_NETWORKS = [
     placeholder: "+52 123 456 7890",
   },
   {
+    id: "whatsapp",
+    icon: MessageCircle,
+    label: "profile.socials.networks.whatsapp",
+    placeholder: "https://wa.me/1234567890",
+  },
+  {
+    id: "whatsappGroup",
+    icon: UsersIcon,
+    label: "profile.socials.networks.whatsappGroup",
+    placeholder: "https://chat.whatsapp.com/...",
+  },
+  {
     id: "email",
     icon: MailIcon,
     label: "profile.socials.networks.email",
@@ -97,7 +111,8 @@ const SOCIAL_NETWORKS = [
     id: "other",
     icon: Globe,
     label: "profile.socials.networks.other",
-    placeholder: "URL",
+    placeholder: "profile.socials.networks.otherValuePlaceholder",
+    isMultiple: true,
   },
 ];
 
@@ -245,6 +260,32 @@ export function ProfileView() {
       setSendingReset(false);
     }
   };
+
+  const SecurityCard = (
+    <Card className="p-8 bg-linear-to-br from-[rgb(var(--bg-surface))] to-[rgb(var(--bg-muted))]/20">
+      <div className="mb-6 flex items-center gap-2">
+        <div className="h-8 w-1 bg-violet-500 rounded-full"></div>
+        <h3 className="text-xl font-bold text-[rgb(var(--text-primary))]">
+          {t("profile.security")}
+        </h3>
+      </div>
+
+      <div className="space-y-4">
+        <p className="text-sm font-medium text-[rgb(var(--text-secondary))]">
+          {t("profile.resetPasswordDesc")}
+        </p>
+        <Button
+          onClick={handleSendReset}
+          disabled={sendingReset || loading}
+          variant="secondary"
+          className="w-full rounded-2xl h-12 border-2! hover:bg-white hover:border-[rgb(var(--brand-primary))] hover:text-[rgb(var(--brand-primary))] transition-all group"
+        >
+          <Mail className="mr-2 h-4 w-4 group-hover:scale-125 transition-transform" />
+          {t("profile.sendResetEmail")}
+        </Button>
+      </div>
+    </Card>
+  );
 
   return (
     <PageLayout title={t("profile.title")} subtitle={t("profile.subtitle")}>
@@ -490,6 +531,9 @@ export function ProfileView() {
                 </div>
               </div>
             </Card>
+
+            {/* Desktop Security Section */}
+            <div className="hidden lg:block">{SecurityCard}</div>
           </div>
 
           {/* Socials & Security Side Column */}
@@ -506,8 +550,10 @@ export function ProfileView() {
               <div className="space-y-4">
                 {isEditing ? (
                   <div className="space-y-4">
-                    {Object.entries(formData.socials || {}).map(
-                      ([key, value]) => {
+                    {/* Standard Socials */}
+                    {Object.entries(formData.socials || {})
+                      .filter(([key]) => key !== "others")
+                      .map(([key, value]) => {
                         const network = SOCIAL_NETWORKS.find(
                           (n) => n.id === key,
                         ) || { icon: Globe, label: key };
@@ -554,12 +600,77 @@ export function ProfileView() {
                             </Button>
                           </div>
                         );
-                      },
-                    )}
+                      })}
+
+                    {/* Custom Socials (Others) */}
+                    {(formData.socials?.others || []).map((item, index) => (
+                      <div
+                        key={`other-${index}`}
+                        className="p-3 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))]/10 space-y-3 anim-fade-in"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--text-muted))]">
+                            <Globe className="h-3 w-3" />
+                            {t("profile.socials.networks.other")}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newSocials = { ...formData.socials };
+                              newSocials.others = [
+                                ...newSocials.others.slice(0, index),
+                                ...newSocials.others.slice(index + 1),
+                              ];
+                              setFormData({ ...formData, socials: newSocials });
+                            }}
+                            className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="grid gap-2">
+                          <Input
+                            value={item.label}
+                            onChange={(e) => {
+                              const newSocials = { ...formData.socials };
+                              const newOthers = [...newSocials.others];
+                              newOthers[index] = {
+                                ...newOthers[index],
+                                label: e.target.value.substring(0, 20),
+                              };
+                              newSocials.others = newOthers;
+                              setFormData({ ...formData, socials: newSocials });
+                            }}
+                            className="h-8 text-xs"
+                            placeholder={t(
+                              "profile.socials.networks.otherLabelPlaceholder",
+                            )}
+                          />
+                          <Input
+                            value={item.value}
+                            onChange={(e) => {
+                              const newSocials = { ...formData.socials };
+                              const newOthers = [...newSocials.others];
+                              newOthers[index] = {
+                                ...newOthers[index],
+                                value: e.target.value,
+                              };
+                              newSocials.others = newOthers;
+                              setFormData({ ...formData, socials: newSocials });
+                            }}
+                            className="h-8 text-xs font-mono"
+                            placeholder={t(
+                              "profile.socials.networks.otherValuePlaceholder",
+                            )}
+                          />
+                        </div>
+                      </div>
+                    ))}
 
                     <Combobox
                       options={SOCIAL_NETWORKS.filter(
-                        (n) => !formData.socials?.[n.id],
+                        (n) => n.isMultiple || !formData.socials?.[n.id],
                       ).map((n) => ({
                         value: n.id,
                         label: t(n.label),
@@ -570,10 +681,14 @@ export function ProfileView() {
                         if (!value) return;
                         const key = value;
                         const newSocials = { ...formData.socials };
-                        if (!newSocials[key]) {
+
+                        if (key === "other") {
+                          if (!newSocials.others) newSocials.others = [];
+                          newSocials.others.push({ label: "", value: "" });
+                        } else if (!newSocials[key]) {
                           newSocials[key] = "";
-                          setFormData({ ...formData, socials: newSocials });
                         }
+                        setFormData({ ...formData, socials: newSocials });
                       }}
                       placeholder={t("profile.socials.add")}
                     />
@@ -582,21 +697,56 @@ export function ProfileView() {
                   <div className="flex flex-col gap-3">
                     {profile?.socials &&
                     Object.keys(JSON.parse(profile.socials)).length > 0 ? (
-                      Object.entries(JSON.parse(profile.socials)).map(
-                        ([key, value]) => {
-                          const network = SOCIAL_NETWORKS.find(
-                            (n) => n.id === key,
-                          ) || { icon: Globe, label: key };
-                          const Icon = network.icon;
-                          if (!value) return null;
+                      (() => {
+                        const parsedSocials = JSON.parse(profile.socials);
+                        const items = [];
+
+                        // Add standard socials
+                        Object.entries(parsedSocials).forEach(
+                          ([key, value]) => {
+                            if (key === "others" || !value) return;
+                            const network = SOCIAL_NETWORKS.find(
+                              (n) => n.id === key,
+                            );
+                            if (network) {
+                              items.push({
+                                ...network,
+                                value,
+                                key,
+                              });
+                            }
+                          },
+                        );
+
+                        // Add others
+                        if (Array.isArray(parsedSocials.others)) {
+                          parsedSocials.others.forEach((other, idx) => {
+                            if (!other.value) return;
+                            items.push({
+                              id: `other-${idx}`,
+                              icon: Globe,
+                              label: other.label || "Other",
+                              value: other.value,
+                              isOther: true,
+                            });
+                          });
+                        }
+
+                        return items.map((item) => {
+                          const Icon = item.icon;
+                          const href =
+                            item.key === "email"
+                              ? `mailto:${item.value}`
+                              : item.key === "phone"
+                                ? `tel:${item.value}`
+                                : item.value.startsWith("http")
+                                  ? item.value
+                                  : `https://${item.value}`;
+
                           return (
                             <a
-                              key={key}
-                              href={
-                                value.startsWith("http")
-                                  ? value
-                                  : `https://${value}`
-                              }
+                              key={item.id}
+                              href={href}
                               target="_blank"
                               rel="noreferrer"
                               className="group flex items-center gap-4 p-3 rounded-2xl bg-[rgb(var(--bg-muted))]/30 hover:bg-[rgb(var(--bg-muted))]/60 transition-all border border-transparent hover:border-[rgb(var(--border-base))]"
@@ -606,16 +756,16 @@ export function ProfileView() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-[rgb(var(--text-muted))]">
-                                  {t(network.label)}
+                                  {item.isOther ? item.label : t(item.label)}
                                 </div>
                                 <div className="text-sm font-bold truncate text-[rgb(var(--text-primary))]">
-                                  {value.replace(/^https?:\/\//, "")}
+                                  {item.value.replace(/^https?:\/\//, "")}
                                 </div>
                               </div>
                             </a>
                           );
-                        },
-                      )
+                        });
+                      })()
                     ) : (
                       <div className="flex flex-col items-center justify-center p-8 text-center rounded-2xl bg-[rgb(var(--bg-muted))]/20 border border-dashed border-[rgb(var(--border-base))]">
                         <Globe className="h-8 w-8 text-[rgb(var(--text-muted))] mb-2 opacity-20" />
@@ -629,30 +779,8 @@ export function ProfileView() {
               </div>
             </Card>
 
-            {/* Security Section */}
-            <Card className="p-8 bg-linear-to-br from-[rgb(var(--bg-surface))] to-[rgb(var(--bg-muted))]/20">
-              <div className="mb-6 flex items-center gap-2">
-                <div className="h-8 w-1 bg-violet-500 rounded-full"></div>
-                <h3 className="text-xl font-bold text-[rgb(var(--text-primary))]">
-                  {t("profile.security")}
-                </h3>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-[rgb(var(--text-secondary))]">
-                  {t("profile.resetPasswordDesc")}
-                </p>
-                <Button
-                  onClick={handleSendReset}
-                  disabled={sendingReset || loading}
-                  variant="secondary"
-                  className="w-full rounded-2xl h-12 border-2! hover:bg-white hover:border-[rgb(var(--brand-primary))] hover:text-[rgb(var(--brand-primary))] transition-all group"
-                >
-                  <Mail className="mr-2 h-4 w-4 group-hover:scale-125 transition-transform" />
-                  {t("profile.sendResetEmail")}
-                </Button>
-              </div>
-            </Card>
+            {/* Security Section (Mobile only) */}
+            <div className="lg:hidden">{SecurityCard}</div>
           </div>
         </div>
       </div>

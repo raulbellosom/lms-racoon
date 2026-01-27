@@ -128,8 +128,27 @@ export function RegisterForm() {
       });
 
       // Check for returnUrl
-      const returnUrl = location.state?.returnUrl || "/app/home";
-      navigate(returnUrl);
+      const searchParams = new URLSearchParams(window.location.search);
+      let returnUrl =
+        searchParams.get("redirect") ||
+        localStorage.getItem("racoon-return-url") ||
+        location.state?.returnUrl ||
+        "/app/home";
+
+      // Clear the stored return URL
+      localStorage.removeItem("racoon-return-url");
+
+      // Ensure returnUrl is absolute path relative to root if it starts with /
+      if (!returnUrl.startsWith("/") && !returnUrl.startsWith("http")) {
+        returnUrl = "/" + returnUrl;
+      }
+
+      // If returning to public cart alias, switch to app cart
+      if (returnUrl === "/cart") {
+        returnUrl = "/app/cart";
+      }
+
+      navigate(returnUrl, { replace: true });
     } catch (err) {
       toast.push({
         title: t("toast.errorTitle"),

@@ -79,7 +79,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-safe pb-safe">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 pt-safe pb-safe">
           {/* Overlay */}
           <motion.div
             variants={overlayVariants}
@@ -98,7 +98,7 @@ export function Modal({
             animate="visible"
             exit="exit"
             className={cn(
-              "relative w-full rounded-[var(--radius-lg)] border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] shadow-xl flex flex-col max-h-[85vh] sm:max-h-[90vh]", // Updated layout
+              "relative w-full rounded-lg border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] shadow-xl flex flex-col max-h-[85vh] sm:max-h-[90vh]", // Updated layout
               sizeClasses[size],
               className,
             )}
@@ -136,7 +136,7 @@ export function Modal({
             {/* Footer - Fixed (Optional) */}
             {/* Footer - Fixed (Optional) */}
             {footer && (
-              <div className="shrink-0 px-6 py-4 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] rounded-b-[var(--radius-lg)]">
+              <div className="shrink-0 px-6 py-4 border-t border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] rounded-b-lg">
                 {footer}
               </div>
             )}

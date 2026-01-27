@@ -19,9 +19,10 @@ import appIcon from "../../../resources/icon.svg";
 export function PublicLayout() {
   const { t } = useTranslation();
   const location = useLocation();
+  const isAuthPage = location.pathname.startsWith("/auth");
 
   return (
-    <div className="min-h-dvh overflow-x-hidden">
+    <div className="min-h-dvh">
       {/* ========== Header ========== */}
       {/* ========== Header ========== */}
       <PublicNavbar />
@@ -30,13 +31,12 @@ export function PublicLayout() {
 
       {/* ========== Main Content ========== */}
       <main className="pt-[calc(4rem+var(--safe-top))]">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
           >
             <Outlet />
           </motion.div>
@@ -44,50 +44,52 @@ export function PublicLayout() {
       </main>
 
       {/* ========== Footer ========== */}
-      <footer className="mt-16 border-t border-[rgb(var(--border-base)/0.5)] bg-[rgb(var(--bg-surface))]">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            {/* Logo */}
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center">
-                <img
-                  src={appIcon}
-                  alt="Racoon LMS"
-                  className="h-full w-full object-contain"
-                />
+      {!isAuthPage && (
+        <footer className="mt-16 border-t border-[rgb(var(--border-base)/0.5)] bg-[rgb(var(--bg-surface))]">
+          <div className="mx-auto max-w-6xl px-4 py-12">
+            <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+              {/* Logo */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center">
+                  <img
+                    src={appIcon}
+                    alt="Racoon LMS"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <span className="font-bold">Racoon LMS</span>
               </div>
-              <span className="font-bold">Racoon LMS</span>
-            </div>
 
-            {/* Links */}
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-[rgb(var(--text-secondary))]">
-              <NavLink
-                to="/catalog"
-                className="transition hover:text-[rgb(var(--text-primary))]"
-              >
-                {t("nav.catalog")}
-              </NavLink>
-              <a
-                href="#"
-                className="transition hover:text-[rgb(var(--text-primary))]"
-              >
-                {t("auth.terms")}
-              </a>
-              <a
-                href="#"
-                className="transition hover:text-[rgb(var(--text-primary))]"
-              >
-                {t("auth.privacy")}
-              </a>
-            </div>
+              {/* Links */}
+              <div className="flex flex-wrap justify-center gap-6 text-sm text-[rgb(var(--text-secondary))]">
+                <NavLink
+                  to="/catalog"
+                  className="transition hover:text-[rgb(var(--text-primary))]"
+                >
+                  {t("nav.catalog")}
+                </NavLink>
+                <a
+                  href="#"
+                  className="transition hover:text-[rgb(var(--text-primary))]"
+                >
+                  {t("auth.terms")}
+                </a>
+                <a
+                  href="#"
+                  className="transition hover:text-[rgb(var(--text-primary))]"
+                >
+                  {t("auth.privacy")}
+                </a>
+              </div>
 
-            {/* Copyright */}
-            <div className="text-sm text-[rgb(var(--text-muted))]">
-              © {new Date().getFullYear()} Racoon Devs
+              {/* Copyright */}
+              <div className="text-sm text-[rgb(var(--text-muted))]">
+                © {new Date().getFullYear()} Racoon Devs
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

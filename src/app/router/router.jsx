@@ -32,6 +32,7 @@ import {
   requireAuthLoader,
   requireRoleLoader,
   requireGuestLoader,
+  publicRouteLoader,
 } from "./routeGuards";
 
 import { ForgotPasswordPage } from "../../pages/public/ForgotPasswordPage";
@@ -50,22 +51,29 @@ export const router = createBrowserRouter([
 
       {
         element: <PublicLayout />,
-        loader: requireGuestLoader,
+        loader: publicRouteLoader,
         children: [
           { index: true, element: <LandingView /> },
           { path: "/catalog", element: <CatalogView /> },
           { path: "/catalog/:id", element: <CourseDetailView /> },
           // Legacy route redirect or keep
           { path: "/courses/:id", element: <CourseDetailView /> },
-          {
-            path: "/auth/login",
-            element: <LoginView />,
-          },
-          {
-            path: "/auth/register",
-            element: <RegisterView />,
-          },
           { path: "/cart", element: <CartPage /> },
+
+          // Group guest-only pages inside PublicLayout
+          {
+            loader: requireGuestLoader,
+            children: [
+              {
+                path: "/auth/login",
+                element: <LoginView />,
+              },
+              {
+                path: "/auth/register",
+                element: <RegisterView />,
+              },
+            ],
+          },
         ],
       },
       {

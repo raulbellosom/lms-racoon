@@ -23,7 +23,7 @@ export function AuthLayout({
   sideDescription = "La plataforma educativa definitiva para estudiantes y profesores.",
 }) {
   return (
-    <div className="flex min-h-dvh w-full overflow-hidden bg-[rgb(var(--bg-base))]">
+    <div className="flex min-h-[calc(100dvh-4rem-var(--safe-top,0px))] w-full overflow-hidden bg-[rgb(var(--bg-base))]">
       {/* LEFT SIDE - BRANDING (Hidden on mobile) */}
       <div className="relative hidden w-0 flex-col justify-between overflow-hidden bg-[rgb(var(--brand-primary))] text-white lg:flex lg:w-5/12 xl:w-1/2">
         {/* Abstract Background */}
@@ -93,22 +93,6 @@ export function AuthLayout({
 
       {/* RIGHT SIDE - FORM */}
       <div className="relative flex w-full flex-col items-center justify-center p-4 lg:w-7/12 xl:w-1/2">
-        {/* Mobile Logo (Visible only on mobile) */}
-        <div className="absolute top-6 left-6 lg:hidden">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--brand-primary))] shadow-lg shadow-[rgb(var(--brand-primary)/0.2)]">
-              <img
-                src={appIcon}
-                alt="Logo"
-                className="h-6 w-6 brightness-0 invert"
-              />
-            </div>
-            <span className="text-lg font-bold text-[rgb(var(--text-primary))]">
-              Racoon LMS
-            </span>
-          </Link>
-        </div>
-
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
