@@ -1,5 +1,7 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   CheckCircle2,
   ListVideo,
@@ -7,6 +9,18 @@ import {
   Lock,
   Play,
   ArrowLeft,
+  FileText,
+  File,
+  Download,
+  Paperclip,
+  ChevronDown,
+  ChevronRight,
+  BookText,
+  Layers3,
+  ClipboardList,
+  MessageSquare,
+  HelpCircle,
+  Folder,
 } from "lucide-react";
 import { Card } from "../../../shared/ui/Card";
 import { Tabs, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
@@ -17,7 +31,6 @@ import {
 } from "../../../shared/data/comments";
 import { listAssignmentsForCourse } from "../../../shared/data/assignments";
 import { Button } from "../../../shared/ui/Button";
-import { ProgressBar } from "../../../shared/ui/ProgressBar";
 import { getCourseById } from "../../../shared/data/courses";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { upsertLessonProgress } from "../../../shared/data/enrollments";
@@ -29,6 +42,478 @@ import { LoadingScreen } from "../../../shared/ui/LoadingScreen";
 import { SectionService } from "../../../shared/data/sections-teacher";
 import { LessonService } from "../../../shared/data/lessons-teacher";
 import { FileService } from "../../../shared/data/files";
+import { VideoPlayer } from "../../../shared/ui/VideoPlayer";
+import { AnimatePresence, motion } from "framer-motion";
+
+// Helper for file icons
+const getFileIcon = (filename) => {
+  const ext = filename?.split(".").pop().toLowerCase();
+  if (["pdf"].includes(ext)) return FileText;
+  return File;
+};
+
+// --- Extracted Components to prevent re-renders ---
+
+const LessonViewer = ({
+  current,
+  course,
+  isLocked,
+  theaterMode,
+  setTheaterMode,
+  handleBack,
+  markComplete,
+}) => {
+  // Common Back Button for non-video views
+  const BackButton = () => (
+    <button
+      onClick={handleBack}
+      className="flex items-center gap-2 text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text-primary))] transition-colors mb-4"
+    >
+      <ArrowLeft className="h-5 w-5" />
+      <span className="font-bold text-sm">Volver al curso</span>
+    </button>
+  );
+
+  if (isLocked) {
+    return (
+      <div className="w-full bg-black relative overflow-hidden aspect-video shadow-2xl rounded-xl">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+          {(current.videoCoverFileId || course.coverFileId) && (
+            <img
+              src={FileService.getCourseCoverUrl(
+                current.videoCoverFileId || course.coverFileId,
+              )}
+              alt="Locked content"
+              className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+            />
+          )}
+          <div className="relative z-10">
+            <Lock className="h-16 w-16 text-white/40 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-white mb-2">
+              Contenido Bloqueado
+            </h3>
+            <p className="text-white/60 max-w-md mx-auto">
+              Adquiere este curso para acceder a todas las lecciones y recursos.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (current.kind === "video") {
+    return (
+      <div className="w-full">
+        <div className="bg-black relative overflow-hidden aspect-video shadow-2xl rounded-xl">
+          <VideoPlayer
+            src={
+              current.videoFileId
+                ? FileService.getLessonVideoUrl(current.videoFileId)
+                : null
+            }
+            poster={
+              current.videoCoverFileId
+                ? FileService.getCourseCoverUrl(current.videoCoverFileId)
+                : undefined
+            }
+            title={current.title}
+            onBack={handleBack}
+            theaterMode={theaterMode}
+            onToggleTheater={() => setTheaterMode(!theaterMode)}
+            className="w-full h-full"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Non-video content: just show header (if needed) and content
+  // For standard "reading" lessons, we essentially just render the BackButton here,
+  // as the content is in the Tabs (Description).
+  // For Quizzes/Assignments, we render them full width/height.
+
+  return (
+    <div className="w-full">
+      <BackButton />
+
+      {current.kind === "quiz" && (
+        <div className="min-h-[500px] border border-[rgb(var(--border-base))] rounded-2xl overflow-hidden bg-[rgb(var(--bg-base))]">
+          <QuizView
+            lessonId={current.$id}
+            courseId={course.$id}
+            onComplete={markComplete}
+          />
+        </div>
+      )}
+
+      {current.kind === "assignment" && (
+        <div className="min-h-[500px] border border-[rgb(var(--border-base))] rounded-2xl overflow-hidden bg-[rgb(var(--bg-base))]">
+          <AssignmentView lessonId={current.$id} courseId={course.$id} />
+        </div>
+      )}
+
+      {/* For 'text' (Reading), we don't render a placeholder box anymore, just the tabs below will show content */}
+    </div>
+  );
+};
+
+const LessonTabs = ({
+  lessonTab,
+  setLessonTab,
+  current,
+  currentAttachments,
+  isLocked,
+  assignments,
+  comments,
+  commentDraft,
+  setCommentDraft,
+  auth,
+  isEnrolled,
+  isOwner,
+  busy,
+  done,
+  markComplete,
+  setComments,
+  courseId,
+}) => {
+  return (
+    <div className="mt-6">
+      <Tabs value={lessonTab} onValueChange={setLessonTab} className="w-full">
+        <TabsList className="mb-6 flex-wrap overflow-x-auto scrollbar-hide justify-start">
+          <TabsTrigger value="description">
+            <div className="flex items-center gap-2">
+              <BookText className="h-4 w-4" />
+              <span>Descripción</span>
+            </div>
+          </TabsTrigger>
+          {currentAttachments.length > 0 && !isLocked && (
+            <TabsTrigger value="resources">
+              <div className="flex items-center gap-2">
+                <Folder className="h-4 w-4" />
+                <span>Recursos ({currentAttachments.length})</span>
+              </div>
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="chapters">
+            <div className="flex items-center gap-2">
+              <Layers3 className="h-4 w-4" />
+              <span>Capítulos</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="assignments">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              <span>Tareas ({assignments.length})</span>
+            </div>
+          </TabsTrigger>
+          <TabsTrigger value="qa">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span>Q&A ({comments.filter((c) => !c.parentId).length})</span>
+            </div>
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="px-1">
+          {lessonTab === "description" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h1 className="text-2xl font-bold mb-4">{current.title}</h1>
+              <div className="markdown-content text-[rgb(var(--text-secondary))] leading-relaxed">
+                {current.description ? (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {current.description}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="italic opacity-60">
+                    Sin descripción detallada.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {lessonTab === "resources" && (
+            <div className="animate-in fade-in duration-300 space-y-3">
+              <h3 className="font-bold text-lg mb-4">Archivos Adjuntos</h3>
+              {currentAttachments.map((att) => {
+                const Icon = getFileIcon(att.name);
+                return (
+                  <div
+                    key={att.id}
+                    className="flex items-center justify-between p-4 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] hover:border-[rgb(var(--brand-primary))] transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-[rgb(var(--bg-muted))] text-[rgb(var(--brand-primary))]">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm text-[rgb(var(--text-primary))]">
+                          {att.name}
+                        </div>
+                        <div className="text-xs text-[rgb(var(--text-muted))]">
+                          {(att.size / 1024).toFixed(0)} KB
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href={FileService.getLessonAttachmentUrl(att.id)}
+                      download
+                      className="p-2 rounded-full hover:bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))] transition-colors"
+                      title="Descargar"
+                    >
+                      <Download className="h-5 w-5" />
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {lessonTab === "chapters" && (
+            <div className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-6 text-center animate-in fade-in duration-300">
+              <PlayCircle className="h-10 w-10 mx-auto mb-3 text-[rgb(var(--text-muted))]" />
+              <h3 className="text-sm font-bold text-[rgb(var(--text-primary))]">
+                Capítulos del video
+              </h3>
+              <p className="mt-2 text-sm text-[rgb(var(--text-secondary))] max-w-xs mx-auto">
+                Próximamente podrás saltar directamente a los puntos clave de
+                esta lección.
+              </p>
+            </div>
+          )}
+
+          {lessonTab === "assignments" && (
+            <div className="space-y-4 animate-in fade-in duration-300">
+              {assignments.length === 0 ? (
+                <div className="text-center py-8 text-sm text-[rgb(var(--text-secondary))] bg-[rgb(var(--bg-muted))] rounded-xl">
+                  No hay tareas publicadas para este curso aún.
+                </div>
+              ) : (
+                assignments.map((a) => (
+                  <div
+                    key={a.$id}
+                    className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4 shadow-sm"
+                  >
+                    <div className="text-sm font-bold text-[rgb(var(--text-primary))]">
+                      {a.title}
+                    </div>
+                    <div className="mt-2 text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">
+                      {a.description}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {lessonTab === "qa" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-4">
+                <h4 className="text-sm font-bold mb-3">Haz una pregunta</h4>
+                <div className="space-y-3">
+                  <Textarea
+                    value={commentDraft}
+                    onChange={(e) => setCommentDraft(e.target.value)}
+                    placeholder="Comparte tus dudas o comentarios sobre esta lección..."
+                    className="bg-[rgb(var(--bg-surface))] border-none focus:ring-1 focus:ring-[rgb(var(--brand-primary))]"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={!commentDraft.trim()}
+                      onClick={async () => {
+                        if (!commentDraft.trim()) return;
+                        const doc = await createComment({
+                          courseId,
+                          lessonId: current.$id,
+                          userId: auth.user.$id,
+                          body: commentDraft.trim(),
+                        });
+                        setComments((prev) => [doc, ...prev]);
+                        setCommentDraft("");
+                      }}
+                    >
+                      Publicar Comentario
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {comments
+                  .filter((c) => c.lessonId === current.$id && !c.parentId)
+                  .map((c) => (
+                    <div
+                      key={c.$id}
+                      className="rounded-xl border border-[rgb(var(--border-base))] p-4 bg-[rgb(var(--bg-surface))]"
+                    >
+                      <div className="text-sm text-[rgb(var(--text-primary))] whitespace-pre-line">
+                        {c.body}
+                      </div>
+                      <div className="mt-2 text-[10px] text-[rgb(var(--text-muted))] uppercase font-bold">
+                        {new Date(c.$createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Button: Only if enrolled AND NOT owner */}
+        {isEnrolled && !isOwner && (
+          <div className="mt-8 pt-6 border-t border-[rgb(var(--border-base))]">
+            <Button
+              onClick={markComplete}
+              disabled={busy || !!done[current.$id]}
+              className="w-full sm:w-auto font-bold"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {done[current.$id]
+                ? "Lección Completada"
+                : busy
+                  ? "Guardando..."
+                  : "Marcar como completada"}
+            </Button>
+          </div>
+        )}
+      </Tabs>
+    </div>
+  );
+};
+
+const CourseContentList = ({
+  className,
+  course,
+  isEnrolled,
+  isOwner,
+  current,
+  done,
+  expandedSections,
+  toggleSection,
+  setCurrent,
+}) => {
+  return (
+    <Card
+      className={`p-0 h-fit sticky top-4 overflow-hidden shadow-none border-none bg-transparent ${className}`}
+    >
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div className="text-sm font-black uppercase tracking-widest inline-flex items-center gap-2 text-[rgb(var(--brand-primary))]">
+          <ListVideo className="h-4 w-4" />
+          Contenido
+        </div>
+        <div className="rounded-full bg-[rgb(var(--brand-primary)/0.1)] px-2 py-0.5 text-[10px] font-bold text-[rgb(var(--brand-primary))]">
+          {course.sections?.flatMap((s) => s.lessons || []).length || 0}{" "}
+          lecciones
+        </div>
+      </div>
+
+      <div className="space-y-3 max-h-[calc(100vh-100px)] overflow-y-auto pr-1 scrollbar-thin pb-10">
+        {course.sections?.map((section) => {
+          const isExpanded = expandedSections[section.$id];
+
+          return (
+            <div
+              key={section.$id}
+              className="rounded-lg border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] overflow-hidden"
+            >
+              <button
+                onClick={() => toggleSection(section.$id)}
+                className="w-full flex items-center justify-between p-3 bg-[rgb(var(--bg-muted))] hover:bg-[rgb(var(--bg-muted))/80] transition-colors"
+                type="button"
+              >
+                <div className="text-xs font-black text-[rgb(var(--text-primary))] uppercase tracking-tight text-left">
+                  {section.title}
+                </div>
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+                )}
+              </button>
+
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: "auto" }}
+                    exit={{ height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-2 space-y-2">
+                      {section.lessons?.map((l) => {
+                        const isFree = !!l.isFreePreview;
+                        const canAccess = isEnrolled || isOwner || isFree;
+                        const isActive = l.$id === current.$id;
+                        const hasAttachments =
+                          l.attachments && l.attachments.length > 0;
+
+                        // Determine Thumbnail
+                        let thumbUrl = null;
+                        if (l.videoCoverFileId)
+                          thumbUrl = FileService.getCourseCoverUrl(
+                            l.videoCoverFileId,
+                            { width: 100, height: 60 },
+                          );
+
+                        return (
+                          <button
+                            key={l.$id}
+                            onClick={() => setCurrent(l)}
+                            className={[
+                              "w-full text-left rounded-md p-2 transition-all duration-200 group relative overflow-hidden flex gap-3",
+                              isActive
+                                ? "bg-[rgb(var(--brand-primary)/0.05)] ring-1 ring-[rgb(var(--brand-primary)/0.2)]"
+                                : "hover:bg-[rgb(var(--bg-muted))] border border-transparent hover:border-[rgb(var(--border-base))]",
+                            ].join(" ")}
+                          >
+                            {/* Thumbnail / Icon */}
+                            <div className="shrink-0 w-24 aspect-video rounded-md overflow-hidden bg-black/5 relative grid place-items-center">
+                              {!canAccess && (
+                                <div className="absolute inset-0 bg-black/50 grid place-items-center">
+                                  <Lock className="h-4 w-4 text-white" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                              <div
+                                className={`text-xs font-bold leading-tight line-clamp-2 ${isActive ? "text-[rgb(var(--brand-primary))]" : "text-[rgb(var(--text-secondary))]"}`}
+                              >
+                                {l.title}
+                              </div>
+                              <div className="text-[10px] text-[rgb(var(--text-muted))] font-medium flex items-center gap-2">
+                                <span>
+                                  {Math.round((l.durationSec || 0) / 60)} min
+                                </span>
+                                {hasAttachments && (
+                                  <Paperclip className="h-3 w-3 opacity-70" />
+                                )}
+                              </div>
+                            </div>
+
+                            {done[l.$id] && (
+                              <div className="absolute top-1 right-1">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-[rgb(var(--success))]" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+};
 
 export function LearnPage() {
   const { courseId, lessonId } = useParams();
@@ -39,7 +524,7 @@ export function LearnPage() {
   const [current, setCurrent] = React.useState(null);
   const [done, setDone] = React.useState({}); // lessonId -> true
   const [busy, setBusy] = React.useState(false);
-  const [lessonTab, setLessonTab] = React.useState("overview");
+  const [lessonTab, setLessonTab] = React.useState("description");
   const [comments, setComments] = React.useState([]);
   const [assignments, setAssignments] = React.useState([]);
 
@@ -49,6 +534,15 @@ export function LearnPage() {
 
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+
+  // Theater Mode State
+  const [theaterMode, setTheaterMode] = React.useState(false);
+
+  // Attachments State
+  const [currentAttachments, setCurrentAttachments] = React.useState([]);
+
+  // Collapsed Sections State
+  const [expandedSections, setExpandedSections] = React.useState({});
 
   React.useEffect(() => {
     if (!courseId) return;
@@ -88,6 +582,7 @@ export function LearnPage() {
           }
         }
 
+        // Determine current lesson
         const allLessons = sectionsWithLessons.flatMap((s) => s.lessons || []);
         const first = allLessons[0];
         const target = lessonId
@@ -95,6 +590,16 @@ export function LearnPage() {
           : first;
 
         setCurrent(target || first);
+
+        // Expand the section containing the target lesson
+        if (target) {
+          const section = sectionsWithLessons.find((s) =>
+            s.lessons.some((l) => l.$id === target.$id),
+          );
+          if (section) {
+            setExpandedSections((prev) => ({ ...prev, [section.$id]: true }));
+          }
+        }
 
         // Optional: List comments/assignments
         listCommentsForCourse(c.$id)
@@ -119,11 +624,47 @@ export function LearnPage() {
     loadData();
   }, [courseId, lessonId, auth.user?.$id]);
 
-  const lessonsCount =
-    course?.sections?.flatMap((s) => s.lessons || []).length || 0;
-  const pct = lessonsCount
-    ? (Object.keys(done).length / lessonsCount) * 100
-    : 0;
+  // Load attachments
+  React.useEffect(() => {
+    const fetchAttachments = async () => {
+      if (!current) {
+        setCurrentAttachments([]);
+        return;
+      }
+      if (current.attachments && current.attachments.length > 0) {
+        // Appwrite supports array of strings
+        try {
+          const files = await Promise.all(
+            current.attachments.map(async (id) => {
+              try {
+                const meta = await FileService.getLessonAttachmentMetadata(id);
+                return {
+                  id: meta.$id,
+                  name: meta.name,
+                  size: meta.sizeOriginal,
+                };
+              } catch {
+                return null;
+              }
+            }),
+          );
+          setCurrentAttachments(files.filter(Boolean));
+        } catch {
+          setCurrentAttachments([]);
+        }
+      } else if (current.attachmentsJson) {
+        // Old format backward compatibility
+        try {
+          setCurrentAttachments(JSON.parse(current.attachmentsJson));
+        } catch {
+          setCurrentAttachments([]);
+        }
+      } else {
+        setCurrentAttachments([]);
+      }
+    };
+    fetchAttachments();
+  }, [current]);
 
   const markComplete = async () => {
     if (!current) return;
@@ -153,6 +694,21 @@ export function LearnPage() {
     }
   };
 
+  const handleBack = () => {
+    if (auth.user) {
+      navigate(`/app/courses/${courseId}`);
+    } else {
+      navigate(`/catalog/${courseId}`);
+    }
+  };
+
+  const toggleSection = (sectionId) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
+  };
+
   if (loading && !course) return <LoadingScreen />;
 
   if (error) {
@@ -179,363 +735,145 @@ export function LearnPage() {
         <p className="mb-4 text-[rgb(var(--text-secondary))]">
           La lección que buscas no existe o no está disponible.
         </p>
-        <Button onClick={() => setLessonTab("overview")} variant="outline">
+        <Button onClick={() => setLessonTab("description")} variant="outline">
           Volver al curso
         </Button>
       </div>
     );
   }
 
+  const isLocked = !isEnrolled && !isOwner && !current.isFreePreview;
+
+  // Render
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            if (auth.user) {
-              navigate(`/app/courses/${courseId}`);
-            } else {
-              navigate(`/catalog/${courseId}`);
-            }
-          }}
-          className="h-10 w-10 p-0 rounded-full hover:bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] shrink-0"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </Button>
-        <div className="flex-1 min-w-0 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="text-sm font-medium text-[rgb(var(--text-secondary))] truncate">
-              {course.title}
-            </div>
-            <div className="mt-0.5 text-xl font-black tracking-tight line-clamp-1">
-              {current.title}
+    <div
+      className={`mx-auto ${theaterMode ? "max-w-[1800px] px-0" : "max-w-7xl px-4 py-6"}`}
+    >
+      {/* Theater Mode Layout */}
+      {theaterMode ? (
+        <div className="space-y-6">
+          <div className="bg-black w-full pb-8">
+            <div className="max-w-[1800px] mx-auto">
+              <LessonViewer
+                current={current}
+                course={course}
+                isLocked={isLocked}
+                theaterMode={theaterMode}
+                setTheaterMode={setTheaterMode}
+                handleBack={handleBack}
+                markComplete={markComplete}
+              />
             </div>
           </div>
-          <div className="w-32 shrink-0">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--text-muted))] mb-1 text-right">
-              {Math.round(pct)}% completado
-            </div>
-            <ProgressBar value={pct} />
+          <div className="max-w-7xl mx-auto px-4 grid gap-8 lg:grid-cols-[1fr_350px]">
+            <LessonTabs
+              lessonTab={lessonTab}
+              setLessonTab={setLessonTab}
+              current={current}
+              currentAttachments={currentAttachments}
+              isLocked={isLocked}
+              assignments={assignments}
+              comments={comments}
+              commentDraft={commentDraft}
+              setCommentDraft={setCommentDraft}
+              auth={auth}
+              isEnrolled={isEnrolled}
+              isOwner={isOwner}
+              busy={busy}
+              done={done}
+              markComplete={markComplete}
+              setComments={setComments}
+              courseId={courseId}
+            />
+            <CourseContentList
+              className="hidden lg:block h-fit"
+              course={course}
+              isEnrolled={isEnrolled}
+              isOwner={isOwner}
+              current={current}
+              done={done}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              setCurrent={setCurrent}
+            />
+          </div>
+          {/* Mobile / Stacked Content */}
+          <div className="lg:hidden px-4">
+            <CourseContentList
+              course={course}
+              isEnrolled={isEnrolled}
+              isOwner={isOwner}
+              current={current}
+              done={done}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              setCurrent={setCurrent}
+            />
           </div>
         </div>
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-        <Card className="overflow-hidden">
-          {/* Check Access */}
-          {!isEnrolled && !isOwner && !current.isFreePreview ? (
-            <div className="aspect-video bg-black/95 relative flex flex-col items-center justify-center p-6 text-center">
-              {(current.videoCoverFileId || course.coverFileId) && (
-                <img
-                  src={FileService.getCourseCoverUrl(
-                    current.videoCoverFileId || course.coverFileId,
-                  )}
-                  alt="Locked content"
-                  className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
-                />
-              )}
-              <div className="relative z-10">
-                <Lock className="h-16 w-16 text-white/40 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  Contenido Bloqueado
-                </h3>
-                <p className="text-white/60 max-w-md mx-auto">
-                  Adquiere este curso para acceder a todas las lecciones y
-                  recursos.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {current.kind === "quiz" ? (
-                <QuizView
-                  lessonId={current.$id}
-                  courseId={courseId}
-                  onComplete={markComplete}
-                />
-              ) : current.kind === "assignment" ? (
-                <AssignmentView lessonId={current.$id} courseId={courseId} />
-              ) : (
-                <div className="aspect-video bg-black grid place-items-center">
-                  {current.kind === "video" ? (
-                    current.videoFileId ? (
-                      <video
-                        key={current.$id}
-                        className="w-full h-full"
-                        controls
-                        controlsList="nodownload"
-                        onContextMenu={(e) => e.preventDefault()}
-                        src={FileService.getLessonVideoUrl(current.videoFileId)}
-                        poster={
-                          current.videoCoverFileId
-                            ? FileService.getCourseCoverUrl(
-                                current.videoCoverFileId,
-                              )
-                            : undefined
-                        }
-                      />
-                    ) : (
-                      <div className="text-center">
-                        <PlayCircle className="mx-auto h-12 w-12 text-white/50" />
-                        <div className="mt-2 text-sm text-white/40">
-                          Video no disponible
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <div className="text-center p-8 text-[rgb(var(--text-muted))] h-full flex flex-col items-center justify-center bg-[rgb(var(--bg-muted))]">
-                      <ListVideo className="h-12 w-12 mb-2 opacity-50" />
-                      <div>Contenido de lectura disponible abajo</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          <div className="p-4 sm:p-6">
-            {!isEnrolled && !isOwner && !current.isFreePreview ? (
-              <div className="text-center py-12 text-[rgb(var(--text-muted))] italic flex flex-col items-center justify-center min-h-[200px]">
-                <Lock className="h-8 w-8 mb-4 opacity-30" />
-                Contenido adicional bloqueado.
-              </div>
-            ) : (
-              <>
-                <Tabs
-                  value={lessonTab}
-                  onValueChange={setLessonTab}
-                  className="mb-6 overflow-x-auto"
-                >
-                  <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0">
-                    <TabsTrigger
-                      value="overview"
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-[rgb(var(--brand-primary))] data-[state=active]:bg-transparent px-4 py-2"
-                    >
-                      Resumen
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="chapters"
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-[rgb(var(--brand-primary))] data-[state=active]:bg-transparent px-4 py-2"
-                    >
-                      Capítulos
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="assignments"
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-[rgb(var(--brand-primary))] data-[state=active]:bg-transparent px-4 py-2"
-                    >
-                      Tareas ({assignments.length})
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="qa"
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-[rgb(var(--brand-primary))] data-[state=active]:bg-transparent px-4 py-2"
-                    >
-                      Q&A ({comments.filter((c) => !c.parentId).length})
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <div className="mt-6">
-                    {lessonTab === "overview" && (
-                      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <h3 className="text-sm font-black text-[rgb(var(--text-primary))] uppercase tracking-wider mb-3">
-                          Descripción
-                        </h3>
-                        <div className="text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line leading-relaxed">
-                          {current.description ||
-                            "Esta lección incluye explicación detallada y recursos prácticos."}
-                        </div>
-                      </div>
-                    )}
-
-                    {lessonTab === "chapters" && (
-                      <div className="rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-6 text-center animate-in fade-in duration-300">
-                        <PlayCircle className="h-10 w-10 mx-auto mb-3 text-[rgb(var(--text-muted))]" />
-                        <h3 className="text-sm font-bold text-[rgb(var(--text-primary))]">
-                          Capítulos del video
-                        </h3>
-                        <p className="mt-2 text-sm text-[rgb(var(--text-secondary))] max-w-xs mx-auto">
-                          Próximamente podrás saltar directamente a los puntos
-                          clave de esta lección.
-                        </p>
-                      </div>
-                    )}
-
-                    {lessonTab === "assignments" && (
-                      <div className="space-y-4 animate-in fade-in duration-300">
-                        {assignments.length === 0 ? (
-                          <div className="text-center py-8 text-sm text-[rgb(var(--text-secondary))] bg-[rgb(var(--bg-muted))] rounded-2xl">
-                            No hay tareas publicadas para este curso aún.
-                          </div>
-                        ) : (
-                          assignments.map((a) => (
-                            <div
-                              key={a.$id}
-                              className="rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4 shadow-sm"
-                            >
-                              <div className="text-sm font-bold text-[rgb(var(--text-primary))]">
-                                {a.title}
-                              </div>
-                              <div className="mt-2 text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">
-                                {a.description}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-
-                    {lessonTab === "qa" && (
-                      <div className="space-y-6 animate-in fade-in duration-300">
-                        <div className="rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-4">
-                          <h4 className="text-sm font-bold mb-3">
-                            Haz una pregunta
-                          </h4>
-                          <div className="space-y-3">
-                            <Textarea
-                              value={commentDraft}
-                              onChange={(e) => setCommentDraft(e.target.value)}
-                              placeholder="Comparte tus dudas o comentarios sobre esta lección..."
-                              className="bg-[rgb(var(--bg-surface))] border-none focus:ring-1 focus:ring-[rgb(var(--brand-primary))]"
-                            />
-                            <div className="flex justify-end">
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                disabled={!commentDraft.trim()}
-                                onClick={async () => {
-                                  if (!commentDraft.trim()) return;
-                                  const doc = await createComment({
-                                    courseId,
-                                    lessonId: current.$id,
-                                    userId: auth.user.$id,
-                                    body: commentDraft.trim(),
-                                  });
-                                  setComments((prev) => [doc, ...prev]);
-                                  setCommentDraft("");
-                                }}
-                              >
-                                Publicar Comentario
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          {comments
-                            .filter(
-                              (c) => c.lessonId === current.$id && !c.parentId,
-                            )
-                            .map((c) => (
-                              <div
-                                key={c.$id}
-                                className="rounded-2xl border border-[rgb(var(--border-base))] p-4 bg-[rgb(var(--bg-surface))]"
-                              >
-                                <div className="text-sm text-[rgb(var(--text-primary))] whitespace-pre-line">
-                                  {c.body}
-                                </div>
-                                <div className="mt-2 text-[10px] text-[rgb(var(--text-muted))] uppercase font-bold">
-                                  {new Date(c.$createdAt).toLocaleDateString()}
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </Tabs>
-
-                <div className="mt-8 pt-6 border-t border-[rgb(var(--border-base))]">
-                  <Button
-                    onClick={markComplete}
-                    disabled={busy || !!done[current.$id]}
-                    className="w-full sm:w-auto font-bold"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    {done[current.$id]
-                      ? "Lección Completada"
-                      : busy
-                        ? "Guardando..."
-                        : "Marcar como completada"}
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </Card>
-
-        <Card className="p-4 h-fit sticky top-20">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <div className="text-sm font-black uppercase tracking-widest inline-flex items-center gap-2 text-[rgb(var(--brand-primary))]">
-              <ListVideo className="h-4 w-4" />
-              Contenido
-            </div>
-            <div className="rounded-full bg-[rgb(var(--brand-primary)/0.1)] px-2 py-0.5 text-[10px] font-bold text-[rgb(var(--brand-primary))]">
-              {course.sections?.flatMap((s) => s.lessons || []).length || 0}{" "}
-              lecciones
-            </div>
+      ) : (
+        <div className="grid gap-6 lg:gap-8 lg:grid-cols-[1fr_350px]">
+          {/* Left Column */}
+          <div className="min-w-0">
+            <LessonViewer
+              current={current}
+              course={course}
+              isLocked={isLocked}
+              theaterMode={theaterMode}
+              setTheaterMode={setTheaterMode}
+              handleBack={handleBack}
+              markComplete={markComplete}
+            />
+            <LessonTabs
+              lessonTab={lessonTab}
+              setLessonTab={setLessonTab}
+              current={current}
+              currentAttachments={currentAttachments}
+              isLocked={isLocked}
+              assignments={assignments}
+              comments={comments}
+              commentDraft={commentDraft}
+              setCommentDraft={setCommentDraft}
+              auth={auth}
+              isEnrolled={isEnrolled}
+              isOwner={isOwner}
+              busy={busy}
+              done={done}
+              markComplete={markComplete}
+              setComments={setComments}
+              courseId={courseId}
+            />
           </div>
 
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
-            {course.sections?.map((section) => (
-              <div key={section.$id} className="space-y-2">
-                <div className="px-2 text-[10px] font-black text-[rgb(var(--text-muted))] uppercase tracking-tight">
-                  {section.title}
-                </div>
-                <div className="space-y-1.5">
-                  {section.lessons?.map((l) => {
-                    const isFree = !!l.isFreePreview;
-                    const canAccess = isEnrolled || isOwner || isFree;
-                    const isActive = l.$id === current.$id;
-
-                    return (
-                      <button
-                        key={l.$id}
-                        onClick={() => setCurrent(l)}
-                        className={[
-                          "w-full text-left rounded-xl p-3 transition-all duration-200 group relative overflow-hidden",
-                          isActive
-                            ? "bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))]"
-                            : "hover:bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))]",
-                        ].join(" ")}
-                      >
-                        {isActive && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[rgb(var(--brand-primary))]" />
-                        )}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              {!canAccess ? (
-                                <Lock className="h-3 w-3 shrink-0 opacity-50" />
-                              ) : isFree && !isEnrolled && !isOwner ? (
-                                <Play className="h-3 w-3 shrink-0 text-green-500" />
-                              ) : (
-                                <PlayCircle
-                                  className={`h-3 w-3 shrink-0 ${isActive ? "text-[rgb(var(--brand-primary))]" : "opacity-50"}`}
-                                />
-                              )}
-                              <div
-                                className={`text-xs font-bold truncate ${isActive ? "text-[rgb(var(--text-primary))]" : "group-hover:text-[rgb(var(--text-primary))]"}`}
-                              >
-                                {l.title}
-                              </div>
-                            </div>
-                            <div className="mt-0.5 ml-5 text-[10px] opacity-60 font-medium">
-                              {Math.round((l.durationSec || 0) / 60)} min
-                            </div>
-                          </div>
-                          {done[l.$id] && (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-[rgb(var(--success))] shrink-0" />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          {/* Right Column */}
+          <div className="hidden lg:block min-w-0">
+            <CourseContentList
+              course={course}
+              isEnrolled={isEnrolled}
+              isOwner={isOwner}
+              current={current}
+              done={done}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              setCurrent={setCurrent}
+            />
           </div>
-        </Card>
-      </div>
+
+          {/* Mobile Content List */}
+          <div className="lg:hidden mt-4">
+            <CourseContentList
+              course={course}
+              isEnrolled={isEnrolled}
+              isOwner={isOwner}
+              current={current}
+              done={done}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              setCurrent={setCurrent}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

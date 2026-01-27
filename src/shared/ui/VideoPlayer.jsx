@@ -10,23 +10,34 @@ import {
   Settings,
   SkipBack,
   SkipForward,
+  ArrowLeft,
+  Square,
+  LayoutTemplate,
 } from "lucide-react";
 
 /**
  * VideoPlayer - Custom HTML5 video player with controls
  * @param {string} src - Video source URL
  * @param {string} poster - Poster image URL
+ * @param {string} title - Video title for overlay
+ * @param {Function} onBack - Back button callback
  * @param {Array} timestamps - Array of { title, atSec } for chapters
  * @param {Function} onProgress - Progress callback (currentTime, duration)
  * @param {number} initialTime - Initial playback time in seconds
+ * @param {boolean} theaterMode - Whether theater mode is active
+ * @param {Function} onToggleTheater - Callback to toggle theater mode
  */
 export function VideoPlayer({
   src,
   poster,
+  title,
+  onBack,
   timestamps = [],
   onProgress,
   initialTime = 0,
   className = "",
+  theaterMode = false,
+  onToggleTheater,
 }) {
   const { t } = useTranslation();
   const videoRef = React.useRef(null);
@@ -222,7 +233,7 @@ export function VideoPlayer({
   if (!src) {
     return (
       <div
-        className={`flex items-center justify-center bg-black/90 text-white aspect-video rounded-xl ${className}`}
+        className={`flex items-center justify-center bg-black/90 text-white aspect-video ${className}`}
       >
         <span className="text-sm text-gray-400">
           {t("videoPlayer.noVideo")}
@@ -234,7 +245,7 @@ export function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className={`relative bg-black rounded-xl overflow-hidden group ${className}`}
+      className={`relative bg-black overflow-hidden group ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => playing && setShowControls(false)}
     >
@@ -248,10 +259,31 @@ export function VideoPlayer({
         playsInline
       />
 
+      {/* Top Overlay (Back & Title) */}
+      <div
+        className={`absolute top-0 left-0 right-0 p-4 bg-linear-to-b from-black/80 to-transparent flex items-center gap-4 transition-opacity duration-300 z-20 ${
+          showControls ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-white/10 rounded-full text-white transition-colors"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+        )}
+        {title && (
+          <h2 className="text-white font-bold text-lg leading-tight line-clamp-1 drop-shadow-md">
+            {title}
+          </h2>
+        )}
+      </div>
+
       {/* Play/Pause Overlay */}
       {!playing && (
         <button
-          className="absolute inset-0 flex items-center justify-center bg-black/30"
+          className="absolute inset-0 flex items-center justify-center bg-black/20 z-10"
           onClick={togglePlay}
         >
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black shadow-lg hover:scale-110 transition-transform">
@@ -262,7 +294,7 @@ export function VideoPlayer({
 
       {/* Controls Bar */}
       <div
-        className={`absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-black/80 to-transparent flex items-end px-4 pb-2 select-none transition-opacity duration-300 ${
+        className={`absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-black/80 to-transparent flex items-end px-4 pb-2 select-none transition-opacity duration-300 z-20 ${
           showControls ? "opacity-100" : "opacity-0"
         }`}
       >
@@ -358,6 +390,18 @@ export function VideoPlayer({
                 </div>
               )}
             </div>
+
+            {/* Theater Mode Toggle */}
+            {onToggleTheater && (
+              <button
+                onClick={onToggleTheater}
+                className={`hidden sm:block p-2 hover:bg-white/10 rounded-lg transition-colors ${theaterMode ? "text-[rgb(var(--brand-primary))]" : ""}`}
+                title="Modo Teatro"
+              >
+                <LayoutTemplate className="h-5 w-5" />
+              </button>
+            )}
+
             <button
               onClick={toggleFullscreen}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -374,7 +418,7 @@ export function VideoPlayer({
 
       {/* Timestamps/Chapters Panel (if provided) */}
       {timestamps.length > 0 && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
           <div className="relative">
             <button className="p-2 bg-black/70 rounded-lg text-white hover:bg-black/90 transition-colors">
               <Settings className="h-4 w-4" />

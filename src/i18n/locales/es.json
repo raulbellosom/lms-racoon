@@ -330,7 +330,9 @@
       "sectionTitlePlaceholder": "Ej: Introducción al curso",
       "editSection": "Editar sección",
       "deleteSection": "Eliminar sección",
-      "deleteSectionConfirm": "Eliminar Sección",
+      "isFreePreview": "Habilitar vista previa gratuita",
+      "isFreePreviewDesc": "Permite que los estudiantes vean esta lección sin comprar el curso.",
+      "makeSectionFreeConfirm": "¿Hacer gratis toda la sección?",
       "deleteSectionDesc": "¿Estás seguro de que quieres eliminar esta sección? Esta acción no se puede deshacer.",
       "lessonTitle": "Título de la lección",
       "lessonTitlePlaceholder": "Ej: Bienvenida al curso",
@@ -374,7 +376,9 @@
       "timestampTime": "Tiempo (segundos)",
       "uploadImage": "Subir Imagen",
       "removeCover": "Eliminar portada",
-      "videoCoverDesc": "Sube una imagen de portada para este video."
+      "videoCoverDesc": "Sube una imagen de portada para este video.",
+      "isFreePreview": "Habilitar vista previa gratuita",
+      "isFreePreviewDesc": "Permite que los estudiantes vean esta lección sin comprar el curso."
     },
     "quiz": {
       "title": "Evaluaciones",
