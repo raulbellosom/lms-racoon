@@ -43,6 +43,7 @@ import { FileService } from "../../../shared/data/files";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { LoadingScreen } from "../../../shared/ui/LoadingScreen";
 import { CharacterCountCircle } from "../../../features/teacher/components/CharacterCountCircle";
+import { MarkdownDescriptionEditor } from "../../../features/teacher/components/MarkdownDescriptionEditor";
 
 const QUESTION_TYPES = [
   { value: "single", label: "teacher.quiz.singleChoice" },
@@ -348,17 +349,47 @@ export function TeacherQuizEditorPage() {
   // Image Upload for Question
   const handleImageUpload = async (file, questionIndex) => {
     if (!file) return;
+
+    // Check if replacing an existing image
+    const oldImageId = questions[questionIndex]?.imageId;
+
     const toastId = showToast("Subiendo imagen...", "info");
     try {
       if (!file.type.startsWith("image/")) {
         throw new Error("Solo imágenes");
       }
       const attachment = await FileService.uploadLessonAttachment(file);
-      updateQuestion(questionIndex, "imageId", attachment.$id);
-      showToast(t("teacher.lesson.videoUploaded"), "success");
+
+      // Hydrate state immediately
+      updateQuestion(questionIndex, "imageId", attachment.id);
+
+      // Delete previous image from storage if it exists
+      if (oldImageId) {
+        try {
+          await FileService.deleteLessonAttachment(oldImageId);
+        } catch (delError) {
+          console.error("Failed to delete old image:", delError);
+        }
+      }
+
+      showToast(t("teacher.lesson.imageUploaded"), "success");
     } catch (error) {
       console.error(error);
       showToast(t("teacher.errors.uploadFailed"), "error");
+    }
+  };
+
+  const handleImageDelete = async (questionIndex) => {
+    const imageId = questions[questionIndex]?.imageId;
+    if (!imageId) return;
+
+    try {
+      await FileService.deleteLessonAttachment(imageId);
+      updateQuestion(questionIndex, "imageId", null);
+      showToast(t("common.deleted"), "success");
+    } catch (error) {
+      console.error("Failed to delete image:", error);
+      showToast(t("teacher.errors.deleteFailed"), "error");
     }
   };
 
@@ -528,29 +559,6 @@ export function TeacherQuizEditorPage() {
                 />
               </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
-                    {t("teacher.quiz.quizDescription")}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-[rgb(var(--text-muted))]">
-                      {2000 - formData.description.length}
-                    </span>
-                    <CharacterCountCircle
-                      current={formData.description.length}
-                      max={2000}
-                      size={18}
-                    />
-                  </div>
-                </div>
-                <Textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => updateField("description", e.target.value)}
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
@@ -628,6 +636,14 @@ export function TeacherQuizEditorPage() {
 
         {/* Right Column: Questions */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Description Editor */}
+          <MarkdownDescriptionEditor
+            title={t("teacher.quiz.quizDescription")}
+            value={formData.description}
+            onChange={(val) => updateField("description", val)}
+            maxLength={2000}
+          />
+
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-lg">
               {t("teacher.quiz.questions")} ({questions.length})
@@ -776,27 +792,23 @@ export function TeacherQuizEditorPage() {
 
                               {/* Image Question Type Extra UI */}
                               {q.kind === "image" && (
-                                <div className="p-4 rounded-lg bg-[rgb(var(--bg-muted))]/0.5 border border-dashed border-[rgb(var(--border-base))]">
+                                <div className="p-4 rounded-lg bg-[rgb(var(--bg-muted))]/0.5 border border-dashed border-[rgb(var(--border-base))] max-h-[220px] overflow-hidden flex items-center justify-center">
                                   {q.imageId ? (
-                                    <div className="relative group w-fit">
+                                    <div className="relative group max-w-full">
                                       <img
                                         src={FileService.getLessonAttachmentPreviewUrl(
                                           q.imageId,
                                         )}
                                         alt="Question"
-                                        className="h-40 w-auto rounded-lg object-contain bg-[rgb(var(--bg-card))]"
+                                        className="max-h-[180px] w-auto rounded-lg object-contain bg-[rgb(var(--bg-card))] shadow-sm"
                                       />
                                       <button
                                         onClick={() =>
-                                          updateQuestion(
-                                            qIndex,
-                                            "imageId",
-                                            null,
-                                          )
+                                          handleImageDelete(qIndex)
                                         }
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                                       >
-                                        <X className="h-3 w-3" />
+                                        <X className="h-3.5 w-3.5" />
                                       </button>
                                     </div>
                                   ) : (

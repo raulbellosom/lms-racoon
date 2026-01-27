@@ -5,6 +5,10 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { FileService } from "../../../shared/data/files";
 
 export function QuizView({ lessonId, courseId, onComplete }) {
   const { auth } = useAuth();
@@ -105,8 +109,8 @@ export function QuizView({ lessonId, courseId, onComplete }) {
       // For MVP assuming single choice index or value match
       // If answerKey is array of indices
 
-      // Case 1: Single/TrueFalse
-      if (q.kind === "single" || q.kind === "trueFalse") {
+      // Case 1: Single/TrueFalse/Image
+      if (q.kind === "single" || q.kind === "trueFalse" || q.kind === "image") {
         // answerKey might be [0] (index)
         const correctIndex = q.answerKey?.[0]; // 0-based index
         // User ans is probably index (integer)
@@ -156,8 +160,7 @@ export function QuizView({ lessonId, courseId, onComplete }) {
     }
   };
 
-  if (loading)
-    return <div className="p-8 text-center">Cargando evaluación...</div>;
+  if (loading) return <LoadingContent />;
   if (!quiz)
     return (
       <div className="p-8 text-center text-gray-500">
@@ -175,12 +178,17 @@ export function QuizView({ lessonId, courseId, onComplete }) {
   if (activeAttemptId) {
     // RENDERING QUESTIONS
     return (
-      <div className="space-y-6 p-4">
-        <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-          <span className="font-bold text-lg">{quiz.title}</span>
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex justify-between items-center bg-[rgb(var(--brand-primary)/0.05)] p-4 rounded-2xl border border-[rgb(var(--brand-primary)/0.1)]">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-[rgb(var(--brand-primary))] opacity-80">
+              Evaluación en curso
+            </div>
+            <div className="font-bold text-lg">{quiz.title}</div>
+          </div>
           {timeLeft !== null && (
             <div
-              className={`flex items-center gap-2 font-mono text-xl font-bold ${timeLeft < 60 ? "text-red-500" : ""}`}
+              className={`flex items-center gap-3 px-4 py-2 rounded-xl bg-white dark:bg-gray-900 shadow-sm font-mono text-xl font-black ${timeLeft < 60 ? "text-red-500 animate-pulse" : "text-[rgb(var(--text-primary))]"}`}
             >
               <Clock className="h-5 w-5" />
               {Math.floor(timeLeft / 60)}:
@@ -189,38 +197,62 @@ export function QuizView({ lessonId, courseId, onComplete }) {
           )}
         </div>
 
-        <div className="space-y-8">
-          {questions.map((q, idx) => (
-            <Card key={q.$id} className="p-6">
-              <div className="mb-4">
-                <span className="text-sm font-semibold text-gray-500">
-                  Pregunta {idx + 1}
-                </span>
-                <div className="text-lg font-medium mt-1">{q.prompt}</div>
-              </div>
+        {quiz.description && (
+          <div className="markdown-content text-[rgb(var(--text-secondary))] p-4 bg-[rgb(var(--bg-muted))]/30 rounded-xl border border-[rgb(var(--border-base))]">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {quiz.description}
+            </ReactMarkdown>
+          </div>
+        )}
 
-              <div className="space-y-2">
-                {q.options?.map((opt, optIdx) => (
-                  <label
-                    key={optIdx}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors bg-white dark:bg-gray-900 shadow-sm"
-                  >
-                    <input
-                      type="radio"
-                      name={q.$id}
-                      value={optIdx}
-                      checked={answers[q.$id] === optIdx} // Storing index
-                      onChange={() =>
-                        setAnswers((prev) => ({ ...prev, [q.$id]: optIdx }))
-                      }
-                      className="h-4 w-4 text-blue-600"
-                    />
-                    <span>{opt}</span>
-                  </label>
-                ))}
-              </div>
+        <div className="space-y-8">
+          {questions.length === 0 ? (
+            <Card className="p-8 text-center text-gray-500 italic">
+              Esta evaluación no tiene preguntas configuradas aún.
             </Card>
-          ))}
+          ) : (
+            questions.map((q, idx) => (
+              <Card key={q.$id} className="p-6">
+                <div className="mb-4">
+                  <span className="text-sm font-semibold text-gray-500">
+                    Pregunta {idx + 1}
+                  </span>
+                  <div className="text-lg font-medium mt-1">{q.prompt}</div>
+                </div>
+
+                {q.imageId && (
+                  <div className="mb-6 rounded-xl overflow-hidden bg-black/5 border border-[rgb(var(--border-base))] flex justify-center">
+                    <img
+                      src={FileService.getLessonAttachmentPreviewUrl(q.imageId)}
+                      alt="Referencia visual"
+                      className="max-h-[300px] w-auto h-auto object-contain"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {q.options?.map((opt, optIdx) => (
+                    <label
+                      key={optIdx}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors bg-white dark:bg-gray-900 shadow-sm"
+                    >
+                      <input
+                        type="radio"
+                        name={q.$id}
+                        value={optIdx}
+                        checked={answers[q.$id] === optIdx} // Storing index
+                        onChange={() =>
+                          setAnswers((prev) => ({ ...prev, [q.$id]: optIdx }))
+                        }
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </Card>
+            ))
+          )}
         </div>
 
         <div className="flex justify-end pt-4">
@@ -237,77 +269,120 @@ export function QuizView({ lessonId, courseId, onComplete }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] p-6 text-center space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold">{quiz.title}</h2>
-        <p className="text-gray-500 max-w-lg mx-auto">{quiz.description}</p>
-      </div>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* 1. Description Section */}
+      {quiz.description && (
+        <div className="markdown-content text-[rgb(var(--text-secondary))] max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {quiz.description}
+          </ReactMarkdown>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-          <div className="text-sm text-gray-500">Límite de tiempo</div>
-          <div className="font-semibold text-lg">
-            {quiz.timeLimitSec
-              ? `${Math.round(quiz.timeLimitSec / 60)} min`
-              : "Sin límite"}
-          </div>
-        </div>
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-          <div className="text-sm text-gray-500">Para aprobar</div>
-          <div className="font-semibold text-lg">
-            {Math.round(quiz.passingScore * 100)}%
-          </div>
-        </div>
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-          <div className="text-sm text-gray-500">Intentos</div>
-          <div className="font-semibold text-lg">
-            {attempt ? "1 usado" : "0 usados"}
-          </div>
-        </div>
-      </div>
+      {/* 2. Stats & Result Section */}
+      <div className="max-w-3xl mx-auto w-full space-y-6">
+        {/* Compact Result Card if attempt exists */}
+        {attempt && (
+          <div
+            className={`p-6 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-6 transition-all ${
+              attempt.passed
+                ? "bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30"
+                : "bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`p-3 rounded-2xl ${attempt.passed ? "bg-green-100 text-green-600 dark:bg-green-900/50" : "bg-red-100 text-red-600 dark:bg-red-900/50"}`}
+              >
+                {attempt.passed ? (
+                  <CheckCircle2 className="h-8 w-8" />
+                ) : (
+                  <XCircle className="h-8 w-8" />
+                )}
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-60">
+                  Tu Puntuación
+                </div>
+                <div className="text-4xl font-black leading-none">
+                  {Math.round(attempt.score * 100)}%
+                </div>
+              </div>
+            </div>
 
-      {attempt && (
-        <div
-          className={`p-6 rounded-xl border-2 w-full max-w-lg ${attempt.passed ? "border-green-100 bg-green-50 dark:bg-green-900/10" : "border-red-100 bg-red-50 dark:bg-red-900/10"}`}
-        >
-          <div className="flex items-center justify-center gap-2 mb-2">
-            {attempt.passed ? (
-              <CheckCircle2 className="text-green-600 h-8 w-8" />
-            ) : (
-              <XCircle className="text-red-600 h-8 w-8" />
-            )}
-            <span
-              className={`text-xl font-bold ${attempt.passed ? "text-green-700" : "text-red-700"}`}
+            <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
+              <div
+                className={`text-2xl font-black ${attempt.passed ? "text-green-600" : "text-red-600"}`}
+              >
+                {attempt.passed ? "¡Aprobado!" : "No aprobado"}
+              </div>
+              <div className="text-xs font-bold opacity-40 uppercase tracking-widest mt-1">
+                Meta: {Math.round(quiz.passingScore * 100)}% para aprobar
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Info Grid (Always visible or only if no result? Let's keep it for context) */}
+        {!attempt && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 bg-[rgb(var(--bg-muted))] rounded-2xl flex items-center gap-4 border border-[rgb(var(--border-base))]">
+              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-50">
+                  Límite de tiempo
+                </div>
+                <div className="font-bold">
+                  {quiz.timeLimitSec
+                    ? `${Math.round(quiz.timeLimitSec / 60)} min`
+                    : "Sin límite"}
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-[rgb(var(--bg-muted))] rounded-2xl flex items-center gap-4 border border-[rgb(var(--border-base))]">
+              <div className="p-2 rounded-xl bg-green-500/10 text-green-500">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-50">
+                  Para aprobar
+                </div>
+                <div className="font-bold">
+                  {Math.round(quiz.passingScore * 100)}% de aciertos
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-col items-center gap-4 pt-4">
+          {(!attempt ||
+            !attempt.passed ||
+            quiz.attemptsAllowed === 0 ||
+            quiz.attemptsAllowed > 1) && (
+            <Button
+              onClick={startQuiz}
+              size="lg"
+              className="px-12 rounded-full font-bold shadow-lg hover:shadow-xl transition-all"
             >
-              {attempt.passed ? "¡Aprobado!" : "No aprobado"}
-            </span>
-          </div>
-          <div className="text-3xl font-black mb-1">
-            {Math.round(attempt.score * 100)}%
-          </div>
-          <div className="text-sm opacity-75">Tu puntuación</div>
+              {attempt ? "Intentar de nuevo" : "Comenzar Evaluación"}
+            </Button>
+          )}
+
+          {attempt?.passed && (
+            <Button
+              variant="outline"
+              onClick={onComplete}
+              className="rounded-full font-bold"
+            >
+              Continuar a la siguiente lección
+            </Button>
+          )}
         </div>
-      )}
-
-      {/* Start Button */}
-      {(!attempt ||
-        !attempt.passed ||
-        quiz.attemptsAllowed === 0 ||
-        quiz.attemptsAllowed > 1) && (
-        <Button
-          onClick={startQuiz}
-          size="lg"
-          className="px-12 animate-in fade-in zoom-in"
-        >
-          {attempt ? "Intentar de nuevo" : "Comenzar Evaluación"}
-        </Button>
-      )}
-
-      {attempt?.passed && (
-        <Button variant="outline" onClick={onComplete}>
-          Continuar a la siguiente lección
-        </Button>
-      )}
+      </div>
     </div>
   );
 }

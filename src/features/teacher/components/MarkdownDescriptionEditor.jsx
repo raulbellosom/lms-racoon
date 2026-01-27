@@ -5,14 +5,18 @@ import "easymde/dist/easymde.min.css";
 import { Card } from "../../../shared/ui/Card";
 import { Modal } from "../../../shared/ui/Modal";
 import { Button } from "../../../shared/ui/Button";
+import { CharacterCountCircle } from "./CharacterCountCircle";
 
 export function MarkdownDescriptionEditor({
   value,
   onChange,
   maxLength = 8000,
+  title,
 }) {
   const { t } = useTranslation();
   const [showMarkdownModal, setShowMarkdownModal] = React.useState(false);
+
+  const displayTitle = title || t("teacher.courseDescription");
 
   const options = React.useMemo(
     () => ({
@@ -57,9 +61,7 @@ export function MarkdownDescriptionEditor({
     <>
       <Card className="p-4 sm:p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-bold">
-            {t("teacher.courseDescription")}
-          </h3>
+          <h3 className="text-lg font-bold">{displayTitle}</h3>
           <button
             type="button"
             onClick={() => setShowMarkdownModal(true)}
@@ -73,12 +75,17 @@ export function MarkdownDescriptionEditor({
           <SimpleMDE value={value} onChange={handleChange} options={options} />
         </div>
 
-        <div className="mt-2 flex items-center justify-between text-xs">
+        <div className="mt-2 flex items-center justify-end gap-2 text-xs">
           <span
             className={`${value?.length > maxLength ? "text-red-500" : "text-[rgb(var(--text-secondary))]"}`}
           >
-            {value?.length || 0} / {maxLength} caracteres
+            {value?.length || 0} / {maxLength}
           </span>
+          <CharacterCountCircle
+            current={value?.length || 0}
+            max={maxLength}
+            size={18}
+          />
         </div>
 
         {value?.length > maxLength && (

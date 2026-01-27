@@ -29,7 +29,7 @@ import {
   listCommentsForCourse,
   createComment,
 } from "../../../shared/data/comments";
-import { listAssignmentsForCourse } from "../../../shared/data/assignments";
+// Removed listAssignmentsForCourse import
 import { Button } from "../../../shared/ui/Button";
 import { getCourseById } from "../../../shared/data/courses";
 import { useAuth } from "../../../app/providers/AuthProvider";
@@ -44,6 +44,7 @@ import { LessonService } from "../../../shared/data/lessons-teacher";
 import { FileService } from "../../../shared/data/files";
 import { VideoPlayer } from "../../../shared/ui/VideoPlayer";
 import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "../../../shared/ui/cn";
 
 // Helper for file icons
 const getFileIcon = (filename) => {
@@ -76,7 +77,7 @@ const LessonViewer = ({
 
   if (isLocked) {
     return (
-      <div className="w-full bg-black relative overflow-hidden aspect-video shadow-2xl rounded-xl">
+      <div className="w-full bg-black relative aspect-video shadow-2xl">
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
           {(current.videoCoverFileId || course.coverFileId) && (
             <img
@@ -104,7 +105,7 @@ const LessonViewer = ({
   if (current.kind === "video") {
     return (
       <div className="w-full">
-        <div className="bg-black relative overflow-hidden aspect-video shadow-2xl rounded-xl">
+        <div className="bg-black relative aspect-video shadow-2xl">
           <VideoPlayer
             src={
               current.videoFileId
@@ -127,32 +128,43 @@ const LessonViewer = ({
     );
   }
 
-  // Non-video content: just show header (if needed) and content
-  // For standard "reading" lessons, we essentially just render the BackButton here,
-  // as the content is in the Tabs (Description).
-  // For Quizzes/Assignments, we render them full width/height.
-
+  // Non-video content: Header placeholder
   return (
     <div className="w-full">
       <BackButton />
-
-      {current.kind === "quiz" && (
-        <div className="min-h-[500px] border border-[rgb(var(--border-base))] rounded-2xl overflow-hidden bg-[rgb(var(--bg-base))]">
-          <QuizView
-            lessonId={current.$id}
-            courseId={course.$id}
-            onComplete={markComplete}
+      <div className="relative aspect-video lg:aspect-21/9 rounded-2xl overflow-hidden bg-[rgb(var(--bg-card))] border border-[rgb(var(--border-base))] shadow-sm flex items-center justify-center p-8 group">
+        {(current.videoCoverFileId || course.coverFileId) && (
+          <img
+            src={FileService.getCourseCoverUrl(
+              current.videoCoverFileId || course.coverFileId,
+            )}
+            alt={current.title}
+            className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none transition-opacity group-hover:opacity-30"
           />
+        )}
+        <div className="relative z-10 text-center max-w-2xl px-4">
+          <div className="inline-flex items-center gap-2 p-2 rounded-full bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))] mb-4">
+            {current.kind === "quiz" && <HelpCircle className="h-5 w-5" />}
+            {current.kind === "assignment" && (
+              <ClipboardList className="h-5 w-5" />
+            )}
+            {current.kind === "article" && <FileText className="h-5 w-5" />}
+            <span className="text-xs font-black uppercase tracking-widest px-2">
+              {current.kind === "quiz"
+                ? "Evaluación"
+                : current.kind === "assignment"
+                  ? "Tarea"
+                  : "Artículo / Lectura"}
+            </span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black text-[rgb(var(--text-primary))] tracking-tight mb-2">
+            {current.title}
+          </h2>
+          <p className="text-[rgb(var(--text-secondary))] font-medium">
+            Sigue las instrucciones en la sección de descripción para continuar.
+          </p>
         </div>
-      )}
-
-      {current.kind === "assignment" && (
-        <div className="min-h-[500px] border border-[rgb(var(--border-base))] rounded-2xl overflow-hidden bg-[rgb(var(--bg-base))]">
-          <AssignmentView lessonId={current.$id} courseId={course.$id} />
-        </div>
-      )}
-
-      {/* For 'text' (Reading), we don't render a placeholder box anymore, just the tabs below will show content */}
+      </div>
     </div>
   );
 };
@@ -163,7 +175,6 @@ const LessonTabs = ({
   current,
   currentAttachments,
   isLocked,
-  assignments,
   comments,
   commentDraft,
   setCommentDraft,
@@ -200,12 +211,6 @@ const LessonTabs = ({
               <span>Capítulos</span>
             </div>
           </TabsTrigger>
-          <TabsTrigger value="assignments">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              <span>Tareas ({assignments.length})</span>
-            </div>
-          </TabsTrigger>
           <TabsTrigger value="qa">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -218,17 +223,41 @@ const LessonTabs = ({
           {lessonTab === "description" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <h1 className="text-2xl font-bold mb-4">{current.title}</h1>
-              <div className="markdown-content text-[rgb(var(--text-secondary))] leading-relaxed">
-                {current.description ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {current.description}
-                  </ReactMarkdown>
-                ) : (
-                  <p className="italic opacity-60">
-                    Sin descripción detallada.
-                  </p>
-                )}
-              </div>
+              {(current.description ||
+                (current.kind !== "quiz" && current.kind !== "assignment")) && (
+                <div className="markdown-content text-[rgb(var(--text-secondary))] leading-relaxed mb-8">
+                  {current.description ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {current.description}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="italic opacity-60">
+                      Sin descripción detallada.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!isLocked && (
+                <div className="mt-2 pt-2 border-t border-[rgb(var(--border-base))]">
+                  {current.kind === "quiz" && (
+                    <QuizView
+                      lessonId={current.$id}
+                      courseId={courseId}
+                      onComplete={markComplete}
+                    />
+                  )}
+
+                  {current.kind === "assignment" && (
+                    <div className="rounded-2xl border border-[rgb(var(--border-base))] overflow-hidden bg-[rgb(var(--bg-base))] shadow-sm">
+                      <AssignmentView
+                        lessonId={current.$id}
+                        courseId={courseId}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -279,30 +308,6 @@ const LessonTabs = ({
                 Próximamente podrás saltar directamente a los puntos clave de
                 esta lección.
               </p>
-            </div>
-          )}
-
-          {lessonTab === "assignments" && (
-            <div className="space-y-4 animate-in fade-in duration-300">
-              {assignments.length === 0 ? (
-                <div className="text-center py-8 text-sm text-[rgb(var(--text-secondary))] bg-[rgb(var(--bg-muted))] rounded-xl">
-                  No hay tareas publicadas para este curso aún.
-                </div>
-              ) : (
-                assignments.map((a) => (
-                  <div
-                    key={a.$id}
-                    className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4 shadow-sm"
-                  >
-                    <div className="text-sm font-bold text-[rgb(var(--text-primary))]">
-                      {a.title}
-                    </div>
-                    <div className="mt-2 text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line">
-                      {a.description}
-                    </div>
-                  </div>
-                ))
-              )}
             </div>
           )}
 
@@ -392,11 +397,14 @@ const CourseContentList = ({
   done,
   expandedSections,
   toggleSection,
-  setCurrent,
+  onSelectLesson,
 }) => {
   return (
-    <Card
-      className={`p-0 h-fit sticky top-4 overflow-hidden shadow-none border-none bg-transparent ${className}`}
+    <div
+      className={cn(
+        "p-0 overflow-hidden shadow-none border-none bg-transparent",
+        className,
+      )}
     >
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="text-sm font-black uppercase tracking-widest inline-flex items-center gap-2 text-[rgb(var(--brand-primary))]">
@@ -409,21 +417,21 @@ const CourseContentList = ({
         </div>
       </div>
 
-      <div className="space-y-3 max-h-[calc(100vh-100px)] overflow-y-auto pr-1 scrollbar-thin pb-10">
+      <div className="space-y-3 max-h-[calc(100vh-180px)] overflow-y-auto pr-1 scrollbar-thin pb-10">
         {course.sections?.map((section) => {
           const isExpanded = expandedSections[section.$id];
 
           return (
             <div
               key={section.$id}
-              className="rounded-lg border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] overflow-hidden"
+              className="rounded-lg border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))/0.15] overflow-hidden backdrop-blur-sm mb-4 transition-all"
             >
               <button
                 onClick={() => toggleSection(section.$id)}
-                className="w-full flex items-center justify-between p-3 bg-[rgb(var(--bg-muted))] hover:bg-[rgb(var(--bg-muted))/80] transition-colors"
+                className="w-full flex items-center justify-between p-3 bg-[rgb(var(--bg-muted))/0.5] hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors"
                 type="button"
               >
-                <div className="text-xs font-black text-[rgb(var(--text-primary))] uppercase tracking-tight text-left">
+                <div className="text-[10px] font-black text-[rgb(var(--text-primary))] uppercase tracking-widest text-left opacity-70">
                   {section.title}
                 </div>
                 {isExpanded ? (
@@ -442,7 +450,7 @@ const CourseContentList = ({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="p-2 space-y-2">
+                    <div className="p-3 space-y-2">
                       {section.lessons?.map((l) => {
                         const isFree = !!l.isFreePreview;
                         const canAccess = isEnrolled || isOwner || isFree;
@@ -461,7 +469,7 @@ const CourseContentList = ({
                         return (
                           <button
                             key={l.$id}
-                            onClick={() => setCurrent(l)}
+                            onClick={() => onSelectLesson(l)}
                             className={[
                               "w-full text-left rounded-md p-2 transition-all duration-200 group relative overflow-hidden flex gap-3",
                               isActive
@@ -471,6 +479,30 @@ const CourseContentList = ({
                           >
                             {/* Thumbnail / Icon */}
                             <div className="shrink-0 w-24 aspect-video rounded-md overflow-hidden bg-black/5 relative grid place-items-center">
+                              {thumbUrl ? (
+                                <img
+                                  src={thumbUrl}
+                                  alt={l.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : l.kind === "quiz" ? (
+                                <div className="w-full h-full bg-linear-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                                  <HelpCircle className="h-6 w-6 text-violet-500" />
+                                </div>
+                              ) : l.kind === "assignment" ? (
+                                <div className="w-full h-full bg-linear-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center">
+                                  <ClipboardList className="h-6 w-6 text-orange-500" />
+                                </div>
+                              ) : l.kind === "article" ? (
+                                <div className="w-full h-full bg-linear-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+                                  <FileText className="h-6 w-6 text-blue-500" />
+                                </div>
+                              ) : (
+                                <div className="w-full h-full bg-black/5 flex items-center justify-center">
+                                  <Play className="h-6 w-6 text-[rgb(var(--text-muted))]" />
+                                </div>
+                              )}
+
                               {!canAccess && (
                                 <div className="absolute inset-0 bg-black/50 grid place-items-center">
                                   <Lock className="h-4 w-4 text-white" />
@@ -511,7 +543,7 @@ const CourseContentList = ({
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 };
 
@@ -526,7 +558,6 @@ export function LearnPage() {
   const [busy, setBusy] = React.useState(false);
   const [lessonTab, setLessonTab] = React.useState("description");
   const [comments, setComments] = React.useState([]);
-  const [assignments, setAssignments] = React.useState([]);
 
   const [commentDraft, setCommentDraft] = React.useState("");
   const [isEnrolled, setIsEnrolled] = React.useState(false);
@@ -544,14 +575,32 @@ export function LearnPage() {
   // Collapsed Sections State
   const [expandedSections, setExpandedSections] = React.useState({});
 
+  // Determine if mobile for default theater mode
+  React.useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth < 1024) {
+        setTheaterMode(true);
+      }
+    };
+
+    checkMobile(); // Check on mount
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   React.useEffect(() => {
     if (!courseId) return;
 
+    let isMounted = true;
+
     const loadData = async () => {
-      // Only set loading to true if we don't have a course yet or the courseId changed
+      // Only set loading to true if we don't have a course yet or the courseId changed (genuine navigation)
+      // DO NOT set loading to true just because auth state updated or on strict mode double-invocations
       if (!course || course.$id !== courseId) {
         setLoading(true);
       }
+
+      const currentError = null;
       setError(null);
 
       try {
@@ -560,6 +609,8 @@ export function LearnPage() {
           SectionService.listByCourse(courseId),
           LessonService.listByCourse(courseId),
         ]);
+
+        if (!isMounted) return;
 
         // Integrate lessons into sections
         const sectionsWithLessons = sectionsData.map((s) => ({
@@ -578,17 +629,21 @@ export function LearnPage() {
             setIsEnrolled(true);
           } else {
             const enrolled = await checkEnrollmentStatus(auth.user.$id, c.$id);
-            setIsEnrolled(enrolled);
+            if (isMounted) setIsEnrolled(enrolled);
           }
         }
 
         // Determine current lesson
+        // If we already have a 'current' lesson and it belongs to this course, try to keep it
+        // to prevent UI jumping unless the URL param explicitly changed.
         const allLessons = sectionsWithLessons.flatMap((s) => s.lessons || []);
         const first = allLessons[0];
-        const target = lessonId
+
+        let target = lessonId
           ? allLessons.find((l) => l.$id === lessonId)
           : first;
 
+        // Fallback or keep current if valid (though usually data flows from URL)
         setCurrent(target || first);
 
         // Expand the section containing the target lesson
@@ -602,13 +657,12 @@ export function LearnPage() {
         }
 
         // Optional: List comments/assignments
+        // We run these without awaiting to not block the main UI render
         listCommentsForCourse(c.$id)
-          .then(setComments)
-          .catch(() => []);
-        listAssignmentsForCourse(c.$id)
-          .then(setAssignments)
+          .then((res) => isMounted && setComments(res))
           .catch(() => []);
       } catch (err) {
+        if (!isMounted) return;
         console.error("Failed to load learn page data", err);
         setError(err);
         toast.push({
@@ -617,11 +671,15 @@ export function LearnPage() {
           variant: "error",
         });
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [courseId, lessonId, auth.user?.$id]);
 
   // Load attachments
@@ -752,7 +810,7 @@ export function LearnPage() {
       {/* Theater Mode Layout */}
       {theaterMode ? (
         <div className="space-y-6">
-          <div className="bg-black w-full pb-8">
+          <div className="bg-black w-full">
             <div className="max-w-[1800px] mx-auto">
               <LessonViewer
                 current={current}
@@ -786,7 +844,7 @@ export function LearnPage() {
               courseId={courseId}
             />
             <CourseContentList
-              className="hidden lg:block h-fit"
+              className="hidden lg:block h-fit sticky top-24"
               course={course}
               isEnrolled={isEnrolled}
               isOwner={isOwner}
@@ -794,7 +852,9 @@ export function LearnPage() {
               done={done}
               expandedSections={expandedSections}
               toggleSection={toggleSection}
-              setCurrent={setCurrent}
+              onSelectLesson={(l) =>
+                navigate(`/app/learn/${courseId}/${l.$id}`)
+              }
             />
           </div>
           {/* Mobile / Stacked Content */}
@@ -803,11 +863,9 @@ export function LearnPage() {
               course={course}
               isEnrolled={isEnrolled}
               isOwner={isOwner}
-              current={current}
-              done={done}
-              expandedSections={expandedSections}
-              toggleSection={toggleSection}
-              setCurrent={setCurrent}
+              onSelectLesson={(l) =>
+                navigate(`/app/learn/${courseId}/${l.$id}`)
+              }
             />
           </div>
         </div>
@@ -830,7 +888,6 @@ export function LearnPage() {
               current={current}
               currentAttachments={currentAttachments}
               isLocked={isLocked}
-              assignments={assignments}
               comments={comments}
               commentDraft={commentDraft}
               setCommentDraft={setCommentDraft}
@@ -848,6 +905,7 @@ export function LearnPage() {
           {/* Right Column */}
           <div className="hidden lg:block min-w-0">
             <CourseContentList
+              className="h-fit sticky top-24"
               course={course}
               isEnrolled={isEnrolled}
               isOwner={isOwner}
@@ -855,7 +913,9 @@ export function LearnPage() {
               done={done}
               expandedSections={expandedSections}
               toggleSection={toggleSection}
-              setCurrent={setCurrent}
+              onSelectLesson={(l) =>
+                navigate(`/app/learn/${courseId}/${l.$id}`)
+              }
             />
           </div>
 
@@ -869,7 +929,9 @@ export function LearnPage() {
               done={done}
               expandedSections={expandedSections}
               toggleSection={toggleSection}
-              setCurrent={setCurrent}
+              onSelectLesson={(l) =>
+                navigate(`/app/learn/${courseId}/${l.$id}`)
+              }
             />
           </div>
         </div>

@@ -369,6 +369,7 @@
       "videoFormats": "MP4, WebM, MOV (máx. 2GB)",
       "uploadingVideo": "Subiendo video...",
       "videoUploaded": "Video subido correctamente",
+      "imageUploaded": "Imagen subida correctamente",
       "videoCover": "Portada de video (Poster)",
       "preview": "Vista previa",
       "attachments": "Archivos adjuntos",

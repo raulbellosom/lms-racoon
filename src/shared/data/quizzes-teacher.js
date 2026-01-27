@@ -131,7 +131,6 @@ export async function listQuestionsByQuiz(quizId, { limit = 100 } = {}) {
     APPWRITE.collections.quizQuestions,
     [
       Query.equal("quizId", quizId),
-      Query.equal("enabled", true),
       Query.orderAsc("order"),
       Query.limit(limit),
     ],

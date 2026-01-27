@@ -409,7 +409,6 @@ export function AppLayout() {
             className="md:col-start-1 md:row-start-1 w-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
             <Outlet />
@@ -567,7 +566,6 @@ export function AppLayout() {
             className="col-start-1 row-start-1 w-full min-h-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
             <Outlet />

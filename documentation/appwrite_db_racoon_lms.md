@@ -355,17 +355,18 @@
 
 ### 15) `quizQuestions`
 
-| Attribute     | Type    | Required | Default | Constraints      | Notes |
-| ------------- | ------- | -------: | ------- | ---------------- | ----- |
-| quizId        | string  |       ✅ | —       | min=1 max=36     |       |
-| courseId      | string  |       ✅ | —       | min=1 max=36     |       |
-| prompt        | string  |       ✅ | —       | min=2 max=2000   |       |
-| kind          | enum    |       ✅ | —       | —                |       |
-| optionsJson   | string  |       ❌ | "[]"    | min=0 max=7500   |       |
-| answerKeyJson | string  |       ❌ | "[]"    | min=0 max=6000   |       |
-| points        | integer |       ❌ | 1       | min=0 max=100    |       |
-| order         | integer |       ✅ | —       | min=0 max=100000 |       |
-| enabled       | boolean |       ❌ | true    | —                |       |
+| Attribute     | Type    | Required | Default | Constraints      | Notes                      |
+| ------------- | ------- | -------: | ------- | ---------------- | -------------------------- |
+| quizId        | string  |       ✅ | —       | min=1 max=36     |                            |
+| courseId      | string  |       ✅ | —       | min=1 max=36     |                            |
+| prompt        | string  |       ✅ | —       | min=2 max=2000   |                            |
+| kind          | enum    |       ✅ | —       | —                |                            |
+| optionsJson   | string  |       ❌ | "[]"    | min=0 max=7500   |                            |
+| answerKeyJson | string  |       ❌ | "[]"    | min=0 max=6000   |                            |
+| points        | integer |       ❌ | 1       | min=0 max=100    |                            |
+| imageId       | string  |       ❌ | ""      | min=0 max=36     | bucket `lessonAttachments` |
+| order         | integer |       ✅ | —       | min=0 max=100000 |                            |
+| enabled       | boolean |       ❌ | true    | —                |                            |
 
 **Enum values**
 

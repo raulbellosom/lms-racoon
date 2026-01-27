@@ -8,6 +8,7 @@ import { Card } from "../../../shared/ui/Card";
 import { Textarea } from "../../../shared/ui/Textarea";
 import { Upload, File, CheckCircle2, Clock } from "lucide-react";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 export function AssignmentView({ lessonId, courseId }) {
   const { auth } = useAuth();
@@ -98,12 +99,7 @@ export function AssignmentView({ lessonId, courseId }) {
     }
   };
 
-  if (loading)
-    return (
-      <div className="p-8 text-center bg-gray-50 rounded-lg">
-        Cargando tarea...
-      </div>
-    );
+  if (loading) return <LoadingContent />;
   if (!assignment)
     return (
       <div className="p-8 text-center text-gray-500">
