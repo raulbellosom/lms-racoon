@@ -394,8 +394,8 @@ const CourseContentList = ({
   isEnrolled,
   isOwner,
   current,
-  done,
-  expandedSections,
+  done = {},
+  expandedSections = {},
   toggleSection,
   onSelectLesson,
 }) => {
@@ -830,7 +830,6 @@ export function LearnPage() {
               current={current}
               currentAttachments={currentAttachments}
               isLocked={isLocked}
-              assignments={assignments}
               comments={comments}
               commentDraft={commentDraft}
               setCommentDraft={setCommentDraft}
@@ -863,6 +862,10 @@ export function LearnPage() {
               course={course}
               isEnrolled={isEnrolled}
               isOwner={isOwner}
+              current={current}
+              done={done}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
               onSelectLesson={(l) =>
                 navigate(`/app/learn/${courseId}/${l.$id}`)
               }
