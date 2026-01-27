@@ -63,5 +63,9 @@ export const APPWRITE = {
       "VITE_APPWRITE_FN_ON_ENROLLMENT_CREATED",
       "onEnrollmentCreated",
     ),
+    checkAbandonedCarts: pick(
+      "VITE_APPWRITE_FN_CHECK_ABANDONED_CARTS",
+      "checkAbandonedCarts",
+    ),
   },
 };

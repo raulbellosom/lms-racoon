@@ -2,6 +2,11 @@
 
 Esta Appwrite Function se encarga de identificar carritos abandonados y notificar a los usuarios para recuperar la venta.
 
+**Runtime**: Node 18.0
+**Entrypoint**: `src/main.js`
+**Execute Access**: No requiere acceso público (Solo Schedule / API Key)
+**Trigger**: Schedule (CRON)
+
 ## Descripción
 
 La función busca en la colección `cart` items que hayan sido añadidos hace 30 días (ventana de 30 a 31 días) y crea una notificación de sistema para el usuario recordándole su carrito pendiente.
