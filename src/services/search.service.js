@@ -79,15 +79,9 @@ class SearchService {
 
     // We only want teachers.
     const queries = [
-      // Query.search("firstName", query), // Disabled: requires fulltext index on 'firstName' in DB.
-      // Actually normally you search on the index.
-      // appwrite_db_racoon_lms.md: idx_name_fulltext — fulltext — firstName, lastName
-      // If we use Query.search("firstName", query), it might fail if index is composite?
-      // No, usually you target one attribute. If the index includes both, Appwrite 1.4+ handles it.
-      // safely, let's try searching firstName. If it fails we might need a dedicated text index attribute or function.
       Query.equal("role", "teacher"),
       Query.equal("enabled", true),
-      Query.limit(3),
+      Query.limit(50), // Fetch a pool of teachers to filter client-side
     ];
 
     try {
@@ -96,7 +90,16 @@ class SearchService {
         APPWRITE.collections.profiles,
         queries,
       );
-      return result.documents;
+
+      const term = query.toLowerCase();
+      // Client-side filtering to avoid "requires fulltext index" issues with composite indexes
+      const matches = result.documents.filter((teacher) => {
+        const fullName =
+          `${teacher.firstName || ""} ${teacher.lastName || ""}`.toLowerCase();
+        return fullName.includes(term);
+      });
+
+      return matches.slice(0, 3);
     } catch (e) {
       console.warn("Teacher search failed", e);
       return [];
