@@ -78,6 +78,7 @@ export function CurriculumEditor({
   onAddLesson,
   onEditLesson,
   onDeleteLesson,
+  onMakeSectionFree,
   onReorderSections,
   onReorderLessons,
   ...props
@@ -265,6 +266,7 @@ export function CurriculumEditor({
                   onAddLesson={onAddLesson}
                   onEditLesson={onEditLesson}
                   onDeleteLesson={onDeleteLesson}
+                  onMakeSectionFree={onMakeSectionFree}
                   onPreviewLesson={props.onPreviewLesson}
                 />
               ))}

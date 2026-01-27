@@ -103,6 +103,73 @@ export function LoadingScreen({ message = "" }) {
 }
 
 /**
+ * Loading content block with logo for component areas (Tabs, Cards, etc.)
+ */
+export function LoadingContent({ className = "" }) {
+  return (
+    <div
+      className={`flex flex-col items-center justify-center py-12 ${className}`}
+    >
+      <div className="relative mb-6">
+        {/* Outer ring */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          className="absolute -inset-4 rounded-full border-2 border-dashed border-[rgb(var(--brand-primary)/0.3)]"
+        />
+
+        {/* Inner glow */}
+        <motion.div
+          animate={{
+            boxShadow: [
+              "0 0 0 0 rgb(var(--brand-primary) / 0.4)",
+              "0 0 0 10px rgb(var(--brand-primary) / 0)",
+            ],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeOut",
+          }}
+          className="relative flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-[rgb(var(--brand-primary))] to-[rgb(var(--brand-accent))]"
+        >
+          <img
+            src={appIcon}
+            alt="Racoon LMS"
+            className="h-10 w-10 object-contain"
+          />
+        </motion.div>
+      </div>
+
+      {/* Loading dots */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="flex gap-1.5"
+      >
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            animate={{
+              scale: [1, 1.3, 1],
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              delay: i * 0.15,
+              ease: "easeInOut",
+            }}
+            className="h-2 w-2 rounded-full bg-[rgb(var(--brand-primary))]"
+          />
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+/**
  * Smaller inline loading spinner
  */
 export function LoadingSpinner({ size = "md", className = "" }) {

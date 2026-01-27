@@ -18,6 +18,8 @@
     "lastName": "Last Name",
     "email": "Email",
     "phone": "Phone",
+    "headline": "Headline",
+    "headlinePlaceholder": "Web Developer & Instructor",
     "bio": "Bio",
     "bioPlaceholder": "Tell us a little about yourself...",
     "noBio": "No biography.",
@@ -43,6 +45,29 @@
     "success": {
       "updated": "Profile updated successfully",
       "photoUpdated": "Profile photo updated"
+    },
+    "socials": {
+      "title": "Social Media & Contact",
+      "subtitle": "Add links to your social networks or contact methods.",
+      "add": "Add method",
+      "network": "Network",
+      "value": "Username or URL",
+      "placeholder": "https://...",
+      "remove": "Remove",
+      "networks": {
+        "facebook": "Facebook",
+        "twitter": "X (Twitter)",
+        "instagram": "Instagram",
+        "linkedin": "LinkedIn",
+        "youtube": "YouTube",
+        "github": "GitHub",
+        "website": "Website",
+        "phone": "Phone (Public)",
+        "email": "Email (Public)",
+        "discord": "Discord",
+        "tiktok": "TikTok",
+        "other": "Other"
+      }
     }
   },
   "auth": {
@@ -139,9 +164,17 @@
       "advanced": "Advanced"
     },
     "instructor": "Instructor",
+    "aboutInstructor": "About the Instructor",
+    "contactInstructor": "Contact",
     "description": "Description",
     "content": "Course content",
-    "reviews": "Reviews",
+    "reviews": {
+      "title": "Reviews",
+      "totalReviews": "Total reviews",
+      "noReviewsTitle": "No reviews yet",
+      "noReviewsDesc": "Be the first to rate this course.",
+      "verifiedSource": "Reviews come from verified students who purchased the course."
+    },
     "includes": "This course includes",
     "requirements": "Requirements",
     "whatYouLearn": "What you'll learn",
@@ -257,7 +290,13 @@
       "quizzes": "Quizzes",
       "assignments": "Assignments",
       "coupons": "Coupons",
-      "reviews": "Reviews",
+      "reviews": {
+        "title": "Reviews",
+        "totalReviews": "Total reviews",
+        "noReviewsTitle": "No reviews yet",
+        "noReviewsDesc": "Be the first to rate this course.",
+        "verifiedSource": "Reviews come from verified students who purchased the course."
+      },
       "settings": "Settings"
     },
     "form": {
@@ -330,7 +369,12 @@
       "timestamps": "Timestamps",
       "addTimestamp": "Add timestamp",
       "timestampTitle": "Timestamp title",
-      "timestampTime": "Time (seconds)"
+      "timestampTime": "Time (seconds)",
+      "isFreePreview": "Enable Free Preview",
+      "isFreePreviewDesc": "Allows students to view this lesson without purchasing the course.",
+      "makeSectionFree": "Make all lessons free",
+      "makeSectionFreeConfirm": "Make all lessons in this section free?",
+      "makeSectionFreeDesc": "All lessons in this section will be available for free preview."
     },
     "quiz": {
       "title": "Quizzes",

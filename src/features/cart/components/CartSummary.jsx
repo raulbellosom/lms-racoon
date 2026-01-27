@@ -6,6 +6,7 @@ import { ArrowRight, Tag, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { CouponsService } from "../../../shared/data/coupons";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../../shared/ui/LoadingScreen";
 
 export function CartSummary({ cartItems, total, onCheckout }) {
   const { t } = useTranslation();
@@ -146,7 +147,7 @@ export function CartSummary({ cartItems, total, onCheckout }) {
               disabled={!couponCode || validating}
             >
               {validating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoadingSpinner size="sm" />
               ) : (
                 <Tag className="h-4 w-4" />
               )}

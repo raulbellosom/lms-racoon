@@ -85,6 +85,7 @@ export function NotificationsPopover() {
         side="bottom"
         sideOffset={12}
         className="w-80"
+        open={isOpen}
         onOpenChange={handleOpenChange}
         trigger={
           <button className="relative rounded-lg p-2 text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--brand-primary))] transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[rgb(var(--brand-primary))/0.2]">

@@ -8,6 +8,7 @@ import { Button } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
 import { LanguageSelector } from "../../shared/ui/LanguageSelector";
 import { useToast } from "../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../shared/ui/LoadingScreen";
 import { authStore } from "../../app/stores/authStore";
 import { PasswordInput } from "../../features/auth/components/PasswordInput";
 
@@ -184,7 +185,7 @@ export function ResetPasswordPage() {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <LoadingSpinner size="sm" className="mr-2" />
                     {t("auth.resetPassword.updating")}
                   </>
                 ) : (

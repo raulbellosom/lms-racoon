@@ -3,13 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { motion } from "framer-motion";
-import {
-  Search,
-  Filter,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Search, Filter, ChevronRight } from "lucide-react";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 import { PageLayout } from "../../../shared/ui/PageLayout";
 import { CatalogFilters } from "../components/CatalogFilters";
@@ -204,9 +199,7 @@ export function CatalogView() {
 
             {/* Loading State */}
             {loading ? (
-              <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-[rgb(var(--brand-primary))]" />
-              </div>
+              <LoadingContent />
             ) : (
               <>
                 {/* Results Grid */}

@@ -13,6 +13,7 @@ import { router } from "./app/router/router";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { ToastProvider } from "./app/providers/ToastProvider";
 import { CartProvider } from "./context/CartContext";
+import { PreferencesProvider } from "./app/providers/PreferencesProvider";
 import { ThemeProvider } from "./shared/theme/ThemeProvider";
 import { RenderErrorBoundary } from "./shared/errors/RenderErrorBoundary";
 import { PWAInstallPrompt } from "./shared/pwa/PWAInstallPrompt";
@@ -42,10 +43,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <ToastProvider>
             <AuthProvider>
               <CartProvider>
-                <RouterProvider
-                  router={router}
-                  fallbackElement={<LoadingScreen />}
-                />
+                <PreferencesProvider>
+                  <RouterProvider
+                    router={router}
+                    fallbackElement={<LoadingScreen />}
+                  />
+                </PreferencesProvider>
                 <PWAInstallPrompt />
               </CartProvider>
             </AuthProvider>

@@ -156,6 +156,7 @@ export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
 
   // Sidebar state
   const [collapsed, setCollapsed] = React.useState(() => {
@@ -325,11 +326,14 @@ export function AppLayout() {
           <NotificationsPopover />
           <CartDropdown />
           <div className="h-8 w-px bg-[rgb(var(--border-base))]" />
+
           <Dropdown
             align="end"
             side="bottom"
             sideOffset={8}
             className="w-60 min-w-[240px]"
+            open={isProfileOpen}
+            onOpenChange={setIsProfileOpen}
             trigger={
               <button className="group flex items-center gap-3 transition-colors">
                 <div className="flex flex-col items-end">
@@ -364,17 +368,33 @@ export function AppLayout() {
               </div>
             </div>
             <DropdownDivider />
-            <DropdownItem icon={User} onClick={() => navigate("/app/profile")}>
+            <DropdownItem
+              icon={User}
+              onClick={() => {
+                navigate("/app/profile");
+                setIsProfileOpen(false);
+              }}
+            >
               {t("nav.profile", "Mi Perfil")}
             </DropdownItem>
             <DropdownItem
               icon={Settings}
-              onClick={() => navigate("/app/settings")}
+              onClick={() => {
+                navigate("/app/settings");
+                setIsProfileOpen(false);
+              }}
             >
               {t("common.settings")}
             </DropdownItem>
             <DropdownDivider />
-            <DropdownItem icon={LogOut} onClick={onLogout} danger>
+            <DropdownItem
+              icon={LogOut}
+              onClick={() => {
+                onLogout();
+                setIsProfileOpen(false);
+              }}
+              danger
+            >
               {t("common.logout")}
             </DropdownItem>
           </Dropdown>

@@ -10,13 +10,16 @@ import { cn } from "./cn";
  * @param {string} [props.size='md'] - Size: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
  * @param {boolean} [props.ring] - Whether to show a decorative ring
  * @param {string} [props.status] - Status indicator: 'online' | 'offline' | 'busy' | 'away'
+ * @param {string} [props.shape='circle'] - Shape: 'circle' | 'square'
  * @param {string} [props.className] - Additional classes
  */
 export function Avatar({
   src,
   alt,
   name,
+  initials,
   size = "md",
+  shape = "circle",
   ring = false,
   status,
   className,
@@ -29,6 +32,7 @@ export function Avatar({
   }, [src]);
 
   const getInitials = (name) => {
+    if (initials) return initials;
     if (!name) return "?";
     const parts = name.trim().split(/\s+/);
     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
@@ -43,6 +47,7 @@ export function Avatar({
     md: "h-10 w-10 text-base",
     lg: "h-14 w-14 text-lg",
     xl: "h-20 w-20 text-2xl",
+    "2xl": "h-24 w-24 text-3xl",
   };
 
   const statusSizeClasses = {
@@ -51,6 +56,7 @@ export function Avatar({
     md: "h-3 w-3 border-2",
     lg: "h-4 w-4 border-2",
     xl: "h-5 w-5 border-2",
+    "2xl": "h-6 w-6 border-2",
   };
 
   const statusColorClasses = {
@@ -63,25 +69,27 @@ export function Avatar({
   const showFallback = !src || imageError;
 
   return (
-    <div className={cn("relative inline-flex shrink-0", className)}>
-      <div
-        className={cn(
-          "flex items-center justify-center overflow-hidden rounded-full bg-[rgb(var(--bg-muted))] font-semibold text-[rgb(var(--text-secondary))]",
-          sizeClasses[size],
-          ring && "avatar-ring",
-        )}
-      >
-        {showFallback ? (
-          <span>{getInitials(name)}</span>
-        ) : (
-          <img
-            src={src}
-            alt={alt || name || "Avatar"}
-            onError={() => setImageError(true)}
-            className="h-full w-full object-cover"
-          />
-        )}
-      </div>
+    <div
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden font-semibold text-[rgb(var(--text-secondary))]",
+        shape === "circle" ? "rounded-full" : "rounded-2xl",
+        (shape === "square" || shape === "circle") &&
+          "bg-[rgb(var(--bg-muted))]",
+        sizeClasses[size],
+        ring && "avatar-ring",
+        className,
+      )}
+    >
+      {showFallback ? (
+        <span>{getInitials(name)}</span>
+      ) : (
+        <img
+          src={src}
+          alt={alt || name || "Avatar"}
+          onError={() => setImageError(true)}
+          className="h-full w-full object-cover"
+        />
+      )}
 
       {/* Status indicator */}
       {status && (

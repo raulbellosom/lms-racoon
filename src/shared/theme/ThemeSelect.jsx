@@ -5,6 +5,7 @@ import { useTheme } from "./ThemeProvider";
 import { cn } from "../ui/cn";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { usePreferences } from "../../shared/hooks/usePreferences";
 
 /**
  * Dropdown-style theme selector, similar to LanguageSelector.
@@ -16,6 +17,7 @@ export function ThemeSelect({
   iconOnly = false,
 }) {
   const { theme, setTheme, resolved } = useTheme();
+  const { updateTheme } = usePreferences();
   const { t } = useTranslation();
   // Store the target theme during animation
   const pendingThemeRef = React.useRef(null);
@@ -39,7 +41,7 @@ export function ThemeSelect({
     isDarkMode: resolved === "dark",
     onDarkModeChange: () => {
       if (pendingThemeRef.current) {
-        setTheme(pendingThemeRef.current);
+        updateTheme(pendingThemeRef.current);
         pendingThemeRef.current = null;
       }
     },
@@ -63,7 +65,7 @@ export function ThemeSelect({
       pendingThemeRef.current = newTheme;
       toggleSwitchTheme(event);
     } else {
-      setTheme(newTheme);
+      updateTheme(newTheme);
     }
     setOpen(false);
   };

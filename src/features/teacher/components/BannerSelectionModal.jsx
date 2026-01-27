@@ -14,6 +14,7 @@ import { FileService } from "../../../shared/data/files";
 import { LessonService } from "../../../shared/data/lessons-teacher";
 import { DEFAULT_BANNERS } from "../../../shared/assets/banners";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../../shared/ui/LoadingScreen";
 
 export function BannerSelectionModal({
   open,
@@ -209,7 +210,9 @@ export function BannerSelectionModal({
                   />
                   <div className="pointer-events-none p-6 text-center">
                     {uploading ? (
-                      <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
+                      <div className="mx-auto mb-4">
+                        <LoadingSpinner />
+                      </div>
                     ) : (
                       <ImageIcon className="mx-auto mb-4 h-12 w-12 text-[rgb(var(--text-muted))]" />
                     )}
@@ -256,7 +259,7 @@ export function BannerSelectionModal({
               </div>
               {loadingLessons ? (
                 <div className="flex justify-center p-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
+                  <LoadingSpinner />
                 </div>
               ) : lessons.length === 0 ? (
                 <div className="rounded-xl border bg-[rgb(var(--bg-muted))] p-8 text-center">

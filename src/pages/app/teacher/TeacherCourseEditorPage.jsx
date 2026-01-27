@@ -43,6 +43,7 @@ import {
   TeacherAssignmentGrading,
   TeacherCouponsManager,
 } from "../../../features/teacher";
+import { LoadingScreen } from "../../../shared/ui/LoadingScreen";
 
 // Tab Button Component
 function TabButton({
@@ -458,6 +459,43 @@ export function TeacherCourseEditorPage() {
     });
   };
 
+  const handleMakeSectionFree = async (section) => {
+    setConfirmation({
+      open: true,
+      title: t("teacher.lesson.makeSectionFreeConfirm"),
+      description: t("teacher.lesson.makeSectionFreeDesc"),
+      confirmText: t("common.yes"),
+      onConfirm: async () => {
+        try {
+          const lessons = lessonsBySection[section.$id] || [];
+          // Parallel update for speed
+          await Promise.all(
+            lessons.map((l) =>
+              LessonService.update(l.$id, { isFreePreview: true }),
+            ),
+          );
+
+          // Update local state by mapping over the lessons for this section
+          const updatedLessons = lessons.map((l) => ({
+            ...l,
+            isFreePreview: true,
+          }));
+          setLessonsBySection((prev) => ({
+            ...prev,
+            [section.$id]: updatedLessons,
+          }));
+
+          showToast(t("common.success"), "success");
+          closeConfirmation();
+        } catch (e) {
+          console.error(e);
+          showToast(t("teacher.errors.updateFailed"), "error");
+          closeConfirmation();
+        }
+      },
+    });
+  };
+
   // Reorder Handlers
   const handleReorderSections = async (newSections) => {
     // Optimistic update
@@ -552,11 +590,7 @@ export function TeacherCourseEditorPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -734,6 +768,7 @@ export function TeacherCourseEditorPage() {
             onPreviewLesson={handlePreviewLesson}
             onReorderSections={handleReorderSections}
             onReorderLessons={handleReorderLessons}
+            onMakeSectionFree={handleMakeSectionFree}
           />
         )}
 

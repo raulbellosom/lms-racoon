@@ -14,6 +14,7 @@ import { BannerSelectionModal } from "./BannerSelectionModal";
 import { FileService } from "../../../shared/data/files";
 import { getBannerById } from "../../../shared/assets/banners";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../../shared/ui/LoadingScreen";
 
 /**
  * CourseMediaUploader - Cover image and promo video uploader
@@ -276,7 +277,7 @@ export function CourseMediaUploader({
             <div className="text-[rgb(var(--text-muted))]">
               {uploading ? (
                 <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
+                  <LoadingSpinner size="sm" />
                   <span className="text-xs font-medium">
                     {t("common.loading")}
                   </span>

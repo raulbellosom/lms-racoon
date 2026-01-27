@@ -8,6 +8,7 @@ import { Input } from "../../shared/ui/Input";
 import { Button } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
 import { useToast } from "../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../shared/ui/LoadingScreen";
 
 export function ForgotPasswordPage() {
   const {
@@ -116,7 +117,7 @@ export function ForgotPasswordPage() {
               <Button className="w-full" type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <LoadingSpinner size="sm" className="mr-2" />
                     Enviando...
                   </>
                 ) : (

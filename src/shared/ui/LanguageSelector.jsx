@@ -4,6 +4,8 @@ import { Globe, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "./cn";
 
+import { usePreferences } from "../../shared/hooks/usePreferences";
+
 const languages = [
   { code: "es", name: "Español", region: "MX" },
   { code: "en", name: "English", region: "US" },
@@ -19,6 +21,7 @@ export function LanguageSelector({
   iconOnly = false,
 }) {
   const { i18n } = useTranslation();
+  const { updateLanguage } = usePreferences();
   const [open, setOpen] = React.useState(false);
   const dropdownRef = React.useRef(null);
 
@@ -37,7 +40,7 @@ export function LanguageSelector({
   }, [open]);
 
   const handleSelect = (code) => {
-    i18n.changeLanguage(code);
+    updateLanguage(code);
     setOpen(false);
   };
 

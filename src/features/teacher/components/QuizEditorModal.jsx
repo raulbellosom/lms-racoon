@@ -8,6 +8,7 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { QuizQuestionService } from "../../../shared/data/quizzes-teacher";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../../shared/ui/LoadingScreen";
 
 const QUESTION_TYPES = [
   { value: "single", label: "singleChoice" },
@@ -313,7 +314,7 @@ export function QuizEditorModal({
 
           {loadingQuestions ? (
             <div className="flex justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
+              <LoadingSpinner size="sm" />
             </div>
           ) : questions.length === 0 ? (
             <Card className="p-6 text-center text-[rgb(var(--text-secondary))]">

@@ -62,3 +62,21 @@ export async function upsertLessonProgress({
     });
   }
 }
+
+// Check enrollment status (using listDocuments to avoid 404 errors in console)
+export async function checkEnrollmentStatus(userId, courseId) {
+  const dbId = APPWRITE.databaseId;
+  const col = APPWRITE.collections.enrollments;
+
+  try {
+    const list = await db.listDocuments(dbId, col, [
+      Query.equal("userId", userId),
+      Query.equal("courseId", courseId),
+      Query.limit(1),
+    ]);
+    return list.total > 0;
+  } catch (error) {
+    console.error("Failed to check enrollment status", error);
+    return false;
+  }
+}

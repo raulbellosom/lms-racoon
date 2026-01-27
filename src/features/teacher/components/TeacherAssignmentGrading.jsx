@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 export function TeacherAssignmentGrading({ courseId }) {
   const { t } = useTranslation();
@@ -103,7 +104,7 @@ export function TeacherAssignmentGrading({ courseId }) {
   };
 
   if (loading && assignments.length === 0)
-    return <div className="p-8 text-center">{t("common.loading")}</div>;
+    return <LoadingContent message={t("common.loading")} />;
   if (assignments.length === 0)
     return (
       <EmptyState

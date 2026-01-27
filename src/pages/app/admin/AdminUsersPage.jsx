@@ -8,6 +8,7 @@ import { APPWRITE } from "../../../shared/appwrite/ids";
 import { db, functions } from "../../../shared/appwrite/client";
 import { ProfileService } from "../../../shared/data/profiles";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../../shared/ui/LoadingScreen";
 import {
   Dropdown,
   DropdownItem,
@@ -600,7 +601,7 @@ export function AdminUsersPage() {
             Cancelar
           </Button>
           <Button onClick={handleSaveUser} disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {saving && <LoadingSpinner size="sm" className="mr-2" />}
             Guardar Cambios
           </Button>
         </ModalFooter>
@@ -694,7 +695,7 @@ export function AdminUsersPage() {
             Cancelar
           </Button>
           <Button onClick={handleCreateUser} disabled={creating}>
-            {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {creating && <LoadingSpinner size="sm" className="mr-2" />}
             Crear Usuario
           </Button>
         </ModalFooter>

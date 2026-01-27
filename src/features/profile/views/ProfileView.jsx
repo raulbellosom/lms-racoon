@@ -11,6 +11,95 @@ import { ProfileService } from "../../../shared/data/profiles";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { functions } from "../../../shared/appwrite/client";
 import { APPWRITE } from "../../../shared/appwrite/ids";
+import { Combobox } from "../../../shared/ui/Combobox";
+import {
+  Plus,
+  Trash2,
+  Globe,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Github,
+  Phone,
+  Mail as MailIcon,
+} from "lucide-react";
+
+const SOCIAL_NETWORKS = [
+  {
+    id: "website",
+    icon: Globe,
+    label: "profile.socials.networks.website",
+    placeholder: "https://mysite.com",
+  },
+  {
+    id: "facebook",
+    icon: Facebook,
+    label: "profile.socials.networks.facebook",
+    placeholder: "https://facebook.com/username",
+  },
+  {
+    id: "twitter",
+    icon: Twitter,
+    label: "profile.socials.networks.twitter",
+    placeholder: "https://twitter.com/username",
+  },
+  {
+    id: "instagram",
+    icon: Instagram,
+    label: "profile.socials.networks.instagram",
+    placeholder: "https://instagram.com/username",
+  },
+  {
+    id: "linkedin",
+    icon: Linkedin,
+    label: "profile.socials.networks.linkedin",
+    placeholder: "https://linkedin.com/in/username",
+  },
+  {
+    id: "youtube",
+    icon: Youtube,
+    label: "profile.socials.networks.youtube",
+    placeholder: "https://youtube.com/@channel",
+  },
+  {
+    id: "github",
+    icon: Github,
+    label: "profile.socials.networks.github",
+    placeholder: "https://github.com/username",
+  },
+  {
+    id: "tiktok",
+    icon: Globe,
+    label: "profile.socials.networks.tiktok",
+    placeholder: "https://tiktok.com/@username",
+  },
+  {
+    id: "discord",
+    icon: Globe,
+    label: "profile.socials.networks.discord",
+    placeholder: "Discord Username / Invite",
+  },
+  {
+    id: "phone",
+    icon: Phone,
+    label: "profile.socials.networks.phone",
+    placeholder: "+52 123 456 7890",
+  },
+  {
+    id: "email",
+    icon: MailIcon,
+    label: "profile.socials.networks.email",
+    placeholder: "public@email.com",
+  },
+  {
+    id: "other",
+    icon: Globe,
+    label: "profile.socials.networks.other",
+    placeholder: "URL",
+  },
+];
 
 export function ProfileView() {
   const { t } = useTranslation();
@@ -32,7 +121,9 @@ export function ProfileView() {
         firstName: profile.firstName || "",
         lastName: profile.lastName || "",
         phone: profile.phone || "",
+        headline: profile.headline || "",
         bio: profile.bio || "",
+        socials: profile.socials ? JSON.parse(profile.socials) : {},
         email: user?.email || "", // From auth user
       });
     }
@@ -41,6 +132,15 @@ export function ProfileView() {
   const displayName = profile?.firstName
     ? `${profile.firstName} ${profile.lastName || ""}`.trim()
     : user?.name || t("student.welcome");
+
+  const getInitials = () => {
+    if (profile?.firstName && profile?.lastName) {
+      return (
+        profile.firstName.charAt(0) + profile.lastName.charAt(0)
+      ).toUpperCase();
+    }
+    return undefined; // Fallback to name-based generation in Avatar
+  };
 
   const validate = () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
@@ -69,7 +169,11 @@ export function ProfileView() {
     setLoading(true);
     try {
       // Use syncUpdate to handle Auth sync
-      await ProfileService.syncUpdate(user.$id, formData);
+      const payload = { ...formData };
+      if (typeof payload.socials === "object") {
+        payload.socials = JSON.stringify(payload.socials);
+      }
+      await ProfileService.syncUpdate(user.$id, payload);
       await refreshProfile(); // Reload profile in AuthContext
       showToast(t("profile.success.updated"), "success");
       setIsEditing(false);
@@ -144,226 +248,413 @@ export function ProfileView() {
 
   return (
     <PageLayout title={t("profile.title")} subtitle={t("profile.subtitle")}>
-      <div className="grid gap-6 xl:grid-cols-3">
-        {/* Profile Card */}
-        <Card className="p-6 xl:col-span-1">
-          <div className="flex flex-col items-center text-center">
-            <div className="relative group">
-              <Avatar
-                src={ProfileService.getAvatarUrl(profile?.avatarFileId)}
-                name={displayName}
-                size="xl"
-                ring
-                className="mb-4"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading}
-                className="absolute bottom-4 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] text-white shadow-md transition-transform hover:scale-110 disabled:opacity-50"
-                title={t("profile.changePhoto")}
-              >
-                <Camera className="h-4 w-4" />
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif"
-                onChange={handleAvatarChange}
-              />
-            </div>
+      <div className="flex flex-col gap-8">
+        {/* Unified Profile Header Card */}
+        <Card className="overflow-hidden border-none bg-[rgb(var(--bg-surface))] shadow-xl!">
+          {/* Decorative Banner */}
+          <div className="relative h-32 w-full bg-linear-to-r from-[rgb(var(--brand-primary))] to-[rgb(var(--brand-secondary))] opacity-90 sm:h-48">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+          </div>
 
-            <h2 className="text-xl font-bold text-[rgb(var(--text-primary))]">
-              {displayName}
-            </h2>
-            <p className="text-sm text-[rgb(var(--text-secondary))]">
-              {user?.email}
-            </p>
-            <div className="mt-4 rounded-full bg-[rgb(var(--bg-muted))] px-3 py-1 text-xs font-medium uppercase tracking-wide">
-              {t(`roles.${profile?.role || "student"}`)}
+          {/* Profile Basic Info Area */}
+          <div className="relative px-6 pb-8">
+            <div className="flex flex-col items-center sm:flex-row sm:items-end sm:gap-6">
+              {/* Avatar Overlap */}
+              <div className="relative -mt-16 group sm:-mt-20">
+                <Avatar
+                  src={ProfileService.getAvatarUrl(profile?.avatarFileId)}
+                  name={displayName}
+                  initials={getInitials()}
+                  size="xl"
+                  shape="square"
+                  ring={false}
+                  className="size-32 border-2 border-[rgb(var(--bg-surface))] shadow-xl sm:size-40"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] text-white shadow-md transition-transform hover:scale-110 active:scale-95 disabled:opacity-50"
+                  title={t("profile.changePhoto")}
+                >
+                  <Camera className="h-5 w-5" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif"
+                  onChange={handleAvatarChange}
+                />
+              </div>
+
+              {/* Name and Role */}
+              <div className="mt-4 flex-1 text-center sm:mt-0 sm:pb-2 sm:text-left">
+                <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-baseline sm:gap-4">
+                  <h2 className="text-2xl font-black tracking-tight text-[rgb(var(--text-primary))] sm:text-3xl">
+                    {displayName}
+                  </h2>
+                  <div className="rounded-full bg-[rgb(var(--brand-primary))]/10 px-3 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--brand-primary))]">
+                    {t(`roles.${profile?.role || "student"}`)}
+                  </div>
+                </div>
+                <p className="mt-1 text-base font-medium text-[rgb(var(--text-secondary))]">
+                  {profile?.headline || ""}
+                </p>
+                <div className="mt-2 flex flex-wrap justify-center gap-4 text-sm text-[rgb(var(--text-muted))] sm:justify-start">
+                  <div className="flex items-center gap-1.5">
+                    <MailIcon className="h-4 w-4" />
+                    {user?.email}
+                  </div>
+                  {profile?.phone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-4 w-4" />
+                      {profile.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-6 flex gap-2 sm:mt-0 sm:pb-2">
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setIsEditing(false)}
+                      disabled={loading}
+                      className="rounded-full px-6"
+                    >
+                      <X className="mr-2 h-4 w-4" /> {t("common.cancel")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSave}
+                      disabled={loading}
+                      className="rounded-full px-6 shadow-md!"
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                          {t("common.saving")}
+                        </span>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" /> {t("common.save")}
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="rounded-full px-8 shadow-md!"
+                  >
+                    <Edit className="mr-2 h-4 w-4" /> {t("common.edit")}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </Card>
 
-        {/* Details Card */}
-        <Card className="p-6 xl:col-span-2">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
-              {t("profile.personalInfo")}
-            </h3>
-            {isEditing ? (
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsEditing(false)}
-                  disabled={loading}
-                >
-                  <X className="mr-2 h-4 w-4" /> {t("common.cancel")}
-                </Button>
-                <Button size="sm" onClick={handleSave} disabled={loading}>
-                  <Save className="mr-2 h-4 w-4" /> {t("common.save")}
-                </Button>
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Detailed Info Section */}
+          <div className="space-y-8 lg:col-span-2">
+            <Card className="p-8">
+              <div className="mb-6 flex items-center gap-2">
+                <div className="h-8 w-1 bg-[rgb(var(--brand-primary))] rounded-full"></div>
+                <h3 className="text-xl font-bold text-[rgb(var(--text-primary))]">
+                  {t("profile.personalInfo")}
+                </h3>
               </div>
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit className="mr-2 h-4 w-4" /> {t("common.edit")}
-              </Button>
-            )}
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+                    {t("profile.headline")}
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      value={formData.headline}
+                      onChange={(e) =>
+                        setFormData({ ...formData, headline: e.target.value })
+                      }
+                      className="transition-all focus:ring-2!"
+                      placeholder={t("profile.headlinePlaceholder")}
+                    />
+                  ) : (
+                    <div className="rounded-xl bg-[rgb(var(--bg-muted))]/50 p-3 text-sm font-medium text-[rgb(var(--text-primary))]">
+                      {profile?.headline || "-"}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+                    {t("profile.firstName")}
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      value={formData.firstName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, firstName: e.target.value })
+                      }
+                      className="transition-all focus:ring-2!"
+                    />
+                  ) : (
+                    <div className="rounded-xl bg-[rgb(var(--bg-muted))]/50 p-3 text-sm font-medium text-[rgb(var(--text-primary))]">
+                      {profile?.firstName || "-"}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+                    {t("profile.lastName")}
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      value={formData.lastName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lastName: e.target.value })
+                      }
+                      className="transition-all focus:ring-2!"
+                    />
+                  ) : (
+                    <div className="rounded-xl bg-[rgb(var(--bg-muted))]/50 p-3 text-sm font-medium text-[rgb(var(--text-primary))]">
+                      {profile?.lastName || "-"}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+                    {t("profile.email")}
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      className="transition-all focus:ring-2!"
+                    />
+                  ) : (
+                    <div className="flex h-10 items-center rounded-xl bg-[rgb(var(--bg-muted))]/20 px-3 text-sm font-medium text-[rgb(var(--text-muted))]">
+                      {user?.email}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+                    {t("profile.phone")}
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
+                      className="transition-all focus:ring-2!"
+                      placeholder="+52 123 456 7890"
+                    />
+                  ) : (
+                    <div className="rounded-xl bg-[rgb(var(--bg-muted))]/50 p-3 text-sm font-medium text-[rgb(var(--text-primary))]">
+                      {profile?.phone || "-"}
+                    </div>
+                  )}
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+                    {t("profile.bio")}
+                  </label>
+                  {isEditing ? (
+                    <textarea
+                      className="min-h-32 w-full rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4 text-sm transition-all focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
+                      value={formData.bio}
+                      onChange={(e) =>
+                        setFormData({ ...formData, bio: e.target.value })
+                      }
+                      placeholder={t("profile.bioPlaceholder")}
+                    />
+                  ) : (
+                    <div className="rounded-xl bg-[rgb(var(--bg-muted))]/50 p-4 text-sm leading-relaxed text-[rgb(var(--text-secondary))] whitespace-pre-wrap">
+                      {profile?.bio || t("profile.noBio")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
 
-          <div className="space-y-4">
-            {/* Grid Change: 1 col for default/tablet, 2 cols for very large screens */}
-            <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
-              <div>
-                <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  {t("profile.firstName")}
-                </label>
-                {isEditing ? (
-                  <Input
-                    value={formData.firstName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, firstName: e.target.value })
-                    }
-                    placeholder={t("profile.firstName")}
-                  />
-                ) : (
-                  <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
-                    {profile?.firstName || "-"}
-                  </div>
-                )}
+          {/* Socials & Security Side Column */}
+          <div className="space-y-8">
+            {/* Socials Section */}
+            <Card className="p-8">
+              <div className="mb-6 flex items-center gap-2">
+                <div className="h-8 w-1 bg-amber-500 rounded-full"></div>
+                <h3 className="text-xl font-bold text-[rgb(var(--text-primary))]">
+                  {t("profile.socials.title")}
+                </h3>
               </div>
-              <div>
-                <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  {t("profile.lastName")}
-                </label>
+
+              <div className="space-y-4">
                 {isEditing ? (
-                  <Input
-                    value={formData.lastName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lastName: e.target.value })
-                    }
-                    placeholder={t("profile.lastName")}
-                  />
-                ) : (
-                  <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
-                    {profile?.lastName || "-"}
+                  <div className="space-y-4">
+                    {Object.entries(formData.socials || {}).map(
+                      ([key, value]) => {
+                        const network = SOCIAL_NETWORKS.find(
+                          (n) => n.id === key,
+                        ) || { icon: Globe, label: key };
+                        const Icon = network.icon;
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center gap-2 group anim-fade-in"
+                          >
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] shrink-0">
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1">
+                              <Input
+                                value={value}
+                                onChange={(e) => {
+                                  const newSocials = { ...formData.socials };
+                                  newSocials[key] = e.target.value;
+                                  setFormData({
+                                    ...formData,
+                                    socials: newSocials,
+                                  });
+                                }}
+                                className="h-10 text-xs"
+                                placeholder={t(
+                                  network.placeholder || "https://...",
+                                )}
+                              />
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const newSocials = { ...formData.socials };
+                                delete newSocials[key];
+                                setFormData({
+                                  ...formData,
+                                  socials: newSocials,
+                                });
+                              }}
+                              className="h-10 w-10 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      },
+                    )}
+
+                    <Combobox
+                      options={SOCIAL_NETWORKS.filter(
+                        (n) => !formData.socials?.[n.id],
+                      ).map((n) => ({
+                        value: n.id,
+                        label: t(n.label),
+                        icon: n.icon,
+                      }))}
+                      value={null}
+                      onChange={(value) => {
+                        if (!value) return;
+                        const key = value;
+                        const newSocials = { ...formData.socials };
+                        if (!newSocials[key]) {
+                          newSocials[key] = "";
+                          setFormData({ ...formData, socials: newSocials });
+                        }
+                      }}
+                      placeholder={t("profile.socials.add")}
+                    />
                   </div>
-                )}
-              </div>
-              <div>
-                <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  {t("profile.email")}
-                </label>
-                {isEditing ? (
-                  <Input
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    placeholder="tucorreo@ejemplo.com"
-                  />
                 ) : (
-                  <div className="mt-1 flex min-h-10 items-center text-sm font-medium text-[rgb(var(--text-secondary))] opacity-60">
-                    {user?.email || "-"}
-                    {profile?.role === "admin" && (
-                      <span className="ml-2 shrink-0 text-[10px] text-amber-500">
-                        (Admin)
-                      </span>
+                  <div className="flex flex-col gap-3">
+                    {profile?.socials &&
+                    Object.keys(JSON.parse(profile.socials)).length > 0 ? (
+                      Object.entries(JSON.parse(profile.socials)).map(
+                        ([key, value]) => {
+                          const network = SOCIAL_NETWORKS.find(
+                            (n) => n.id === key,
+                          ) || { icon: Globe, label: key };
+                          const Icon = network.icon;
+                          if (!value) return null;
+                          return (
+                            <a
+                              key={key}
+                              href={
+                                value.startsWith("http")
+                                  ? value
+                                  : `https://${value}`
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="group flex items-center gap-4 p-3 rounded-2xl bg-[rgb(var(--bg-muted))]/30 hover:bg-[rgb(var(--bg-muted))]/60 transition-all border border-transparent hover:border-[rgb(var(--border-base))]"
+                            >
+                              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-xs group-hover:scale-110 transition-transform">
+                                <Icon className="h-5 w-5 text-[rgb(var(--brand-primary))]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-[rgb(var(--text-muted))]">
+                                  {t(network.label)}
+                                </div>
+                                <div className="text-sm font-bold truncate text-[rgb(var(--text-primary))]">
+                                  {value.replace(/^https?:\/\//, "")}
+                                </div>
+                              </div>
+                            </a>
+                          );
+                        },
+                      )
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-8 text-center rounded-2xl bg-[rgb(var(--bg-muted))]/20 border border-dashed border-[rgb(var(--border-base))]">
+                        <Globe className="h-8 w-8 text-[rgb(var(--text-muted))] mb-2 opacity-20" />
+                        <p className="text-xs font-medium text-[rgb(var(--text-muted))] italic">
+                          No social links added.
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}
               </div>
-              <div>
-                <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                  {t("profile.phone")}
-                </label>
-                {isEditing ? (
-                  <Input
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
-                    placeholder="+52 123 456 7890"
-                  />
-                ) : (
-                  <div className="mt-1 text-sm font-medium text-[rgb(var(--text-primary))]">
-                    {profile?.phone || "-"}
-                  </div>
-                )}
+            </Card>
+
+            {/* Security Section */}
+            <Card className="p-8 bg-linear-to-br from-[rgb(var(--bg-surface))] to-[rgb(var(--bg-muted))]/20">
+              <div className="mb-6 flex items-center gap-2">
+                <div className="h-8 w-1 bg-violet-500 rounded-full"></div>
+                <h3 className="text-xl font-bold text-[rgb(var(--text-primary))]">
+                  {t("profile.security")}
+                </h3>
               </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-medium text-[rgb(var(--text-muted))]">
-                {t("profile.bio")}
-              </label>
-              {isEditing ? (
-                <textarea
-                  className="mt-1 w-full rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-3 text-sm focus:outline-hidden focus:ring-2 focus:ring-[rgb(var(--brand-primary))]"
-                  value={formData.bio}
-                  onChange={(e) =>
-                    setFormData({ ...formData, bio: e.target.value })
-                  }
-                  placeholder={t("profile.bioPlaceholder")}
-                  rows={4}
-                />
-              ) : (
-                <div className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
-                  {profile?.bio || t("profile.noBio")}
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* Security Card - Full width on xl */}
-        <Card className="p-6 xl:col-span-3">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-amber-500/20 to-orange-500/20 text-amber-500">
-              <Shield className="h-6 w-6" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
-                {t("profile.security")}
-              </h3>
-              <p className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
-                {t("profile.securityDesc")}
-              </p>
-
-              {/* Reset Password Section */}
-              <div className="mt-6 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))]">
-                      <KeyRound className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-[rgb(var(--text-primary))]">
-                        {t("profile.resetPassword")}
-                      </h4>
-                      <p className="text-xs text-[rgb(var(--text-muted))]">
-                        {t("profile.resetPasswordDesc")}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleSendReset}
-                    disabled={sendingReset || loading}
-                    className="w-full sm:w-auto"
-                  >
-                    <Mail className="mr-2 h-4 w-4" />
-                    {t("profile.sendResetEmail")}
-                  </Button>
-                </div>
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-[rgb(var(--text-secondary))]">
+                  {t("profile.resetPasswordDesc")}
+                </p>
+                <Button
+                  onClick={handleSendReset}
+                  disabled={sendingReset || loading}
+                  variant="secondary"
+                  className="w-full rounded-2xl h-12 border-2! hover:bg-white hover:border-[rgb(var(--brand-primary))] hover:text-[rgb(var(--brand-primary))] transition-all group"
+                >
+                  <Mail className="mr-2 h-4 w-4 group-hover:scale-125 transition-transform" />
+                  {t("profile.sendResetEmail")}
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
-        </Card>
+        </div>
       </div>
     </PageLayout>
   );

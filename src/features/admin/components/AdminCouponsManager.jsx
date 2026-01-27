@@ -19,6 +19,7 @@ import { Badge } from "../../../shared/ui/Badge";
 import { Modal } from "../../../shared/ui/Modal";
 import { Switch } from "../../../shared/ui/Switch";
 import { EmptyState } from "../../../shared/components/EmptyState";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 const DB_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const COL_COUPONS = import.meta.env.VITE_APPWRITE_COL_COUPONS;
@@ -222,9 +223,7 @@ export function AdminCouponsManager() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="animate-spin h-8 w-8 text-[rgb(var(--brand-primary))]" />
-        </div>
+        <LoadingContent message={t("common.loading")} />
       ) : coupons.length === 0 ? (
         <EmptyState
           icon={Ticket}

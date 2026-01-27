@@ -17,6 +17,8 @@
     "lastName": "Apellidos",
     "email": "Email",
     "phone": "Teléfono",
+    "headline": "Titular",
+    "headlinePlaceholder": "Desarrollador Web e Instructor",
     "bio": "Biografía",
     "bioPlaceholder": "Cuéntanos un poco sobre ti...",
     "noBio": "Sin biografía.",
@@ -42,6 +44,29 @@
     "success": {
       "updated": "Perfil actualizado correctamente",
       "photoUpdated": "Foto de perfil actualizada"
+    },
+    "socials": {
+      "title": "Redes Sociales y Contacto",
+      "subtitle": "Agrega enlaces a tus redes sociales o métodos de contacto.",
+      "add": "Añadir método",
+      "network": "Red / Medio",
+      "value": "Usuario o URL",
+      "placeholder": "https://...",
+      "remove": "Eliminar",
+      "networks": {
+        "facebook": "Facebook",
+        "twitter": "X (Twitter)",
+        "instagram": "Instagram",
+        "linkedin": "LinkedIn",
+        "youtube": "YouTube",
+        "github": "GitHub",
+        "website": "Sitio Web",
+        "phone": "Teléfono (Público)",
+        "email": "Email (Público)",
+        "discord": "Discord",
+        "tiktok": "TikTok",
+        "other": "Otro"
+      }
     }
   },
   "auth": {
@@ -138,9 +163,17 @@
       "advanced": "Avanzado"
     },
     "instructor": "Instructor",
+    "aboutInstructor": "Acerca del Instructor",
+    "contactInstructor": "Contacto",
     "description": "Descripción",
     "content": "Contenido del curso",
-    "reviews": "Reseñas",
+    "reviews": {
+      "title": "Reseñas",
+      "totalReviews": "valoraciones",
+      "noReviewsTitle": "Aún no hay reseñas",
+      "noReviewsDesc": "Sé el primero en calificar este curso.",
+      "verifiedSource": "Las reseñas provienen de estudiantes verificados que compraron el curso."
+    },
     "includes": "Este curso incluye",
     "requirements": "Requisitos",
     "whatYouLearn": "Lo que aprenderás",

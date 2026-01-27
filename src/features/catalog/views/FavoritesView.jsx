@@ -7,6 +7,7 @@ import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
 import { Button } from "../../../shared/ui/Button";
 import { Heart, Loader } from "lucide-react";
 import { CourseCard } from "../../../components/courses/CourseCard";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 export function FavoritesView() {
   const { t } = useTranslation();
@@ -60,11 +61,7 @@ export function FavoritesView() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin text-[rgb(var(--brand-primary))]" />
-      </div>
-    );
+    return <LoadingContent />;
   }
 
   return (

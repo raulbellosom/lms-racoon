@@ -143,6 +143,11 @@ export function LessonItem({
                 title={t("teacher.lesson.hasAttachments") || "Tiene adjuntos"}
               />
             )}
+            {lesson.isFreePreview && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                FREE
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-xs text-[rgb(var(--text-secondary))]">
             {lesson.durationSec > 0 && (

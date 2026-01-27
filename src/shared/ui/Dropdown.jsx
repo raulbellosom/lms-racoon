@@ -53,8 +53,25 @@ export function Dropdown({
   side = "bottom",
   sideOffset = 0,
   className,
+  open: controlledOpen,
+  onOpenChange,
 }) {
-  const [open, setOpen] = React.useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+  const setOpen = React.useCallback(
+    (value) => {
+      if (isControlled) {
+        onOpenChange?.(value);
+      } else {
+        setUncontrolledOpen(value);
+      }
+    },
+    [isControlled, onOpenChange],
+  );
+
   const dropdownRef = React.useRef(null);
 
   // ... (keep existing effects works implicitly as they are inside component body in file) check if I need to re-include them if I am not viewing them.

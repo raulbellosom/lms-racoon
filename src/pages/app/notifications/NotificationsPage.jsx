@@ -17,6 +17,7 @@ import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
 import { Badge } from "../../../shared/ui/Badge";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 export function NotificationsPage() {
   const { t } = useTranslation();
@@ -150,12 +151,7 @@ export function NotificationsPage() {
 
         {/* List */}
         {loading ? (
-          <div className="text-center py-12">
-            <Loader2 className="animate-spin h-8 w-8 mx-auto text-[rgb(var(--brand-primary))]" />
-            <p className="mt-2 text-sm text-[rgb(var(--text-secondary))]">
-              Cargando...
-            </p>
-          </div>
+          <LoadingContent message="Cargando..." />
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-[rgb(var(--border-base))] rounded-2xl">
             <div className="p-4 bg-[rgb(var(--bg-muted))] rounded-full mb-4">

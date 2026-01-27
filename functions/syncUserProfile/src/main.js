@@ -111,6 +111,8 @@ module.exports = async ({ req, res, log, error }) => {
   if (body.phone !== undefined) patch.phone = phone;
 
   if (body.bio !== undefined) patch.bio = safeStr(body.bio, 500);
+  if (body.headline !== undefined) patch.headline = safeStr(body.headline, 120);
+  if (body.socials !== undefined) patch.socials = safeStr(body.socials, 2500);
   if (body.country !== undefined) patch.country = safeStr(body.country, 2);
   if (body.avatarFileId !== undefined)
     patch.avatarFileId = safeStr(body.avatarFileId, 36);

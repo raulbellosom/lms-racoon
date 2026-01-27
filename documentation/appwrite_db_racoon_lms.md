@@ -29,18 +29,20 @@
 
 **Doc ID = Auth userId** (espejo del usuario)
 
-| Attribute    | Type    | Required | Default | Constraints   | Notes                     |
-| ------------ | ------- | -------: | ------- | ------------- | ------------------------- |
-| firstName    | string  |       ✅ | —       | min=1 max=40  |                           |
-| lastName     | string  |       ✅ | —       | min=1 max=60  |                           |
-| role         | enum    |       ✅ | —       | —             | controla UI/permisos      |
-| avatarFileId | string  |       ❌ | ""      | min=0 max=36  | bucket `avatars`          |
-| bio          | string  |       ❌ | ""      | min=0 max=500 |                           |
-| phone        | string  |       ❌ | ""      | min=0 max=20  | formato E.164 recomendado |
-| email        | email   |       ✅ | —       | min=0 max=100 | Sync with Auth            |
-| country      | string  |       ❌ | "MX"    | min=0 max=2   | ISO-2                     |
-| suspended    | boolean |       ❌ | false   | —             | Block login               |
-| enabled      | boolean |       ❌ | true    | —             | borrado lógico            |
+| Attribute    | Type    | Required | Default | Constraints    | Notes                     |
+| ------------ | ------- | -------: | ------- | -------------- | ------------------------- |
+| firstName    | string  |       ✅ | —       | min=1 max=40   |                           |
+| lastName     | string  |       ✅ | —       | min=1 max=60   |                           |
+| Role         | enum    |       ✅ | —       | —              | controla UI/permisos      |
+| headline     | string  |       ❌ | ""      | min=0 max=120  | Título profesional        |
+| bio          | string  |       ❌ | ""      | min=0 max=500  |                           |
+| socials      | string  |       ❌ | "{}"    | min=0 max=2500 | JSON links                |
+| avatarFileId | string  |       ❌ | ""      | min=0 max=36   | bucket `avatars`          |
+| phone        | string  |       ❌ | ""      | min=0 max=20   | formato E.164 recomendado |
+| email        | email   |       ✅ | —       | min=0 max=100  | Sync with Auth            |
+| country      | string  |       ❌ | "MX"    | min=0 max=2    | ISO-2                     |
+| suspended    | boolean |       ❌ | false   | —              | Block login               |
+| enabled      | boolean |       ❌ | true    | —              | borrado lógico            |
 
 **Enum values**
 

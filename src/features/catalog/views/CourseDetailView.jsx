@@ -17,7 +17,19 @@ import {
   ArrowLeft,
   ShoppingCart,
   ShoppingBag,
+  Star,
+  MessageCircle,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Github,
+  Phone,
+  Mail,
 } from "lucide-react";
+
+import { Card } from "../../../shared/ui/Card";
 
 import { Button } from "../../../shared/ui/Button";
 import { CourseCurriculum } from "../components/CourseCurriculum";
@@ -28,9 +40,35 @@ import { LessonService } from "../../../shared/data/lessons-teacher";
 import { StatsService } from "../../../shared/data/stats";
 import { FileService } from "../../../shared/data/files";
 import { useAuth } from "../../../app/providers/AuthProvider";
+import { getProfileById, ProfileService } from "../../../shared/data/profiles";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "../../../shared/ui/Tabs";
+import { Avatar } from "../../../shared/ui/Avatar";
 import { getRandomBanner, getBannerById } from "../../../shared/assets/banners";
 import { CategoryService } from "../../../shared/data/categories";
 import { FavoritesService } from "../../../shared/data/favorites";
+
+import { LoadingScreen } from "../../../shared/ui/LoadingScreen";
+import { checkEnrollmentStatus } from "../../../shared/data/enrollments";
+
+const SOCIAL_ICONS = {
+  website: Globe,
+  facebook: Facebook,
+  twitter: Twitter,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  youtube: Youtube,
+  github: Github,
+  tiktok: Globe,
+  discord: Globe,
+  phone: Phone,
+  email: Mail,
+  other: Globe,
+};
 
 export function CourseDetailView() {
   const { id } = useParams();
@@ -43,10 +81,24 @@ export function CourseDetailView() {
   const [loading, setLoading] = React.useState(true);
   const [stats, setStats] = React.useState(null);
   const [category, setCategory] = React.useState(null);
+  const [instructor, setInstructor] = React.useState(null);
+  const [activeTab, setActiveTab] = React.useState("description");
+  const reviewsRef = React.useRef(null);
+
+  const handleScrollToReviews = () => {
+    setActiveTab("reviews");
+    setTimeout(() => {
+      reviewsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
+  };
 
   const [isFavorite, setIsFavorite] = React.useState(false);
   const [favoritesCount, setFavoritesCount] = React.useState(0);
   const [togglingFavorite, setTogglingFavorite] = React.useState(false);
+  const [isEnrolled, setIsEnrolled] = React.useState(false);
 
   React.useEffect(() => {
     if (id) {
@@ -70,13 +122,18 @@ export function CourseDetailView() {
 
       if (auth.user) {
         try {
-          const isFav = await FavoritesService.isFavorite(auth.user.$id, id);
+          const [isFav, enrolled] = await Promise.all([
+            FavoritesService.isFavorite(auth.user.$id, id),
+            checkEnrollmentStatus(auth.user.$id, id),
+          ]);
           setIsFavorite(isFav);
+          setIsEnrolled(enrolled);
         } catch (err) {
-          console.error("Failed to load user favorites status", err);
+          console.error("Failed to load user status", err);
         }
       } else {
         setIsFavorite(false);
+        setIsEnrolled(false);
       }
 
       const content = sectionsData.map((section) => ({
@@ -120,6 +177,13 @@ export function CourseDetailView() {
       } else {
         console.log("No categoryId found in course");
       }
+
+      // Fetch Instructor
+      if (courseData.teacherId) {
+        getProfileById(courseData.teacherId)
+          .then((teacher) => setInstructor(teacher))
+          .catch((err) => console.error("Failed to load instructor", err));
+      }
     } catch (error) {
       console.error("Failed to load course details", error);
     } finally {
@@ -160,11 +224,7 @@ export function CourseDetailView() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[rgb(var(--bg-base))]">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[rgb(var(--brand-primary))] border-t-transparent" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!course) {
@@ -303,10 +363,13 @@ export function CourseDetailView() {
                     {t(`courses.levels.${course.level}`)}
                   </button>
                   {/* Rating */}
-                  <span className="flex items-center gap-1 text-base font-medium text-amber-400">
+                  <button
+                    onClick={handleScrollToReviews}
+                    className="flex items-center gap-1 text-base font-medium text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                  >
                     <span className="text-amber-400 text-lg">★</span>{" "}
                     {rating.toFixed(1)}
-                  </span>
+                  </button>
                 </div>
 
                 <h1 className="text-3xl font-extrabold md:text-4xl lg:text-5xl leading-tight text-white mb-4 drop-shadow-lg">
@@ -433,30 +496,164 @@ export function CourseDetailView() {
               </div>
             )}
 
-            {/* Description */}
-            <section className="mb-10">
-              <h2 className="mb-4 text-2xl font-bold text-[rgb(var(--text-primary))]">
-                {t("courses.courseDescription")}
-              </h2>
-              <div className="markdown-content text-[rgb(var(--text-secondary))]">
-                {course.description ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {(course.description || "")
-                      .replace(/\r\n/g, "\n")
-                      .replace(/\n(\* |\d+\. |> )/g, "\n\n$1")}
-                  </ReactMarkdown>
-                ) : (
-                  <p>{t("courses.noDescription")}</p>
-                )}
-              </div>
-            </section>
+            {/* Content Tabs */}
+            <div className="mb-10" ref={reviewsRef}>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="description">
+                    {t("courses.description") || "Descripción"}
+                  </TabsTrigger>
+                  <TabsTrigger value="reviews">
+                    {t("courses.reviews.title")} ({stats?.ratingCount || 0})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="description">
+                  <div className="markdown-content text-[rgb(var(--text-secondary))]">
+                    {course.description ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {(course.description || "")
+                          .replace(/\r\n/g, "\n")
+                          .replace(/\n(\* |\d+\. |> )/g, "\n\n$1")}
+                      </ReactMarkdown>
+                    ) : (
+                      <p>{t("courses.noDescription")}</p>
+                    )}
+                  </div>
+
+                  {/* Instructor Section */}
+                  {instructor && (
+                    <div className="mt-12 pt-8 border-t border-[rgb(var(--border-base))]">
+                      <h3 className="text-xl font-bold text-[rgb(var(--text-primary))] mb-6">
+                        {t("courses.aboutInstructor")}
+                      </h3>
+                      <Card className="p-6 bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border-base))]">
+                        <div className="flex flex-col sm:flex-row gap-6">
+                          <div className="shrink-0 flex flex-col items-center sm:items-start gap-4">
+                            <Avatar
+                              src={ProfileService.getAvatarUrl(
+                                instructor.avatarFileId,
+                              )}
+                              name={instructor.displayName || "Instructor"}
+                              className="h-24 w-24 text-2xl"
+                              ring
+                            />
+
+                            {/* Socials */}
+                            {instructor.socials && (
+                              <div className="flex flex-wrap gap-2 justify-center sm:justify-start max-w-[200px]">
+                                {(() => {
+                                  try {
+                                    const socials =
+                                      typeof instructor.socials === "string"
+                                        ? JSON.parse(instructor.socials)
+                                        : instructor.socials;
+
+                                    return Object.entries(socials || {}).map(
+                                      ([key, value]) => {
+                                        const Icon = SOCIAL_ICONS[key] || Globe;
+                                        const href =
+                                          key === "email"
+                                            ? `mailto:${value}`
+                                            : key === "phone"
+                                              ? `tel:${value}`
+                                              : value;
+
+                                        return (
+                                          <a
+                                            key={key}
+                                            href={href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-2 rounded-full bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--brand-primary))] hover:text-white transition-colors"
+                                            title={key}
+                                          >
+                                            <Icon className="h-4 w-4" />
+                                          </a>
+                                        );
+                                      },
+                                    );
+                                  } catch (e) {
+                                    return null;
+                                  }
+                                })()}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 text-center sm:text-left">
+                            <div className="mb-1 text-lg font-bold text-[rgb(var(--text-primary))]">
+                              {instructor.firstName} {instructor.lastName}
+                            </div>
+                            {instructor.headline && (
+                              <div className="mb-4 text-sm font-medium text-[rgb(var(--brand-primary))] uppercase tracking-wide">
+                                {instructor.headline}
+                              </div>
+                            )}
+                            <div className="text-sm text-[rgb(var(--text-secondary))] whitespace-pre-line leading-relaxed">
+                              {instructor.bio || "Instructor en Racoon LMS."}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="reviews">
+                  <div className="py-8">
+                    <div className="flex items-center gap-4 mb-8 p-6 rounded-2xl bg-[rgb(var(--bg-muted))]">
+                      <div className="text-center">
+                        <div className="text-4xl font-black text-[rgb(var(--text-primary))]">
+                          {(stats?.averageRating || 0).toFixed(1)}
+                        </div>
+                        <div className="flex text-amber-400 justify-center my-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-4 w-4 ${star <= Math.round(stats?.averageRating || 0) ? "fill-current" : "text-[rgb(var(--text-tertiary))]"}`}
+                            />
+                          ))}
+                        </div>
+                        <div className="text-xs text-[rgb(var(--text-secondary))]">
+                          {t("courses.reviews.totalReviews") || "valoraciones"}
+                        </div>
+                      </div>
+                      <div className="h-12 w-px bg-[rgb(var(--border-base))]" />
+                      <div className="flex-1 text-sm text-[rgb(var(--text-secondary))]">
+                        <p>{t("courses.reviews.verifiedSource")}</p>
+                      </div>
+                    </div>
+
+                    {/* Placeholder for actual reviews list */}
+                    <div className="text-center py-12 text-[rgb(var(--text-muted))]">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                      <p>{t("courses.reviews.noReviewsTitle")}</p>
+                      <p className="text-xs mt-1">
+                        {t("courses.reviews.noReviewsDesc")}
+                      </p>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
 
             {/* Curriculum */}
             <section className="mb-10">
               <h2 className="mb-4 text-2xl font-bold text-[rgb(var(--text-primary))]">
                 {t("courses.courseContent")}
               </h2>
-              <CourseCurriculum content={course.content || []} />
+              <CourseCurriculum
+                content={course.content || []}
+                isEnrolled={isEnrolled || isOwner}
+                onPlayPreview={(lessonId) => {
+                  // If we are enrolled, we might want to go to learn page?
+                  // Or open a modal? The user asked for "btn to go to player".
+                  // If enrolled -> navigate to learn page.
+                  // If not enrolled (free preview) -> navigate to learn page (since we established we handle it there)
+                  navigate(`/app/learn/${id}/${lessonId}`);
+                }}
+              />
             </section>
           </div>
 

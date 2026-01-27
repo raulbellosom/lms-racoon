@@ -15,7 +15,7 @@ export async function listCommentsForCourse(courseId, { limit = 30 } = {}) {
     APPWRITE.collections.comments,
     [
       Query.equal("courseId", courseId),
-      Query.orderDesc("createdAt"),
+      Query.orderDesc("$createdAt"),
       Query.limit(limit),
     ],
   );

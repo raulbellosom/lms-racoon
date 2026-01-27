@@ -15,6 +15,7 @@ import { Badge } from "../../../shared/ui/Badge";
 import { AssignmentService } from "../../../shared/data/assignments-teacher";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 /**
  * AssignmentList - List and manage assignments for a course
@@ -91,11 +92,7 @@ export function AssignmentList({
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
-      </div>
-    );
+    return <LoadingContent />;
   }
 
   return (

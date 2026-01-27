@@ -208,6 +208,7 @@ export function LessonEditorModal({
           videoFileId: lesson.videoFileId || "",
           videoCoverFileId: lesson.videoCoverFileId || "",
           durationSec: lesson.durationSec || 0,
+          isFreePreview: lesson.isFreePreview || false,
         });
 
         // Load attachments
@@ -247,6 +248,7 @@ export function LessonEditorModal({
           videoFileId: "",
           videoCoverFileId: "",
           durationSec: 0,
+          isFreePreview: false,
         });
         setAttachments([]);
         setRelatedEntity(null);
@@ -397,6 +399,7 @@ export function LessonEditorModal({
         videoFileId,
         videoCoverFileId,
         durationSec: formData.durationSec,
+        isFreePreview: formData.isFreePreview,
         attachments: attachments.map((a) => a.id),
       };
 
@@ -526,6 +529,25 @@ export function LessonEditorModal({
               onChange={(e) => updateField("title", e.target.value)}
               maxLength={80}
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isFreePreview"
+              checked={formData.isFreePreview || false}
+              onChange={(e) => updateField("isFreePreview", e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-[rgb(var(--brand-primary))] focus:ring-[rgb(var(--brand-primary))]"
+            />
+            <label
+              htmlFor="isFreePreview"
+              className="text-sm font-medium text-[rgb(var(--text-secondary))]"
+            >
+              {t("teacher.lesson.isFreePreview")}
+            </label>
+            <span className="text-xs text-[rgb(var(--text-muted))]">
+              ({t("teacher.lesson.isFreePreviewDesc")})
+            </span>
           </div>
 
           {/* CONTENT BASED ON TYPE */}

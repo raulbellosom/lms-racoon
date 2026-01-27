@@ -18,6 +18,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { EmptyState } from "../../../shared/components/EmptyState";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 export function TeacherQuizGrades({ courseId }) {
   const { t } = useTranslation();
@@ -83,8 +84,7 @@ export function TeacherQuizGrades({ courseId }) {
     }
   };
 
-  if (loading)
-    return <div className="p-8 text-center">{t("common.loading")}</div>;
+  if (loading) return <LoadingContent message={t("common.loading")} />;
   if (quizzes.length === 0)
     return (
       <EmptyState

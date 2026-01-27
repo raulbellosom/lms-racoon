@@ -16,6 +16,7 @@ export function CartDropdown() {
   const { t } = useTranslation();
   const { cartItems, removeFromCart, clearCart, getCartTotal } = useCart();
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = React.useState(false);
 
   const total = getCartTotal();
 
@@ -29,6 +30,8 @@ export function CartDropdown() {
       side="bottom"
       sideOffset={12}
       className="w-80"
+      open={isOpen}
+      onOpenChange={setIsOpen}
       trigger={
         <button className="relative rounded-lg p-2 text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--brand-primary))] transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-[rgb(var(--brand-primary))/0.2]">
           <ShoppingCart className="h-5 w-5" />
@@ -58,7 +61,7 @@ export function CartDropdown() {
         {cartItems.length === 0 ? (
           <div className="text-center py-6 text-sm text-[rgb(var(--text-secondary))]">
             <p className="mb-2">{t("cart.empty", "Tu carrito está vacío")}</p>
-            <Link to="/app/explore">
+            <Link to="/app/explore" onClick={() => setIsOpen(false)}>
               <span className="text-[rgb(var(--brand-primary))] hover:underline cursor-pointer">
                 {t("nav.explore", "Explorar cursos")}
               </span>
@@ -129,7 +132,11 @@ export function CartDropdown() {
                 </span>
               </div>
 
-              <Link to="/app/cart" className="block">
+              <Link
+                to="/app/cart"
+                className="block"
+                onClick={() => setIsOpen(false)}
+              >
                 <Button className="w-full" size="sm">
                   {t("cart.checkout", "Ir al Carrito")}
                 </Button>

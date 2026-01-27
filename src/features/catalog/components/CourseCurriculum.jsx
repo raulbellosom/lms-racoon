@@ -1,5 +1,12 @@
 import React from "react";
-import { ChevronDown, PlayCircle, FileText, HelpCircle } from "lucide-react";
+import {
+  ChevronDown,
+  PlayCircle,
+  FileText,
+  HelpCircle,
+  Lock,
+  Play,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
@@ -15,7 +22,12 @@ function getIcon(kind) {
   }
 }
 
-function SectionItem({ section, defaultOpen = false }) {
+function SectionItem({
+  section,
+  defaultOpen = false,
+  isEnrolled,
+  onPlayPreview,
+}) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
 
   return (
@@ -49,27 +61,59 @@ function SectionItem({ section, defaultOpen = false }) {
             className="overflow-hidden bg-[rgb(var(--bg-surface))]"
           >
             <div className="space-y-1 p-2">
-              {section.lessons?.map((lesson) => (
-                <div
-                  key={lesson.$id}
-                  className="flex items-center justify-between rounded-lg p-2 transition hover:bg-[rgb(var(--bg-muted))]"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="text-[rgb(var(--brand-primary))]">
-                      {getIcon(lesson.kind)}
+              {section.lessons?.map((lesson) => {
+                const isFree = !!lesson.isFreePreview;
+                const canAccess = isEnrolled || isFree;
+
+                return (
+                  <div
+                    key={lesson.$id}
+                    onClick={() => {
+                      if (canAccess && onPlayPreview) {
+                        onPlayPreview(lesson.$id);
+                      }
+                    }}
+                    className={`flex items-center justify-between rounded-lg p-2 transition ${
+                      canAccess
+                        ? "hover:bg-[rgb(var(--bg-muted))] cursor-pointer"
+                        : "opacity-60 cursor-not-allowed"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`
+                        ${canAccess ? "text-[rgb(var(--brand-primary))]" : "text-[rgb(var(--text-muted))]"}
+                      `}
+                      >
+                        {/* If not enrolled and not free, show Lock. Else show Type Icon or Play if free preview? */}
+                        {!isEnrolled && !isFree ? (
+                          <Lock className="h-4 w-4" />
+                        ) : !isEnrolled && isFree ? (
+                          <Play className="h-4 w-4 text-green-500" />
+                        ) : (
+                          getIcon(lesson.kind)
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-[rgb(var(--text-secondary))]">
+                          {lesson.title}
+                        </span>
+                        {!isEnrolled && isFree && (
+                          <span className="text-[10px] uppercase font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded w-fit mt-0.5">
+                            Gratis
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-sm font-medium text-[rgb(var(--text-secondary))]">
-                      {lesson.title}
-                    </span>
+                    {lesson.durationSec > 0 && (
+                      <span className="text-xs text-[rgb(var(--text-muted))]">
+                        {Math.floor(lesson.durationSec / 60)}:
+                        {(lesson.durationSec % 60).toString().padStart(2, "0")}
+                      </span>
+                    )}
                   </div>
-                  {lesson.durationSec > 0 && (
-                    <span className="text-xs text-[rgb(var(--text-muted))]">
-                      {Math.floor(lesson.durationSec / 60)}:
-                      {(lesson.durationSec % 60).toString().padStart(2, "0")}
-                    </span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
               {(!section.lessons || section.lessons.length === 0) && (
                 <div className="p-2 text-center text-xs text-[rgb(var(--text-muted))] italic">
                   Sin lecciones
@@ -83,7 +127,11 @@ function SectionItem({ section, defaultOpen = false }) {
   );
 }
 
-export function CourseCurriculum({ content = [] }) {
+export function CourseCurriculum({
+  content = [],
+  isEnrolled = false,
+  onPlayPreview,
+}) {
   const { t } = useTranslation();
 
   if (!content || content.length === 0) {
@@ -101,6 +149,8 @@ export function CourseCurriculum({ content = [] }) {
           key={section.$id || index}
           section={section}
           defaultOpen={index === 0}
+          isEnrolled={isEnrolled}
+          onPlayPreview={onPlayPreview}
         />
       ))}
     </div>

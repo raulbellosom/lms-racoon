@@ -2,13 +2,8 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
-import {
-  Search,
-  Filter,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 import { CatalogFilters } from "../../catalog/components/CatalogFilters";
 import { CourseCard } from "../../../components/courses/CourseCard";
@@ -182,9 +177,7 @@ export function ExploreCoursesView() {
 
           {/* Loading State */}
           {loading ? (
-            <div className="flex h-64 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-[rgb(var(--brand-primary))]" />
-            </div>
+            <LoadingContent />
           ) : (
             <>
               {/* Results Grid */}

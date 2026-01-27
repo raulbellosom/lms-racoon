@@ -14,6 +14,7 @@ import {
   Info,
 } from "lucide-react";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { LoadingSpinner } from "../../../shared/ui/LoadingScreen";
 import { CategoryService } from "../../../shared/data/categories";
 import {
   Dropdown,
@@ -314,7 +315,7 @@ export function AdminCategoriesPage() {
             Cancelar
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {saving && <LoadingSpinner size="sm" className="mr-2" />}
             {editingId ? "Guardar Cambios" : "Crear"}
           </Button>
         </ModalFooter>

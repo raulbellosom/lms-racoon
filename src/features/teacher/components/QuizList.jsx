@@ -15,6 +15,7 @@ import { Badge } from "../../../shared/ui/Badge";
 import { QuizService } from "../../../shared/data/quizzes-teacher";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 /**
  * QuizList - List and manage quizzes for a course
@@ -85,11 +86,7 @@ export function QuizList({ courseId, onEdit, onCreate }) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[rgb(var(--brand-primary))] border-t-transparent" />
-      </div>
-    );
+    return <LoadingContent />;
   }
 
   return (

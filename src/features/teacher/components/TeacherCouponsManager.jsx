@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Plus,
-  Trash2,
-  Ticket,
-  Percent,
-  DollarSign,
-  Loader2,
-} from "lucide-react";
+import { Plus, Trash2, Ticket, Percent, DollarSign } from "lucide-react";
 import { ID, Query } from "appwrite";
 import { db as databases } from "../../../shared/appwrite/client";
 import { useToast } from "../../../app/providers/ToastProvider";
@@ -19,6 +12,7 @@ import { Modal } from "../../../shared/ui/Modal";
 import { Switch } from "../../../shared/ui/Switch";
 import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
 import { EmptyState } from "../../../shared/components/EmptyState";
+import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 
 // Constants from .env (reused or hardcoded if needed, best to import usually)
 const DB_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
@@ -190,9 +184,7 @@ export function TeacherCouponsManager({ courseId }) {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="animate-spin h-8 w-8 text-[rgb(var(--brand-primary))]" />
-        </div>
+        <LoadingContent message={t("common.loading")} />
       ) : coupons.length === 0 ? (
         <EmptyState
           icon={Ticket}

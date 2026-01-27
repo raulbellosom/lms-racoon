@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useModeAnimation } from "react-theme-switch-animation";
 import {
@@ -6,19 +7,19 @@ import {
   Palette,
   Bell,
   Globe,
-  Shield,
-  LogOut,
-  Moon,
   Sun,
+  Moon,
   Monitor,
   Volume2,
   VolumeX,
-  ChevronRight,
-  Lock,
   Mail,
   MessageCircle,
+  ChevronRight,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "../../../app/providers/AuthProvider";
+import { Avatar } from "../../../shared/ui/Avatar";
+import { ProfileService } from "../../../shared/data/profiles";
 import { usePreferences } from "../../../shared/hooks/usePreferences";
 import { usePushNotifications } from "../../../features/notifications/hooks/usePushNotifications";
 import { useTheme } from "../../../shared/theme/ThemeProvider";
@@ -31,6 +32,7 @@ import { Badge } from "../../../shared/ui/Badge";
 export function SettingsView() {
   const { t } = useTranslation();
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const { preferences, updateTheme, updateLanguage, updateSettings } =
     usePreferences();
   const { subscribe, permissionStatus } = usePushNotifications();
@@ -94,9 +96,19 @@ export function SettingsView() {
             {/* Profile Summary */}
             <Card className="p-6">
               <div className="flex flex-col sm:flex-row items-center gap-6">
-                <div className="h-24 w-24 rounded-full bg-gradient-to-br from-[rgb(var(--brand-primary))] to-purple-600 flex items-center justify-center text-4xl font-bold text-white shadow-lg shrink-0">
-                  {auth.user?.name?.charAt(0) || "U"}
-                </div>
+                <Avatar
+                  size="2xl"
+                  src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
+                  initials={
+                    auth.profile?.firstName && auth.profile?.lastName
+                      ? (
+                          auth.profile.firstName.charAt(0) +
+                          auth.profile.lastName.charAt(0)
+                        ).toUpperCase()
+                      : undefined
+                  }
+                  name={auth.user?.name}
+                />
                 <div className="flex-1 text-center sm:text-left space-y-2">
                   <h3 className="text-2xl font-bold text-[rgb(var(--text-primary))]">
                     {auth.user?.name}
@@ -118,9 +130,10 @@ export function SettingsView() {
                 <div>
                   <Button
                     variant="outline"
-                    onClick={() => (window.location.href = "/app/profile")}
+                    onClick={() => navigate("/app/profile")}
                   >
                     {t("settings.editProfile", "Editar Perfil")}
+                    <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>
