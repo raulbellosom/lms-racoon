@@ -7,6 +7,7 @@ import { Button } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
 import { useTranslation } from "react-i18next";
 import { FileService } from "../../shared/data/files";
+import { CartSummary } from "../../features/cart/components/CartSummary";
 
 export function CartPage() {
   const { cartItems, removeFromCart, getCartTotal } = useCart();
@@ -120,45 +121,11 @@ export function CartPage() {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <Card className="p-6 sticky top-24">
-            <h3 className="text-xl font-bold text-[rgb(var(--text-primary))] mb-4">
-              Resumen del pedido
-            </h3>
-
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-[rgb(var(--text-secondary))]">
-                <span>Subtotal ({cartItems.length} cursos)</span>
-                <span>
-                  {new Intl.NumberFormat("es-MX", {
-                    style: "currency",
-                    currency: "MXN",
-                  }).format(total / 100)}
-                </span>
-              </div>
-              <div className="border-t border-[rgb(var(--border-base))] pt-3 flex justify-between font-bold text-lg text-[rgb(var(--text-primary))]">
-                <span>Total</span>
-                <span>
-                  {new Intl.NumberFormat("es-MX", {
-                    style: "currency",
-                    currency: "MXN",
-                  }).format(total / 100)}
-                </span>
-              </div>
-            </div>
-
-            <Button
-              className="w-full bg-[rgb(var(--brand-primary))] text-white hover:bg-[rgb(var(--brand-secondary))]"
-              size="lg"
-              onClick={handleCheckout}
-            >
-              Proceder al Pago
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-
-            <p className="mt-4 text-xs text-center text-[rgb(var(--text-tertiary))]">
-              30 días de garantía de devolución. Compra segura.
-            </p>
-          </Card>
+          <CartSummary
+            cartItems={cartItems}
+            total={total}
+            onCheckout={handleCheckout}
+          />
         </div>
       </div>
     </div>

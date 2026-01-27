@@ -7,6 +7,7 @@ import {
   Percent,
   DollarSign,
   Loader2,
+  Search,
 } from "lucide-react";
 import { ID, Query } from "appwrite";
 import { db as databases } from "../../../shared/appwrite/client";
@@ -17,19 +18,19 @@ import { Input } from "../../../shared/ui/Input";
 import { Badge } from "../../../shared/ui/Badge";
 import { Modal } from "../../../shared/ui/Modal";
 import { Switch } from "../../../shared/ui/Switch";
-import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
 import { EmptyState } from "../../../shared/components/EmptyState";
 
-// Constants from .env (reused or hardcoded if needed, best to import usually)
 const DB_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const COL_COUPONS = import.meta.env.VITE_APPWRITE_COL_COUPONS;
+const COL_COURSES = import.meta.env.VITE_APPWRITE_COL_COURSES;
 
-export function TeacherCouponsManager({ courseId }) {
+export function AdminCouponsManager() {
   const { t } = useTranslation();
   const { showToast } = useToast();
 
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState([]); // For course selection
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,18 +45,20 @@ export function TeacherCouponsManager({ courseId }) {
     maxUses: 0, // 0 = unlimited
     expiresAt: "", // ISO string or empty
     enabled: true,
+    courseId: "", // Empty = Global
   });
 
   useEffect(() => {
     loadCoupons();
-  }, [courseId]);
+    loadCourses();
+  }, []);
 
   const loadCoupons = async () => {
     try {
       setLoading(true);
       const res = await databases.listDocuments(DB_ID, COL_COUPONS, [
-        Query.equal("courseId", courseId),
         Query.orderDesc("$createdAt"),
+        Query.limit(100), // Pagination TODO
       ]);
       setCoupons(res.documents);
     } catch (e) {
@@ -63,6 +66,18 @@ export function TeacherCouponsManager({ courseId }) {
       showToast(t("teacher.errors.loadFailed"), "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCourses = async () => {
+    try {
+      const res = await databases.listDocuments(DB_ID, COL_COURSES, [
+        Query.select(["$id", "title"]),
+        Query.limit(100),
+      ]);
+      setCourses(res.documents);
+    } catch (e) {
+      console.error("Failed to load courses", e);
     }
   };
 
@@ -76,6 +91,7 @@ export function TeacherCouponsManager({ courseId }) {
         maxUses: coupon.maxUses,
         expiresAt: coupon.expiresAt ? coupon.expiresAt.split("T")[0] : "",
         enabled: coupon.enabled,
+        courseId: coupon.courseId || "",
       });
     } else {
       setEditingCoupon(null);
@@ -86,6 +102,7 @@ export function TeacherCouponsManager({ courseId }) {
         maxUses: 0,
         expiresAt: "",
         enabled: true,
+        courseId: "",
       });
     }
     setIsModalOpen(true);
@@ -100,15 +117,15 @@ export function TeacherCouponsManager({ courseId }) {
     setSaving(true);
     try {
       const payload = {
-        ...formData,
         code: formData.code.toUpperCase().replace(/\s/g, ""),
-        courseId,
+        type: formData.type,
         value: parseFloat(formData.value),
         maxUses: parseInt(formData.maxUses) || 0,
-        // If empty string, send null or undefined? Appwrite might prefer null for nullable dates
         expiresAt: formData.expiresAt
           ? new Date(formData.expiresAt).toISOString()
           : null,
+        enabled: formData.enabled,
+        courseId: formData.courseId || null, // Global if null
       };
 
       if (editingCoupon) {
@@ -121,7 +138,7 @@ export function TeacherCouponsManager({ courseId }) {
         setCoupons((prev) =>
           prev.map((c) => (c.$id === updated.$id ? updated : c)),
         );
-        showToast(t("teacher.coupons.updated"), "success");
+        showToast(t("teacher.coupons.updated", "Cupón actualizado"), "success");
       } else {
         const created = await databases.createDocument(
           DB_ID,
@@ -130,24 +147,30 @@ export function TeacherCouponsManager({ courseId }) {
           payload,
         );
         setCoupons((prev) => [created, ...prev]);
-        showToast(t("teacher.coupons.created"), "success");
+        showToast(t("teacher.coupons.created", "Cupón creado"), "success");
       }
       setIsModalOpen(false);
     } catch (e) {
       console.error(e);
-      showToast(t("teacher.errors.saveFailed"), "error");
+      showToast(t("teacher.errors.saveFailed", "Error al guardar"), "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
+    if (
+      !window.confirm(
+        t("common.confirmDelete", "¿Estás seguro de eliminar este cupón?"),
+      )
+    )
+      return;
     try {
       await databases.deleteDocument(DB_ID, COL_COUPONS, id);
       setCoupons((prev) => prev.filter((c) => c.$id !== id));
-      showToast(t("teacher.coupons.deleted"), "success");
+      showToast(t("teacher.coupons.deleted", "Cupón eliminado"), "success");
     } catch (e) {
-      showToast(t("teacher.errors.deleteFailed"), "error");
+      showToast(t("teacher.errors.deleteFailed", "Error al eliminar"), "error");
     }
   };
 
@@ -165,8 +188,17 @@ export function TeacherCouponsManager({ courseId }) {
         prev.map((c) => (c.$id === updated.$id ? updated : c)),
       );
     } catch (e) {
-      showToast(t("teacher.errors.updateFailed"), "error");
+      showToast(
+        t("teacher.errors.updateFailed", "Error al actualizar"),
+        "error",
+      );
     }
+  };
+
+  const getCourseName = (id) => {
+    if (!id) return "Global (Todos los cursos)";
+    const course = courses.find((c) => c.$id === id);
+    return course ? course.title : "Curso desconocido";
   };
 
   return (
@@ -174,12 +206,12 @@ export function TeacherCouponsManager({ courseId }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-bold text-[rgb(var(--text-primary))]">
-            {t("teacher.coupons.title", "Cupones del Curso")}
+            {t("admin.coupons.title", "Gestión de Cupones")}
           </h3>
           <p className="text-sm text-[rgb(var(--text-secondary))]">
             {t(
-              "teacher.coupons.subtitle",
-              "Gestiona códigos de descuento para este curso",
+              "admin.coupons.subtitle",
+              "Administra todos los cupones de la plataforma (Globales y Específicos)",
             )}
           </p>
         </div>
@@ -198,8 +230,8 @@ export function TeacherCouponsManager({ courseId }) {
           icon={Ticket}
           title={t("teacher.coupons.empty", "No hay cupones")}
           description={t(
-            "teacher.coupons.emptyDesc",
-            "Crea el primer código de descuento para atraer alumnos.",
+            "admin.coupons.emptyDesc",
+            "Crea cupones globales para campañas de marketing.",
           )}
           className="min-h-[50vh] animate-in fade-in zoom-in-95 duration-500"
         />
@@ -218,18 +250,20 @@ export function TeacherCouponsManager({ courseId }) {
                       : t("common.inactive", "Inactivo")}
                   </Badge>
                 </div>
-                <button
-                  onClick={() => handleOpenModal(coupon)}
-                  className="text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))] opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Ticket className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(coupon.$id)}
-                  className="text-[rgb(var(--text-tertiary))] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleOpenModal(coupon)}
+                    className="text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))] opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Ticket className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(coupon.$id)}
+                    className="text-[rgb(var(--text-tertiary))] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-1 mb-4">
@@ -243,6 +277,14 @@ export function TeacherCouponsManager({ courseId }) {
                   {coupon.type === "percent" ? "%" : ""}{" "}
                   {t("teacher.coupons.discount", "de descuento")}
                 </div>
+
+                <div className="text-xs text-[rgb(var(--text-secondary))]">
+                  <span className="font-semibold">
+                    {t("common.course", "Curso")}:
+                  </span>{" "}
+                  {getCourseName(coupon.courseId)}
+                </div>
+
                 <div className="text-xs text-[rgb(var(--text-secondary))]">
                   {t("teacher.coupons.used", "Usado:")}{" "}
                   <strong>{coupon.usedCount}</strong> /{" "}
@@ -281,8 +323,8 @@ export function TeacherCouponsManager({ courseId }) {
         onClose={() => setIsModalOpen(false)}
         title={
           editingCoupon
-            ? t("teacher.coupons.edit")
-            : t("teacher.coupons.create")
+            ? t("teacher.coupons.edit", "Editar Cupón")
+            : t("teacher.coupons.create", "Crear Cupón")
         }
       >
         <div className="space-y-4">
@@ -295,9 +337,31 @@ export function TeacherCouponsManager({ courseId }) {
               onChange={(e) =>
                 setFormData({ ...formData, code: e.target.value.toUpperCase() })
               }
-              placeholder="E.g. BLACKFRIDAY2024"
+              placeholder="E.g. GLOBALSALE2024"
               maxLength={20}
             />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-1 block">
+              {t("common.course", "Curso (Opcional - Dejar vacío para Global)")}
+            </label>
+            <select
+              className="w-full rounded-md border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-2 text-sm"
+              value={formData.courseId}
+              onChange={(e) =>
+                setFormData({ ...formData, courseId: e.target.value })
+              }
+            >
+              <option value="">
+                {t("admin.coupons.global", "Global (Todos los cursos)")}
+              </option>
+              {courses.map((course) => (
+                <option key={course.$id} value={course.$id}>
+                  {course.title}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

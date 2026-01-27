@@ -25,6 +25,7 @@ import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
 import { TeacherCourseEditorPage } from "../../pages/app/teacher/TeacherCourseEditorPage";
 import { AdminUsersPage } from "../../pages/app/admin/AdminUsersPage";
 import { AdminCategoriesPage } from "../../pages/app/admin/AdminCategoriesPage";
+import { AdminCouponsPage } from "../../pages/app/admin/AdminCouponsPage";
 import { NotificationsPage } from "../../pages/app/notifications/NotificationsPage";
 
 import {
@@ -103,6 +104,7 @@ export const router = createBrowserRouter([
             children: [
               { path: "users", element: <AdminUsersPage /> },
               { path: "categories", element: <AdminCategoriesPage /> },
+              { path: "coupons", element: <AdminCouponsPage /> },
             ],
           },
         ],

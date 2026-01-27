@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Search,
   Tag,
+  Ticket,
   ShoppingCart,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -206,6 +207,11 @@ export function AppLayout() {
             to: "/app/admin/categories",
             icon: Tag,
             label: t("nav.categories", "Categorías"),
+          },
+          {
+            to: "/app/admin/coupons",
+            icon: Ticket,
+            label: t("nav.coupons", "Cupones"),
           },
         ]
       : []),
