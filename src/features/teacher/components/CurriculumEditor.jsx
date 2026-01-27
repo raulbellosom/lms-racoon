@@ -53,6 +53,7 @@ function SortableSectionItem({ section, ...props }) {
         section={section}
         dragHandleProps={{ ...attributes, ...listeners }}
         {...props}
+        onConfigureQuiz={props.onConfigureQuiz}
       />
     </div>
   );
@@ -268,6 +269,8 @@ export function CurriculumEditor({
                   onDeleteLesson={onDeleteLesson}
                   onMakeSectionFree={onMakeSectionFree}
                   onPreviewLesson={props.onPreviewLesson}
+                  onConfigureQuiz={props.onConfigureQuiz}
+                  onConfigureAssignment={props.onConfigureAssignment}
                 />
               ))}
             </div>

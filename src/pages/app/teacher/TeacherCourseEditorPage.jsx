@@ -460,25 +460,33 @@ export function TeacherCourseEditorPage() {
   };
 
   const handleMakeSectionFree = async (section) => {
+    const lessons = lessonsBySection[section.$id] || [];
+    // Check if all are already free
+    const allFree = lessons.length > 0 && lessons.every((l) => l.isFreePreview);
+    const newStatus = !allFree;
+
     setConfirmation({
       open: true,
-      title: t("teacher.lesson.makeSectionFreeConfirm"),
-      description: t("teacher.lesson.makeSectionFreeDesc"),
+      title: newStatus
+        ? t("teacher.curriculum.makeSectionFreeConfirm")
+        : t("teacher.curriculum.makeSectionPaidConfirm"),
+      description: newStatus
+        ? t("teacher.curriculum.makeSectionFreeDesc")
+        : t("teacher.curriculum.makeSectionPaidDesc"),
       confirmText: t("common.yes"),
       onConfirm: async () => {
         try {
-          const lessons = lessonsBySection[section.$id] || [];
           // Parallel update for speed
           await Promise.all(
             lessons.map((l) =>
-              LessonService.update(l.$id, { isFreePreview: true }),
+              LessonService.update(l.$id, { isFreePreview: newStatus }),
             ),
           );
 
           // Update local state by mapping over the lessons for this section
           const updatedLessons = lessons.map((l) => ({
             ...l,
-            isFreePreview: true,
+            isFreePreview: newStatus,
           }));
           setLessonsBySection((prev) => ({
             ...prev,
@@ -766,9 +774,18 @@ export function TeacherCourseEditorPage() {
             onEditLesson={handleEditLesson}
             onDeleteLesson={handleDeleteLesson}
             onPreviewLesson={handlePreviewLesson}
-            onReorderSections={handleReorderSections}
             onReorderLessons={handleReorderLessons}
             onMakeSectionFree={handleMakeSectionFree}
+            onConfigureQuiz={(lesson) =>
+              navigate(
+                `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/quiz`,
+              )
+            }
+            onConfigureAssignment={(lesson) =>
+              navigate(
+                `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/assignment`,
+              )
+            }
           />
         )}
 

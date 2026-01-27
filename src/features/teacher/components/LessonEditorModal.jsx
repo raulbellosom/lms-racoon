@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   X,
@@ -437,14 +438,38 @@ export function LessonEditorModal({
     }
   };
 
+  const navigate = useNavigate();
+
   const handleOpenConfig = () => {
     // If lesson exists, open. If not, ask to save.
     if (isNew) {
       // Trigger save first?
       showToast(t("teacher.errors.saveFirst"), "info");
     } else {
-      if (formData.kind === "quiz") setQuizModalOpen(true);
-      if (formData.kind === "assignment") setAssignmentModalOpen(true);
+      if (formData.kind === "quiz") {
+        // Navigate to new Quiz Editor Page
+        navigate(
+          `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/quiz`,
+        );
+        // We should probably close this modal too?
+        // Yes, UX: Go to new page.
+        // onClose(); // Wait, if we close, do we lose state? No, because we navigated away.
+        // Actually, React Router navigation unmounts the current route components usually?
+        // LessonEditorModal is a child of TeacherCourseEditorPage (likely).
+        // If we navigate to .../curriculum/.../quiz, it is a nested route?
+        // No, I defined it as a sibling of "courses/:courseId" in the router structure?
+        // Let's check router.jsx structure.
+        // It is under `app/teach/children`.
+        // `courses/:courseId` matches `TeacherCourseEditorPage`.
+        // `courses/:courseId/curriculum/:lessonId/quiz` matches `TeacherQuizEditorPage`.
+        // So yes, it will unmount the CourseEditorPage and mount QuizEditorPage.
+        // So onClose call is redundant but fine.
+      }
+      if (formData.kind === "assignment") {
+        navigate(
+          `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/assignment`,
+        );
+      }
     }
   };
 
@@ -664,7 +689,7 @@ export function LessonEditorModal({
                   {relatedEntity && (
                     <span className="flex items-center gap-1 text-sm text-green-600 font-medium px-3 py-1 bg-green-100 dark:bg-green-900/20 rounded-full">
                       <Check className="h-3 w-3" />{" "}
-                      {t("teacher.status.configured")}
+                      {t("teacher.lesson.configuredStatus")}
                     </span>
                   )}
                 </div>
@@ -786,7 +811,8 @@ export function LessonEditorModal({
       </Modal>
 
       {/* QUIZ EDITOR SUB-MODAL */}
-      {quizModalOpen && (
+      {/* QUIZ EDITOR SUB-MODAL REMOVED (Moved to page) */}
+      {/* {quizModalOpen && (
         <QuizEditorModal
           open={quizModalOpen}
           onClose={() => setQuizModalOpen(false)}
@@ -795,7 +821,7 @@ export function LessonEditorModal({
           lessonId={lesson?.$id}
           onSave={handleConfigSaved}
         />
-      )}
+      )} */}
 
       {/* ASSIGNMENT EDITOR SUB-MODAL */}
       {assignmentModalOpen && (

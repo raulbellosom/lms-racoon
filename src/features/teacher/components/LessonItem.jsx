@@ -9,6 +9,7 @@ import {
   GripVertical,
   Edit2,
   File,
+  Settings,
 } from "lucide-react";
 import { Button } from "../../../shared/ui/Button";
 import { FileService } from "../../../shared/data/files";
@@ -61,8 +62,9 @@ export function LessonItem({
   onEdit,
   onDelete,
   onPreview,
+  onConfigure, // New prop
   isDragging = false,
-  dragHandleProps, // New prop
+  dragHandleProps,
 }) {
   const { t } = useTranslation();
   const Icon = getLessonIcon(lesson.kind);
@@ -159,6 +161,21 @@ export function LessonItem({
 
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0 ml-2">
+        {(lesson.kind === "quiz" || lesson.kind === "assignment") && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onConfigure?.(lesson)}
+            className="h-8 w-8 text-[rgb(var(--text-secondary))]"
+            title={
+              lesson.kind === "quiz"
+                ? t("teacher.quiz.configure") || "Configurar"
+                : t("teacher.assignment.configure") || "Configurar"
+            }
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </Button>
+        )}
         {lesson.kind === "video" && lesson.videoFileId && (
           <Button
             variant="ghost"

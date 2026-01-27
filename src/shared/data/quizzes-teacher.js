@@ -151,6 +151,7 @@ export async function createQuizQuestion({
   answerKey = [], // Array of correct answer indices or strings
   points = 1,
   order = 0,
+  imageId = null,
 }) {
   if (!hasAppwrite()) throw new Error("Appwrite not configured");
 
@@ -167,6 +168,7 @@ export async function createQuizQuestion({
       answerKeyJson: JSON.stringify(answerKey),
       points,
       order,
+      imageId,
       enabled: true,
     },
   );
@@ -242,6 +244,18 @@ export function parseQuestionData(question) {
     ...question,
     options: JSON.parse(question.optionsJson || "[]"),
     answerKey: JSON.parse(question.answerKeyJson || "[]"),
+    imageId: question.imageId, // Explicitly include if needed, though ...rest spreads it usually.
+    // Wait, parseQuestionData takes `question` and returns a new object.
+    // `...question` spreads all props including imageId.
+    // So this edit is redundancy check.
+    // However, explicit is good.
+    // Actually, `...question` is fine.
+    // But I'll confirm `...question` is used. Yes: return { ...question, ... }
+    // So I don't strictly need to add this unless I want to be safe or if imageId is separate.
+    // I won't make this edit to save tool calls if it's already covered.
+    // But wait, the `question` object from Appwrite SDK contains all attributes.
+    // So `imageId` is already there.
+    // I will SKIP this edit.
   };
 }
 

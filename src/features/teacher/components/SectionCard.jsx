@@ -213,6 +213,13 @@ export function SectionCard({
                   onEdit={onEditLesson}
                   onDelete={onDeleteLesson}
                   onPreview={props.onPreviewLesson}
+                  onConfigure={
+                    lesson.kind === "quiz"
+                      ? props.onConfigureQuiz
+                      : lesson.kind === "assignment"
+                        ? props.onConfigureAssignment
+                        : undefined
+                  }
                 />
               ))}
             </SortableContext>

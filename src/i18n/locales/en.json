@@ -296,13 +296,7 @@
       "quizzes": "Quizzes",
       "assignments": "Assignments",
       "coupons": "Coupons",
-      "reviews": {
-        "title": "Reviews",
-        "totalReviews": "Total reviews",
-        "noReviewsTitle": "No reviews yet",
-        "noReviewsDesc": "Be the first to rate this course.",
-        "verifiedSource": "Reviews come from verified students who purchased the course."
-      },
+      "reviews": "Reviews",
       "settings": "Settings"
     },
     "form": {
@@ -358,6 +352,7 @@
       "emptyStateDesc": "Add your first section to start organizing your lessons."
     },
     "lesson": {
+      "configuredStatus": "Configured",
       "editTitle": "Edit Lesson",
       "createTitle": "New Lesson",
       "description": "Description",
@@ -415,7 +410,9 @@
       "deleteQuiz": "Delete quiz",
       "deleteQuizConfirm": "Delete this quiz?",
       "deleteQuizDesc": "All student attempts will be deleted.",
-      "createInCurriculum": "To create a quiz, go to the 'Content' tab and add a new 'Quiz' lesson."
+      "createInCurriculum": "To create a quiz, go to the 'Content' tab and add a new 'Quiz' lesson.",
+      "settings": "Quiz settings",
+      "configure": "Configure questions"
     },
     "assignment": {
       "title": "Assignments",
@@ -445,7 +442,9 @@
       "deleteAssignment": "Delete assignment",
       "deleteAssignmentConfirm": "Delete this assignment?",
       "deleteAssignmentDesc": "All student submissions will be deleted.",
-      "createInCurriculum": "To create an assignment, go to the 'Content' tab and add a new 'Assignment' lesson."
+      "createInCurriculum": "To create an assignment, go to the 'Content' tab and add a new 'Assignment' lesson.",
+      "settings": "Assignment settings",
+      "configure": "Configure instructions"
     },
     "coupons": {
       "title": "Course Coupons",
@@ -516,7 +515,11 @@
       "saveFailed": "Failed to save. Check the console.",
       "deleteFailed": "Failed to delete",
       "uploadFailed": "Failed to upload file",
-      "statusChangeFailed": "Failed to change status"
+      "statusChangeFailed": "Failed to change status",
+      "saveFirstToConfig": "Save the lesson first to configure questions and options.",
+      "configureContent": "Configure content, questions, and options.",
+      "saveToEnableConfig": "(Press Save to enable configuration)",
+      "saveFirst": "Save lesson first"
     },
     "confirm": {
       "unsavedChanges": "You have unsaved changes. Leave without saving?",
@@ -555,6 +558,7 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
+    "saved": "Saved",
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",

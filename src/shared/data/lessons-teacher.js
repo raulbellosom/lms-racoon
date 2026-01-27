@@ -19,6 +19,10 @@ export const LessonService = {
     return response.documents;
   },
 
+  async getById(lessonId) {
+    return await db.getDocument(databaseId, lessons, lessonId);
+  },
+
   // Helper to get all lessons for a course to calculate stats or duration
   async listByCourse(courseId) {
     if (!courseId) return [];

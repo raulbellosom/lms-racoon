@@ -23,6 +23,8 @@ import { ProfileView, SettingsView } from "../../features/profile";
 import { TeachHomePage } from "../../pages/app/teacher/TeachHomePage";
 import { TeacherCoursesPage } from "../../pages/app/teacher/TeacherCoursesPage";
 import { TeacherCourseEditorPage } from "../../pages/app/teacher/TeacherCourseEditorPage";
+import { TeacherQuizEditorPage } from "../../pages/app/teacher/TeacherQuizEditorPage";
+import { TeacherAssignmentEditorPage } from "../../pages/app/teacher/TeacherAssignmentEditorPage";
 import { AdminUsersPage } from "../../pages/app/admin/AdminUsersPage";
 import { AdminCategoriesPage } from "../../pages/app/admin/AdminCategoriesPage";
 import { AdminCouponsPage } from "../../pages/app/admin/AdminCouponsPage";
@@ -103,6 +105,14 @@ export const router = createBrowserRouter([
               {
                 path: "courses/:courseId",
                 element: <TeacherCourseEditorPage />,
+              },
+              {
+                path: "courses/:courseId/curriculum/:lessonId/quiz",
+                element: <TeacherQuizEditorPage />,
+              },
+              {
+                path: "courses/:courseId/curriculum/:lessonId/assignment",
+                element: <TeacherAssignmentEditorPage />,
               },
             ],
           },

@@ -176,6 +176,14 @@ export async function deleteLessonAttachment(fileId) {
 }
 
 /**
+ * Get lesson attachment preview URL (for images)
+ * @param {string} fileId - The file ID
+ */
+export function getLessonAttachmentPreviewUrl(fileId) {
+  return getFilePreviewUrl(APPWRITE.buckets.lessonAttachments, fileId);
+}
+
+/**
  * Upload submission attachment (student assignment files)
  * @param {File} file - Attachment file
  * @returns {Promise<Object>} The file info with id and name
@@ -219,6 +227,7 @@ export const FileService = {
   // Lesson attachments
   uploadLessonAttachment,
   getLessonAttachmentUrl,
+  getLessonAttachmentPreviewUrl,
   deleteLessonAttachment,
 
   /**
