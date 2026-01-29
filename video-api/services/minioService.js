@@ -6,6 +6,7 @@ const minioClient = new Minio.Client({
   useSSL: process.env.MINIO_USE_SSL === "true",
   accessKey: process.env.MINIO_ACCESS_KEY,
   secretKey: process.env.MINIO_SECRET_KEY,
+  pathStyle: true, // Force path-style for IP access (avoids bucket.ip issues)
 });
 
 export const uploadFile = async (
@@ -15,9 +16,16 @@ export const uploadFile = async (
   contentType,
 ) => {
   // Ensure bucket exists
-  const exists = await minioClient.bucketExists(bucketName).catch(() => false);
+  const exists = await minioClient.bucketExists(bucketName).catch((err) => {
+    console.warn(
+      `[MinIO] Check bucket '${bucketName}' failed (will attempt create):`,
+      err.message,
+    );
+    return false;
+  });
   if (!exists) {
-    await minioClient.makeBucket(bucketName, "us-east-1"); // Region doesn't matter much for self-hosted
+    console.log(`[MinIO] Creating bucket '${bucketName}'...`);
+    await minioClient.makeBucket(bucketName, "us-east-1");
   }
 
   const metaData = {

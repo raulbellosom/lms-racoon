@@ -28,4 +28,8 @@ app.get("/health", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Video API Server running on port ${PORT}`);
   console.log(`ffmpeg path: ${process.env.FFMPEG_PATH || "default"}`);
+  console.log(
+    `MinIO Endpoint: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`,
+  );
+  console.log(`MinIO SSL: ${process.env.MINIO_USE_SSL}`);
 });
