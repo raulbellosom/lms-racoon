@@ -164,6 +164,7 @@ export function LessonEditorModal({
   });
 
   const [uploading, setUploading] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState(0);
   const [saving, setSaving] = React.useState(false);
   const [videoFile, setVideoFile] = React.useState(null);
   const [coverFile, setCoverFile] = React.useState(null);
@@ -447,6 +448,7 @@ export function LessonEditorModal({
           const videoResponse = await VideoApi.uploadVideo(
             savedLesson.$id,
             videoFile,
+            (progress) => setUploadProgress(progress),
           );
 
           // Update Lesson with MinIO data
@@ -487,6 +489,7 @@ export function LessonEditorModal({
     } finally {
       setSaving(false);
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -647,6 +650,12 @@ export function LessonEditorModal({
                       <span className="text-sm truncate max-w-[200px]">
                         {videoFile.name}
                       </span>
+                      {uploading && uploadProgress > 0 && (
+                        <div
+                          className="absolute bottom-0 left-0 h-1 bg-green-500 transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

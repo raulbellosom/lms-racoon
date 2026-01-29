@@ -421,6 +421,7 @@ export function TeacherCourseEditorPage() {
             (l) => (l.$id === lessonId ? updated : l),
           ),
         });
+        return updated;
       } else {
         const currentLessons = lessonsBySection[lessonData.sectionId] || [];
         const newLesson = await LessonService.create({
@@ -431,6 +432,7 @@ export function TeacherCourseEditorPage() {
           ...lessonsBySection,
           [lessonData.sectionId]: [...currentLessons, newLesson],
         });
+        return newLesson;
       }
     } catch (e) {
       console.error(e);
