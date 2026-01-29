@@ -43,7 +43,9 @@ export function BannerSelectionModal({
     try {
       const allLessons = await LessonService.listByCourse(courseId);
       // Filter lessons that have a video
-      const videoLessons = allLessons.filter((l) => l.videoFileId);
+      const videoLessons = allLessons.filter(
+        (l) => l.videoFileId || l.videoProvider === "minio",
+      );
       setLessons(videoLessons);
     } catch (error) {
       console.error("Failed to load lessons for video selection", error);
@@ -288,7 +290,9 @@ export function BannerSelectionModal({
                       onClick={() => {
                         onSelect({
                           type: "video",
-                          value: lesson.videoFileId,
+                          value: lesson.videoFileId || lesson.videoObjectKey, // Fallback for minio? Logic is murky here, need to update container
+                          provider: lesson.videoProvider || "appwrite",
+                          hlsUrl: lesson.videoHlsUrl,
                           coverId: lesson.videoCoverFileId,
                         });
                         onOpenChange(false);

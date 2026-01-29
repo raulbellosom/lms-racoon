@@ -304,9 +304,12 @@ export function CourseDetailView() {
     ? FileService.getCourseCoverUrl(course.coverFileId)
     : null;
 
-  const promoVideoUrl = course.promoVideoFileId
-    ? FileService.getLessonVideoUrl(course.promoVideoFileId)
-    : null;
+  /*
+   * Handle Promo Video (MinIO HLS)
+   * Legacy Appwrite video support is removed.
+   */
+  const promoVideoUrl =
+    course.promoVideoProvider === "minio" ? course.promoVideoHlsUrl : null;
 
   const rating = stats?.averageRating || 0;
   // Use DB students count or 0, maybe stats logic differs but let's stick to existing

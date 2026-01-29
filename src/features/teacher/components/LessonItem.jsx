@@ -176,17 +176,18 @@ export function LessonItem({
             <Settings className="h-3.5 w-3.5" />
           </Button>
         )}
-        {lesson.kind === "video" && lesson.videoFileId && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onPreview?.(lesson)}
-            className="h-8 w-8 text-[rgb(var(--brand-primary))]"
-            title={t("teacher.lesson.preview") || "Vista previa"}
-          >
-            <Video className="h-3.5 w-3.5" />
-          </Button>
-        )}
+        {lesson.kind === "video" &&
+          (lesson.videoFileId || lesson.videoProvider === "minio") && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onPreview?.(lesson)}
+              className="h-8 w-8 text-[rgb(var(--brand-primary))]"
+              title={t("teacher.lesson.preview") || "Vista previa"}
+            >
+              <Video className="h-3.5 w-3.5" />
+            </Button>
+          )}
         <Button
           variant="ghost"
           size="icon"

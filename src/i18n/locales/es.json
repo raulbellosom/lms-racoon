@@ -366,6 +366,8 @@
       "content": "Contenido",
       "descriptionPlaceholder": "Describe el contenido de esta lección...",
       "uploadVideo": "Subir Video",
+      "uploadCover": "Subir Portada",
+      "changeCover": "Cambiar Portada",
       "videoFormats": "MP4, WebM, MOV (máx. 2GB)",
       "uploadingVideo": "Subiendo video...",
       "videoUploaded": "Video subido correctamente",

@@ -187,7 +187,9 @@ export function CourseMediaUploader({
 
       setFormData((prev) => ({
         ...prev,
-        promoVideoFileId: selection.value,
+        promoVideoFileId: selection.value, // This serves as ID or Key
+        promoVideoProvider: selection.provider,
+        promoVideoHlsUrl: selection.hlsUrl,
         promoVideoCoverFileId: selection.coverId || "",
         bannerFileId: "", // Clear banner, video takes priority
       }));

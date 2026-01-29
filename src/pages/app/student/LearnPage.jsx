@@ -108,9 +108,11 @@ const LessonViewer = ({
         <div className="bg-black relative aspect-video shadow-2xl">
           <VideoPlayer
             src={
-              current.videoFileId
-                ? FileService.getLessonVideoUrl(current.videoFileId)
-                : null
+              current.videoProvider === "minio" && current.videoHlsUrl
+                ? current.videoHlsUrl
+                : current.videoFileId
+                  ? FileService.getLessonVideoUrl(current.videoFileId)
+                  : ""
             }
             poster={
               current.videoCoverFileId

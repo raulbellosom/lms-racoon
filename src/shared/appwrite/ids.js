@@ -34,7 +34,7 @@ export const APPWRITE = {
   buckets: {
     avatars: pick("VITE_APPWRITE_BUCKET_AVATARS", "avatars"),
     courseCovers: pick("VITE_APPWRITE_BUCKET_COURSE_COVERS", "courseCovers"),
-    lessonVideos: pick("VITE_APPWRITE_BUCKET_LESSON_VIDEOS", "lessonVideos"),
+
     lessonAttachments: pick(
       "VITE_APPWRITE_BUCKET_LESSON_ATTACHMENTS",
       "lessonAttachments",

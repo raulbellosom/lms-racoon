@@ -404,6 +404,8 @@
       "content": "Content",
       "descriptionPlaceholder": "Describe the content of this lesson...",
       "uploadVideo": "Upload Video",
+      "uploadCover": "Upload Cover",
+      "changeCover": "Change Cover",
       "videoFormats": "MP4, WebM, MOV (max. 2GB)",
       "uploadingVideo": "Uploading video...",
       "videoUploaded": "Video uploaded successfully",

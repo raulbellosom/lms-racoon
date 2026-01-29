@@ -28,6 +28,8 @@ import "easymde/dist/easymde.min.css";
 import { CharacterCountCircle } from "./CharacterCountCircle";
 import { QuizEditorModal } from "./QuizEditorModal";
 import { AssignmentEditorModal } from "./AssignmentEditorModal";
+import { VideoApi } from "../../../shared/services/videoApi";
+import { LessonService } from "../../../shared/data/lessons-teacher";
 
 /**
  * Lesson type options
@@ -340,6 +342,33 @@ export function LessonEditorModal({
     setCoverFile(file);
   };
 
+  const handleRemoveCover = async () => {
+    // If it was a new file
+    if (coverFile) {
+      setCoverFile(null);
+      return;
+    }
+    // If it was an existing file
+    if (formData.videoCoverFileId) {
+      // We set it to empty string to mark for deletion/removal in save
+      // But wait, if we save, we check if(coverFile).
+      // If we want to strictly remove it, we need state for that.
+      // Simplest: just clear formData.videoCoverFileId and maybe call API immediately or handle in save?
+      // User asked: "logica de eliminacion ... cada que se remplace".
+      // Replacement is handled in save.
+      // What about valid explicit deletion?
+      // If I click garbage icon, I probably want to remove it.
+      try {
+        if (formData.videoCoverFileId) {
+          await FileService.deleteCourseCover(formData.videoCoverFileId);
+        }
+        updateField("videoCoverFileId", "");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const handleAttachmentUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -373,15 +402,9 @@ export function LessonEditorModal({
 
     setSaving(true);
     try {
-      let videoFileId = formData.videoFileId;
       let videoCoverFileId = formData.videoCoverFileId;
 
-      // Upload files if needed
-      if (videoFile) {
-        if (formData.videoFileId)
-          await FileService.deleteLessonVideo(formData.videoFileId);
-        videoFileId = await FileService.uploadLessonVideo(videoFile);
-      }
+      // 1. Handle Cover Image (Appwrite Storage)
       if (coverFile) {
         if (formData.videoCoverFileId) {
           try {
@@ -397,30 +420,51 @@ export function LessonEditorModal({
         title: formData.title.trim(),
         description: formData.description.trim(),
         kind: formData.kind,
-        videoFileId,
         videoCoverFileId,
+        // videoFileId will be removed/ignored for new video flow
+        // but if we want to keep legacy compatibility, we might leave it if we didn't touch it?
+        // Plan says remove it. Let's not send it if we are doing MinIO.
         durationSec: formData.durationSec,
         isFreePreview: formData.isFreePreview,
         attachments: attachments.map((a) => a.id),
       };
 
-      // We need to return the ID after saving to use it for linked entities
+      // 2. Save Lesson to get ID
       const savedLesson = await onSave?.(lessonData, lesson?.$id);
+
+      // 3. Handle Video Upload (MinIO) if there is a new video file
+      if (videoFile && savedLesson?.$id) {
+        try {
+          // Upload to MinIO / VideoAPI
+          const videoResponse = await VideoApi.uploadVideo(
+            savedLesson.$id,
+            videoFile,
+          );
+
+          // Update Lesson with MinIO data
+          await LessonService.update(savedLesson.$id, {
+            videoProvider: "minio",
+            videoObjectKey: videoResponse.videoObjectKey,
+            videoHlsUrl: videoResponse.videoHlsUrl,
+            videoStatus: "ready",
+            durationSec: videoResponse.durationSec || formData.durationSec,
+          });
+        } catch (videoError) {
+          console.error("Video upload failed:", videoError);
+          showToast(
+            "Lesson saved but video upload failed: " + videoError.message,
+            "error",
+          );
+        }
+      }
 
       // If we want to open config immediately
       if (andOpenConfig && savedLesson?.$id) {
         if (formData.kind === "quiz") {
           setQuizModalOpen(true);
-          // Reuse existing related entity if exists, or pass partial data
         } else if (formData.kind === "assignment") {
           setAssignmentModalOpen(true);
         }
-        // Don't close this modal yet if configuring?
-        // Actually user experience: Save Lesson -> Open Config Modal.
-        // When Config Modal closes -> Come back here? Or close everything?
-        // Typically: Close Lesson Modal -> Open Config Modal?
-        // OR: Keep Lesson Modal open, overlay Config Modal.
-        // Let's keep Lesson Modal open.
       } else if (!andOpenConfig) {
         onClose();
       }
@@ -626,6 +670,85 @@ export function LessonEditorModal({
                     className="hidden"
                     accept="video/*"
                     onChange={handleVideoUpload}
+                  />
+                </div>
+              </div>
+              {/* Cover Image Upload (Restored) */}
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[rgb(var(--text-secondary))]">
+                  {t("teacher.lesson.uploadCover")}
+                </label>
+                <div
+                  className="relative flex items-center justify-center gap-3 rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-4 cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors overflow-hidden group"
+                  onClick={() =>
+                    document.getElementById("lesson-cover-upload").click()
+                  }
+                >
+                  {coverFile ? (
+                    <div className="flex items-center gap-2 z-10 relative">
+                      <Image className="h-5 w-5 text-blue-500" />
+                      <span className="text-sm truncate max-w-[200px]">
+                        {coverFile.name}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCoverFile(null);
+                        }}
+                        className="p-1 rounded-full bg-white/50 hover:bg-white text-red-500"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : formData.videoCoverFileId ? (
+                    <div className="w-64 aspect-video relative">
+                      <img
+                        src={FileService.getCourseCoverUrl(
+                          formData.videoCoverFileId,
+                        )}
+                        alt="Cover"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      {/* Overlay always accessible for mobile */}
+                      <div className="absolute inset-0 bg-black/10 flex flex-col justify-between p-2">
+                        <div className="flex justify-end">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveCover();
+                            }}
+                            className="p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 shadow-sm"
+                            title={t("common.delete")}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <div className="self-center">
+                          <span className="px-2 py-1 bg-black/60 text-white text-xs rounded-full font-medium backdrop-blur-sm">
+                            {t("teacher.lesson.changeCover")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-[rgb(var(--text-muted))]">
+                      <Image className="h-6 w-6" />
+                      <span className="text-xs">
+                        {t("teacher.lesson.coverFormats")}
+                      </span>
+                    </div>
+                  )}
+
+                  {coverFile && (
+                    <div className="absolute inset-0 opacity-20 bg-blue-500 pointer-events-none" />
+                  )}
+
+                  <input
+                    id="lesson-cover-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
                   />
                 </div>
               </div>

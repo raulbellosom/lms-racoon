@@ -1,4 +1,5 @@
 import React from "react";
+import Hls from "hls.js";
 import { useTranslation } from "react-i18next";
 import {
   Play,
@@ -27,6 +28,7 @@ import {
  * @param {boolean} theaterMode - Whether theater mode is active
  * @param {Function} onToggleTheater - Callback to toggle theater mode
  */
+
 export function VideoPlayer({
   src,
   poster,
@@ -56,7 +58,62 @@ export function VideoPlayer({
 
   const controlsTimeoutRef = React.useRef(null);
 
+  // Initialize Video Source (HLS or Standard)
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src) return;
+
+    let hls;
+
+    const isHls = src.includes(".m3u8") || src.includes(".m4s");
+
+    if (isHls && Hls.isSupported()) {
+      hls = new Hls({
+        capLevelToPlayerSize: true, // Auto quality based on size
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // Ready to play
+        if (initialTime > 0) video.currentTime = initialTime;
+      });
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              // try to recover network error
+              console.log("fatal network error encountered, try to recover");
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log("fatal media error encountered, try to recover");
+              hls.recoverMediaError();
+              break;
+            default:
+              // cannot recover
+              hls.destroy();
+              break;
+          }
+        }
+      });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS (Safari)
+      video.src = src;
+      // Seek handled in onLoadedMetadata
+    } else {
+      // Standard video
+      video.src = src;
+    }
+
+    return () => {
+      if (hls) {
+        hls.destroy();
+      }
+    };
+  }, [src]);
+
   // Format time as MM:SS
+
   const formatTime = (seconds) => {
     if (!seconds || isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
@@ -252,7 +309,6 @@ export function VideoPlayer({
       {/* Video Element */}
       <video
         ref={videoRef}
-        src={src}
         poster={poster}
         className="w-full h-full object-contain"
         onClick={togglePlay}

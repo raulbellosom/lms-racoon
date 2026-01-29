@@ -116,35 +116,6 @@ export async function deleteCourseCover(fileId) {
 }
 
 /**
- * Upload lesson video
- * @param {File} file - Video file
- * @param {Function} onProgress - Progress callback (optional)
- * @returns {Promise<string>} The file ID
- */
-export async function uploadLessonVideo(file, onProgress = null) {
-  // Note: Appwrite SDK doesn't support progress in browser,
-  // but we include the signature for future compatibility
-  const result = await uploadFile(APPWRITE.buckets.lessonVideos, file);
-  return result.$id;
-}
-
-/**
- * Get lesson video URL
- * @param {string} fileId - The file ID
- */
-export function getLessonVideoUrl(fileId) {
-  return getFileViewUrl(APPWRITE.buckets.lessonVideos, fileId);
-}
-
-/**
- * Delete lesson video
- * @param {string} fileId - The file ID
- */
-export async function deleteLessonVideo(fileId) {
-  return deleteFile(APPWRITE.buckets.lessonVideos, fileId);
-}
-
-/**
  * Upload lesson attachment (PDF, ZIP, etc.)
  * @param {File} file - Attachment file
  * @returns {Promise<Object>} The file info with id and name
@@ -218,11 +189,6 @@ export const FileService = {
   uploadCourseCover,
   getCourseCoverUrl,
   deleteCourseCover,
-
-  // Lesson videos
-  uploadLessonVideo,
-  getLessonVideoUrl,
-  deleteLessonVideo,
 
   // Lesson attachments
   uploadLessonAttachment,
