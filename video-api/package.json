@@ -3,9 +3,15 @@
   "version": "1.0.0",
   "description": "Video upload and HLS transcoding service",
   "main": "index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
+    "dev": "nodemon index.js",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "prod": "pm2 start index.js --name racoon-video-api --time --update-env",
+    "prod:restart": "pm2 restart racoon-video-api --update-env",
+    "prod:stop": "pm2 stop racoon-video-api",
+    "prod:logs": "pm2 logs racoon-video-api"
   },
   "dependencies": {
     "cors": "^2.8.5",
