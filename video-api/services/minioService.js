@@ -15,14 +15,20 @@ export const uploadFile = async (
   filePath,
   contentType,
 ) => {
-  // Ensure bucket exists
-  const exists = await minioClient.bucketExists(bucketName).catch((err) => {
-    console.warn(
-      `[MinIO] Check bucket '${bucketName}' failed (will attempt create):`,
-      err.message,
-    );
-    return false;
-  });
+  // Check if bucket exists
+  let exists = false;
+  try {
+    exists = await minioClient.bucketExists(bucketName);
+  } catch (err) {
+    if (err.code === "NoSuchBucket" || err.code === "NotFound") {
+      exists = false;
+    } else {
+      // Re-throw other errors (AccessDenied, ConnectionRefused, etc.)
+      console.error(`[MinIO] Error checking bucket '${bucketName}':`, err);
+      throw new Error(`MinIO connection failed: ${err.message}`);
+    }
+  }
+
   if (!exists) {
     console.log(`[MinIO] Creating bucket '${bucketName}'...`);
     await minioClient.makeBucket(bucketName, "us-east-1");
