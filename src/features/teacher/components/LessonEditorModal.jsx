@@ -156,7 +156,9 @@ export function LessonEditorModal({
     title: "",
     description: "",
     kind: "video",
-    videoFileId: "",
+    videoFileId: "", // Keep for legacy display support
+    videoStatus: "ready", // Default to ready if new? No, "pending". But for new lessons it is empty.
+    videoProvider: "appwrite",
     videoCoverFileId: "",
     durationSec: 0,
   });
@@ -209,6 +211,8 @@ export function LessonEditorModal({
           description: lesson.description || "",
           kind: lesson.kind || "video",
           videoFileId: lesson.videoFileId || "",
+          videoStatus: lesson.videoStatus || "ready", // Assume ready if not specified (legacy)
+          videoProvider: lesson.videoProvider || "appwrite",
           videoCoverFileId: lesson.videoCoverFileId || "",
           durationSec: lesson.durationSec || 0,
           isFreePreview: lesson.isFreePreview || false,
@@ -249,6 +253,8 @@ export function LessonEditorModal({
           description: "",
           kind: "video",
           videoFileId: "",
+          videoStatus: "",
+          videoProvider: "minio", // Default for new lessons
           videoCoverFileId: "",
           durationSec: 0,
           isFreePreview: false,
@@ -421,9 +427,11 @@ export function LessonEditorModal({
         description: formData.description.trim(),
         kind: formData.kind,
         videoCoverFileId,
-        // videoFileId will be removed/ignored for new video flow
-        // but if we want to keep legacy compatibility, we might leave it if we didn't touch it?
-        // Plan says remove it. Let's not send it if we are doing MinIO.
+        // New MinIO fields logic is handled after initial save for new files,
+        // but we preserve existing state if no new file.
+        videoProvider: formData.videoProvider,
+        videoStatus: formData.videoStatus,
+
         durationSec: formData.durationSec,
         isFreePreview: formData.isFreePreview,
         attachments: attachments.map((a) => a.id),
@@ -649,11 +657,15 @@ export function LessonEditorModal({
                         <X className="h-4 w-4" />
                       </button>
                     </div>
-                  ) : formData.videoFileId ? (
+                  ) : formData.videoStatus === "ready" ||
+                    formData.videoProvider === "minio" ||
+                    formData.videoFileId ? (
                     <div className="flex items-center gap-2 text-green-500">
                       <Video className="h-5 w-5" />
                       <span className="text-sm">
-                        {t("teacher.lesson.videoUploaded")}
+                        {formData.videoStatus === "processing"
+                          ? t("teacher.lesson.processing") || "Procesando..."
+                          : t("teacher.lesson.videoUploaded")}
                       </span>
                     </div>
                   ) : (

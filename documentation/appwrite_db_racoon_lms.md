@@ -76,23 +76,24 @@
 
 ### 3) `courses`
 
-| Attribute        | Type     | Required | Default | Constraints         | Notes                            |
-| ---------------- | -------- | -------: | ------- | ------------------- | -------------------------------- |
-| title            | string   |       ✅ | —       | min=4 max=120       |                                  |
-| subtitle         | string   |       ❌ | ""      | min=0 max=180       |                                  |
-| description      | string   |       ❌ | ""      | min=0 max=8000      | markdown/plain                   |
-| categoryId       | string   |       ✅ | —       | min=1 max=36        | FK -> categories.$id             |
-| teacherId        | string   |       ✅ | —       | min=1 max=36        | FK -> profiles.$id               |
-| language         | string   |       ❌ | "es"    | min=0 max=6         | es, en-US, etc                   |
-| level            | enum     |       ✅ | —       | —                   |                                  |
-| coverFileId      | string   |       ❌ | ""      | min=0 max=36        | bucket `courseCovers`            |
-| bannerFileId     | string   |       ❌ | ""      | min=0 max=36        | bucket `courseCovers`            |
-| promoVideoFileId | string   |       ❌ | ""      | min=0 max=36        | bucket `lessonVideos` (opcional) |
-| priceCents       | integer  |       ❌ | 0       | min=0 max=200000000 |                                  |
-| currency         | string   |       ❌ | "MXN"   | min=0 max=3         |                                  |
-| isPublished      | boolean  |       ❌ | false   | —                   |                                  |
-| publishedAt      | datetime |       ❌ | —       | —                   |                                  |
-| enabled          | boolean  |       ❌ | true    | —                   |                                  |
+| Attribute          | Type     | Required | Default    | Constraints         | Notes                 |
+| ------------------ | -------- | -------: | ---------- | ------------------- | --------------------- |
+| title              | string   |       ✅ | —          | min=4 max=120       |                       |
+| subtitle           | string   |       ❌ | ""         | min=0 max=180       |                       |
+| description        | string   |       ❌ | ""         | min=0 max=8000      | markdown/plain        |
+| categoryId         | string   |       ✅ | —          | min=1 max=36        | FK -> categories.$id  |
+| teacherId          | string   |       ✅ | —          | min=1 max=36        | FK -> profiles.$id    |
+| language           | string   |       ❌ | "es"       | min=0 max=6         | es, en-US, etc        |
+| level              | enum     |       ✅ | —          | —                   |                       |
+| coverFileId        | string   |       ❌ | ""         | min=0 max=36        | bucket `courseCovers` |
+| bannerFileId       | string   |       ❌ | ""         | min=0 max=36        | bucket `courseCovers` |
+| promoVideoProvider | string   |       ❌ | "appwrite" | min=0 max=20        | "minio" o "appwrite"  |
+| promoVideoHlsUrl   | string   |       ❌ | ""         | min=0 max=2000      | MinIO/HLS URL         |
+| priceCents         | integer  |       ❌ | 0          | min=0 max=200000000 |                       |
+| currency           | string   |       ❌ | "MXN"      | min=0 max=3         |                       |
+| isPublished        | boolean  |       ❌ | false      | —                   |                       |
+| publishedAt        | datetime |       ❌ | —          | —                   |                       |
+| enabled            | boolean  |       ❌ | true       | —                   |                       |
 
 **Enum values**
 
@@ -127,24 +128,29 @@
 
 ### 5) `lessons`
 
-| Attribute        | Type     | Required | isArray | Default | Constraints      | Notes                      |
-| ---------------- | -------- | -------: | ------- | ------- | ---------------- | -------------------------- |
-| courseId         | string   |       ✅ | false   | —       | min=1 max=36     | FK -> courses.$id          |
-| sectionId        | string   |       ✅ | false   | —       | min=1 max=36     | FK -> courseSections.$id   |
-| title            | string   |       ✅ | false   | —       | min=2 max=140    |                            |
-| description      | string   |       ❌ | false   | ""      | min=0 max=8000   |                            |
-| kind             | enum     |       ✅ | false   | —       | —                |                            |
-| order            | integer  |       ✅ | false   | —       | min=0 max=100000 |                            |
-| durationSec      | integer  |       ❌ | false   | 0       | min=0 max=86400  |                            |
-| videoFileId      | string   |       ❌ | false   | ""      | min=0 max=36     | bucket `lessonVideos`      |
-| videoCoverFileId | string   |       ❌ | false   | ""      | min=0 max=36     | bucket `lessonVideos`      |
-| attachments      | string[] |       ❌ | true    | []      | size=36          | bucket `lessonAttachments` |
-| isFreePreview    | boolean  |       ❌ | false   | false   | —                |                            |
-| enabled          | boolean  |       ❌ | false   | true    | —                |                            |
+| Attribute        | Type     | Required | isArray | Default    | Constraints      | Notes                      |
+| ---------------- | -------- | -------: | ------- | ---------- | ---------------- | -------------------------- |
+| courseId         | string   |       ✅ | false   | —          | min=1 max=36     | FK -> courses.$id          |
+| sectionId        | string   |       ✅ | false   | —          | min=1 max=36     | FK -> courseSections.$id   |
+| title            | string   |       ✅ | false   | —          | min=2 max=140    |                            |
+| description      | string   |       ❌ | false   | ""         | min=0 max=8000   |                            |
+| kind             | enum     |       ✅ | false   | —          | —                |                            |
+| order            | integer  |       ✅ | false   | —          | min=0 max=100000 |                            |
+| durationSec      | integer  |       ❌ | false   | 0          | min=0 max=86400  |                            |
+| videoProvider    | string   |       ❌ | false   | "appwrite" | min=0 max=20     | "minio" o "appwrite"       |
+| videoHlsUrl      | string   |       ❌ | false   | ""         | min=0 max=2000   | MinIO/HLS URL              |
+| videoObjectKey   | string   |       ❌ | false   | ""         | min=0 max=500    | MinIO raw key              |
+| videoStatus      | enum     |       ❌ | false   | ready      | min=0 max=50     | processing/ready/error     |
+| videoError       | string   |       ❌ | false   | ""         | min=0 max=1000   |                            |
+| videoCoverFileId | string   |       ❌ | false   | ""         | min=0 max=36     | bucket `courseCovers`      |
+| attachments      | string[] |       ❌ | true    | []         | size=36          | bucket `lessonAttachments` |
+| isFreePreview    | boolean  |       ❌ | false   | false      | —                |                            |
+| enabled          | boolean  |       ❌ | false   | true       | —                |                            |
 
 **Enum values**
 
 - `kind`: `video`, `article`, `quiz`, `assignment`
+- `videoStatus`: `processing`, `ready`, `error`
 
 **attachments**
 
@@ -534,6 +540,6 @@
 
 - `avatars` — foto de perfil
 - `courseCovers` — portadas de cursos
-- `lessonVideos` — videos por lección
+
 - `lessonAttachments` — PDF/ZIP/etc
 - `submissionAttachments` — entregas del alumno
