@@ -13,6 +13,10 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+// Routes
+// Mount at /lessons for Nginx usage (strips /api/)
+app.use("/lessons", videoRoutes);
+// Mount at /api/lessons for local usage (direct access)
 app.use("/api/lessons", videoRoutes);
 
 // Health check
