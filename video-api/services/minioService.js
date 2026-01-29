@@ -7,6 +7,7 @@ const minioClient = new Minio.Client({
   accessKey: process.env.MINIO_ACCESS_KEY,
   secretKey: process.env.MINIO_SECRET_KEY,
   pathStyle: true, // Force path-style for IP access (avoids bucket.ip issues)
+  region: "us-east-1",
 });
 
 export const uploadFile = async (
@@ -15,23 +16,20 @@ export const uploadFile = async (
   filePath,
   contentType,
 ) => {
-  // Check if bucket exists
-  let exists = false;
+  // Ensure bucket exists (Try to create, ignore if exists)
   try {
-    exists = await minioClient.bucketExists(bucketName);
+    await minioClient.makeBucket(bucketName);
+    console.log(`[MinIO] Created bucket '${bucketName}'`);
   } catch (err) {
-    if (err.code === "NoSuchBucket" || err.code === "NotFound") {
-      exists = false;
+    if (
+      err.code === "BucketAlreadyOwnedByYou" ||
+      err.code === "BucketAlreadyExists"
+    ) {
+      // Bucket exists, proceed
     } else {
-      // Re-throw other errors (AccessDenied, ConnectionRefused, etc.)
-      console.error(`[MinIO] Error checking bucket '${bucketName}':`, err);
-      throw new Error(`MinIO connection failed: ${err.message}`);
+      console.error(`[MinIO] Error ensuring bucket '${bucketName}':`, err);
+      throw new Error(`MinIO bucket error: ${err.message}`);
     }
-  }
-
-  if (!exists) {
-    console.log(`[MinIO] Creating bucket '${bucketName}'...`);
-    await minioClient.makeBucket(bucketName, "us-east-1");
   }
 
   const metaData = {
