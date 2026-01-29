@@ -1,7 +1,7 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const videoRoutes = require("./routes/videos");
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import videoRoutes from "./routes/videos.js";
 
 dotenv.config();
 

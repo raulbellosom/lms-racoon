@@ -1,11 +1,11 @@
-const ffmpeg = require("fluent-ffmpeg");
-const path = require("path");
+import ffmpeg from "fluent-ffmpeg";
+import path from "path";
 
 if (process.env.FFMPEG_PATH) {
   ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
 }
 
-exports.generateHLS = (inputPath, outputPath) => {
+export const generateHLS = (inputPath, outputPath) => {
   return new Promise((resolve, reject) => {
     let duration = 0;
 

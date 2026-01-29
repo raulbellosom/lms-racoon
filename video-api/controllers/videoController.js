@@ -1,9 +1,9 @@
-const minioService = require("../services/minioService");
-const ffmpegService = require("../services/ffmpegService");
-const fs = require("fs");
-const path = require("path");
+import * as minioService from "../services/minioService.js";
+import * as ffmpegService from "../services/ffmpegService.js";
+import fs from "fs";
+import path from "path";
 
-exports.uploadVideo = async (req, res) => {
+export const uploadVideo = async (req, res) => {
   const { lessonId } = req.params;
   const file = req.file;
 

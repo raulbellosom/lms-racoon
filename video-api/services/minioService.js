@@ -1,4 +1,4 @@
-const Minio = require("minio");
+import * as Minio from "minio";
 
 const minioClient = new Minio.Client({
   endPoint: process.env.MINIO_ENDPOINT || "minio.racoondevs.com",
@@ -8,7 +8,12 @@ const minioClient = new Minio.Client({
   secretKey: process.env.MINIO_SECRET_KEY,
 });
 
-exports.uploadFile = async (bucketName, objectName, filePath, contentType) => {
+export const uploadFile = async (
+  bucketName,
+  objectName,
+  filePath,
+  contentType,
+) => {
   // Ensure bucket exists
   const exists = await minioClient.bucketExists(bucketName).catch(() => false);
   if (!exists) {

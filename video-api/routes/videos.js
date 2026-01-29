@@ -1,9 +1,10 @@
-const express = require("express");
+import express from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { uploadVideo } from "../controllers/videoController.js";
+
 const router = express.Router();
-const multer = require("multer");
-const videoController = require("../controllers/videoController");
-const path = require("path");
-const fs = require("fs");
 
 // Configure upload storage (temporary local storage)
 const uploadDir = process.env.UPLOAD_DIR || "/opt/video-stack/uploads"; // Default to VPS path, but configurable
@@ -35,10 +36,6 @@ const upload = multer({
 });
 
 // Route: POST /api/lessons/:lessonId/video
-router.post(
-  "/:lessonId/video",
-  upload.single("file"),
-  videoController.uploadVideo,
-);
+router.post("/:lessonId/video", upload.single("file"), uploadVideo);
 
-module.exports = router;
+export default router;
