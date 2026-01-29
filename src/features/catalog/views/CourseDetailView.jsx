@@ -329,9 +329,9 @@ export function CourseDetailView() {
       : FileService.getCourseCoverUrl(course.bannerFileId);
   }
 
-  if (course.promoVideoFileId) {
+  if (course.promoVideoProvider === "minio" && course.promoVideoHlsUrl) {
     activeMediaType = "video";
-    activeMediaUrl = FileService.getLessonVideoUrl(course.promoVideoFileId);
+    activeMediaUrl = course.promoVideoHlsUrl;
   } else if (resolvedBannerUrl) {
     activeMediaType = "banner";
     activeMediaUrl = resolvedBannerUrl;

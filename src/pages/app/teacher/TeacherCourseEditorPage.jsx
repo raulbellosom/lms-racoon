@@ -143,6 +143,9 @@ export function TeacherCourseEditorPage() {
     currency: "MXN",
     language: "es",
     coverFileId: "",
+    promoVideoFileId: "",
+    promoVideoProvider: "appwrite",
+    promoVideoHlsUrl: "",
   });
 
   // Track initial state for dirty check
@@ -186,6 +189,8 @@ export function TeacherCourseEditorPage() {
         coverFileId: "",
         bannerFileId: "",
         promoVideoFileId: "",
+        promoVideoProvider: "appwrite",
+        promoVideoHlsUrl: "",
         promoVideoCoverFileId: "",
       });
     }
@@ -272,6 +277,8 @@ export function TeacherCourseEditorPage() {
         coverFileId: data.coverFileId || "",
         bannerFileId: data.bannerFileId || "",
         promoVideoFileId: data.promoVideoFileId || "",
+        promoVideoProvider: data.promoVideoProvider || "appwrite",
+        promoVideoHlsUrl: data.promoVideoHlsUrl || "",
         promoVideoCoverFileId: promoVideoCoverFileId, // Populated from lesson
       };
       setFormData(loadedData);

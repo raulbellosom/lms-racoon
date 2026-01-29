@@ -48,7 +48,10 @@ export function CourseMediaUploader({
 
   // Helper to get banner preview
   const getBannerPreview = () => {
-    if (formData.promoVideoFileId) {
+    if (
+      (formData.promoVideoProvider === "minio" && formData.promoVideoHlsUrl) ||
+      formData.promoVideoFileId
+    ) {
       // If video is selected, show video cover if available, otherwise generic placeholder
       if (formData.promoVideoCoverFileId) {
         return (
@@ -187,7 +190,7 @@ export function CourseMediaUploader({
 
       setFormData((prev) => ({
         ...prev,
-        promoVideoFileId: selection.value, // This serves as ID or Key
+        promoVideoFileId: selection.provider === "minio" ? "" : selection.value,
         promoVideoProvider: selection.provider,
         promoVideoHlsUrl: selection.hlsUrl,
         promoVideoCoverFileId: selection.coverId || "",
@@ -215,6 +218,8 @@ export function CourseMediaUploader({
         ...prev,
         bannerFileId: selection.value,
         promoVideoFileId: "", // Clear video ID so banner is displayed
+        promoVideoProvider: "appwrite", // Reset provider
+        promoVideoHlsUrl: "",
         promoVideoCoverFileId: "",
       }));
     }
@@ -236,6 +241,8 @@ export function CourseMediaUploader({
       ...prev,
       bannerFileId: "",
       promoVideoFileId: "",
+      promoVideoProvider: "appwrite",
+      promoVideoHlsUrl: "",
       promoVideoCoverFileId: "",
     }));
   };
@@ -313,7 +320,10 @@ export function CourseMediaUploader({
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold">Banner / Trailer</h3>
-          {(formData.bannerFileId || formData.promoVideoFileId) && (
+          {(formData.bannerFileId ||
+            (formData.promoVideoProvider === "minio" &&
+              formData.promoVideoHlsUrl) ||
+            formData.promoVideoFileId) && (
             <button
               onClick={handleRemoveBanner}
               className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
@@ -327,7 +337,10 @@ export function CourseMediaUploader({
           className="relative flex aspect-3/1 w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors overflow-hidden"
           onClick={() => setBannerModalOpen(true)}
         >
-          {formData.bannerFileId || formData.promoVideoFileId ? (
+          {formData.bannerFileId ||
+          (formData.promoVideoProvider === "minio" &&
+            formData.promoVideoHlsUrl) ||
+          formData.promoVideoFileId ? (
             <>
               {getBannerPreview()}
               <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
