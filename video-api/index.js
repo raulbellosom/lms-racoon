@@ -6,7 +6,7 @@ import videoRoutes from "./routes/videos.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4015;
 
 // CORS Configuration
 const corsOptions = {
@@ -34,8 +34,9 @@ app.get("/health", (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Video API Server running on port ${PORT}`);
+const HOST = "127.0.0.1";
+app.listen(PORT, HOST, () => {
+  console.log(`Video API Server running on ${HOST}:${PORT}`);
   console.log(`ffmpeg path: ${process.env.FFMPEG_PATH || "default"}`);
   console.log(
     `MinIO Endpoint: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`,
