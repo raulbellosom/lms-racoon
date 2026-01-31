@@ -13,7 +13,32 @@ export const uploadVideo = async (req, res) => {
 
   console.log(`[Video] Processing lesson ${lessonId}`);
 
+  const hlsOutputDir =
+    process.env.HLS_OUTPUT_DIR || "/opt/video-stack/hls-data";
+  const lessonHlsDir = path.join(hlsOutputDir, "lessons", lessonId);
+
   try {
+    // 0. Cleanup old files if they exist (when replacing video)
+    if (fs.existsSync(lessonHlsDir)) {
+      console.log(`[Video] Cleaning old HLS files for lesson ${lessonId}`);
+      fs.rmSync(lessonHlsDir, { recursive: true, force: true });
+    }
+
+    // Also try to delete old source from MinIO (best effort)
+    try {
+      const objectsStream = minioService.listObjectsStream(
+        "raw-videos",
+        `lessons/${lessonId}/`,
+      );
+      for await (const obj of objectsStream) {
+        await minioService.deleteObject("raw-videos", obj.name);
+        console.log(`[Video] Deleted old MinIO object: ${obj.name}`);
+      }
+    } catch (cleanupError) {
+      // Non-fatal, continue with upload
+      console.warn("[Video] Cleanup warning:", cleanupError.message);
+    }
+
     // 1. Upload source to MinIO
     const objectKey = `lessons/${lessonId}/source${path.extname(file.originalname)}`;
     await minioService.uploadFile(
@@ -24,11 +49,7 @@ export const uploadVideo = async (req, res) => {
     );
 
     // 2. Transcode to HLS
-    const hlsOutputDir =
-      process.env.HLS_OUTPUT_DIR || "/opt/video-stack/hls-data";
-    const lessonHlsDir = path.join(hlsOutputDir, "lessons", lessonId);
-
-    // Ensure HLS directory exists
+    // Ensure HLS directory exists (recreate after cleanup)
     if (!fs.existsSync(lessonHlsDir)) {
       fs.mkdirSync(lessonHlsDir, { recursive: true });
     }
@@ -59,6 +80,40 @@ export const uploadVideo = async (req, res) => {
     });
   } catch (error) {
     console.error(`[Video] Error processing ${lessonId}:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Delete video files for a lesson (HLS + MinIO source)
+ */
+export const deleteVideo = async (req, res) => {
+  const { lessonId } = req.params;
+
+  try {
+    const hlsOutputDir =
+      process.env.HLS_OUTPUT_DIR || "/opt/video-stack/hls-data";
+    const lessonHlsDir = path.join(hlsOutputDir, "lessons", lessonId);
+
+    // 1. Delete HLS files
+    if (fs.existsSync(lessonHlsDir)) {
+      fs.rmSync(lessonHlsDir, { recursive: true, force: true });
+      console.log(`[Video] Deleted HLS files for lesson ${lessonId}`);
+    }
+
+    // 2. Delete from MinIO
+    const objectsStream = minioService.listObjectsStream(
+      "raw-videos",
+      `lessons/${lessonId}/`,
+    );
+    for await (const obj of objectsStream) {
+      await minioService.deleteObject("raw-videos", obj.name);
+      console.log(`[Video] Deleted MinIO object: ${obj.name}`);
+    }
+
+    res.json({ success: true, message: "Video deleted successfully" });
+  } catch (error) {
+    console.error(`[Video] Delete error for ${lessonId}:`, error.message);
     res.status(500).json({ error: error.message });
   }
 };

@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { uploadVideo } from "../controllers/videoController.js";
+import * as videoController from "../controllers/videoController.js";
 
 const router = express.Router();
 
@@ -35,7 +35,10 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 * 5000 }, // 5GB limit
 });
 
-// Route: POST /api/lessons/:lessonId/video
-router.post("/:lessonId/video", upload.single("file"), uploadVideo);
+// Upload video for a lesson
+router.post("/:lessonId", upload.single("video"), videoController.uploadVideo);
+
+// Delete video for a lesson (cleanup old files)
+router.delete("/:lessonId", videoController.deleteVideo);
 
 export default router;

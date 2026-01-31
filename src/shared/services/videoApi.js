@@ -51,4 +51,27 @@ export const VideoApi = {
       xhr.send(formData);
     });
   },
+
+  /**
+   * Delete video for a lesson (cleanup HLS + MinIO files)
+   * @param {string} lessonId - Lesson ID
+   * @returns {Promise<{success: boolean}>}
+   */
+  async deleteVideo(lessonId) {
+    const baseUrl = import.meta.env.VITE_VIDEO_API_BASE_URL;
+    if (!baseUrl) {
+      throw new Error("VITE_VIDEO_API_BASE_URL is not defined in .env");
+    }
+
+    const response = await fetch(`${baseUrl}/api/lessons/${lessonId}/video`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to delete video");
+    }
+
+    return await response.json();
+  },
 };

@@ -12,11 +12,13 @@ import "easymde/dist/easymde.min.css";
 import { router } from "./app/router/router";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { ToastProvider } from "./app/providers/ToastProvider";
+import { UploadProgressProvider } from "./app/providers/UploadProgressContext";
 import { CartProvider } from "./context/CartContext";
 import { PreferencesProvider } from "./app/providers/PreferencesProvider";
 import { ThemeProvider } from "./shared/theme/ThemeProvider";
 import { RenderErrorBoundary } from "./shared/errors/RenderErrorBoundary";
 import { PWAInstallPrompt } from "./shared/pwa/PWAInstallPrompt";
+import { UploadProgressCard } from "./shared/components/UploadProgressCard";
 import { LoadingScreen } from "./shared/ui/LoadingScreen";
 
 const queryClient = new QueryClient({
@@ -40,19 +42,22 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         persistOptions={{ persister }}
       >
         <ThemeProvider defaultTheme="system" storageKey="racoon-lms-theme">
-          <ToastProvider>
-            <AuthProvider>
-              <CartProvider>
-                <PreferencesProvider>
-                  <RouterProvider
-                    router={router}
-                    fallbackElement={<LoadingScreen />}
-                  />
-                </PreferencesProvider>
-                <PWAInstallPrompt />
-              </CartProvider>
-            </AuthProvider>
-          </ToastProvider>
+          <UploadProgressProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <CartProvider>
+                  <PreferencesProvider>
+                    <RouterProvider
+                      router={router}
+                      fallbackElement={<LoadingScreen />}
+                    />
+                  </PreferencesProvider>
+                  <PWAInstallPrompt />
+                </CartProvider>
+              </AuthProvider>
+            </ToastProvider>
+            <UploadProgressCard />
+          </UploadProgressProvider>
         </ThemeProvider>
       </PersistQueryClientProvider>
     </RenderErrorBoundary>

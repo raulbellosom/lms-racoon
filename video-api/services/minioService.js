@@ -53,3 +53,23 @@ export const uploadFile = async (
 
   return result;
 };
+
+/**
+ * List objects in a bucket with a prefix
+ * @param {string} bucketName - Bucket name
+ * @param {string} prefix - Object prefix (folder path)
+ * @returns {Stream} Stream of objects
+ */
+export const listObjectsStream = (bucketName, prefix) => {
+  return minioClient.listObjects(bucketName, prefix, true);
+};
+
+/**
+ * Delete an object from MinIO
+ * @param {string} bucketName - Bucket name
+ * @param {string} objectName - Object key to delete
+ * @returns {Promise} Deletion result
+ */
+export const deleteObject = async (bucketName, objectName) => {
+  return await minioClient.removeObject(bucketName, objectName);
+};
