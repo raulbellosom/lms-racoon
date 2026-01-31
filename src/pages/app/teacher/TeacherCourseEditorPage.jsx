@@ -143,7 +143,6 @@ export function TeacherCourseEditorPage() {
     currency: "MXN",
     language: "es",
     coverFileId: "",
-    promoVideoFileId: "",
     promoVideoProvider: "appwrite",
     promoVideoHlsUrl: "",
   });
@@ -188,7 +187,6 @@ export function TeacherCourseEditorPage() {
         language: "es",
         coverFileId: "",
         bannerFileId: "",
-        promoVideoFileId: "",
         promoVideoProvider: "appwrite",
         promoVideoHlsUrl: "",
         promoVideoCoverFileId: "",
@@ -249,21 +247,7 @@ export function TeacherCourseEditorPage() {
       }
 
       setCourse(data);
-      let promoVideoCoverFileId = "";
-      if (data.promoVideoFileId) {
-        try {
-          // Find the lesson with this video to get its cover
-          const lessons = await LessonService.listByCourse(courseId);
-          const promoLesson = lessons.find(
-            (l) => l.videoFileId === data.promoVideoFileId,
-          );
-          if (promoLesson?.videoCoverFileId) {
-            promoVideoCoverFileId = promoLesson.videoCoverFileId;
-          }
-        } catch (e) {
-          console.warn("Failed to resolve promo video cover", e);
-        }
-      }
+      const promoVideoCoverFileId = ""; // Video covers handled via HLS/MinIO now
 
       const loadedData = {
         title: data.title,
@@ -276,10 +260,9 @@ export function TeacherCourseEditorPage() {
         language: data.language || "es",
         coverFileId: data.coverFileId || "",
         bannerFileId: data.bannerFileId || "",
-        promoVideoFileId: data.promoVideoFileId || "",
         promoVideoProvider: data.promoVideoProvider || "appwrite",
         promoVideoHlsUrl: data.promoVideoHlsUrl || "",
-        promoVideoCoverFileId: promoVideoCoverFileId, // Populated from lesson
+        promoVideoCoverFileId: promoVideoCoverFileId,
       };
       setFormData(loadedData);
       setInitialFormData(loadedData);

@@ -22,7 +22,7 @@ export function BannerSelectionModal({
   onSelect,
   courseId,
   currentBannerId,
-  currentVideoId,
+  currentVideoHlsUrl,
 }) {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -142,7 +142,7 @@ export function BannerSelectionModal({
         </div>
 
         {/* Current Selection Status */}
-        {(currentBannerId || currentVideoId) && (
+        {(currentBannerId || currentVideoHlsUrl) && (
           <div className="rounded-lg bg-[rgb(var(--bg-muted))] p-3 flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               {currentBannerId && (
@@ -151,7 +151,7 @@ export function BannerSelectionModal({
                   <span className="font-medium">Banner de imagen actual</span>
                 </>
               )}
-              {currentVideoId && (
+              {currentVideoHlsUrl && (
                 <>
                   <PlayCircle className="h-4 w-4 text-[rgb(var(--brand-primary))]" />
                   <span className="font-medium">
@@ -253,7 +253,7 @@ export function BannerSelectionModal({
                   {t("teacher.banner.videoDescription") ||
                     "Selecciona un video de tus lecciones para usarlo como trailer del curso."}
                 </p>
-                {currentVideoId && (
+                {currentVideoHlsUrl && (
                   <button
                     onClick={() => onSelect({ type: "video", value: null })}
                     className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
@@ -285,14 +285,8 @@ export function BannerSelectionModal({
                       className={`
                                     relative cursor-pointer rounded-xl border p-3 transition-all hover:shadow-md
                                     ${
-                                      (currentVideoId &&
-                                        (currentVideoId ===
-                                          lesson.videoHlsUrl ||
-                                          currentVideoId ===
-                                            lesson.videoFileId)) ||
-                                      (lesson.videoObjectKey &&
-                                        currentVideoId ===
-                                          lesson.videoObjectKey)
+                                      currentVideoHlsUrl &&
+                                      currentVideoHlsUrl === lesson.videoHlsUrl
                                         ? "border-[rgb(var(--brand-primary))] bg-[rgb(var(--brand-primary))/0.05]"
                                         : "border-[rgb(var(--border-base))] hover:border-[rgb(var(--brand-primary))/0.5]"
                                     }
@@ -323,15 +317,12 @@ export function BannerSelectionModal({
                             {t("common.lesson")}
                           </span>
                         </div>
-                        {((currentVideoId &&
-                          (currentVideoId === lesson.videoHlsUrl ||
-                            currentVideoId === lesson.videoFileId)) ||
-                          (lesson.videoObjectKey &&
-                            currentVideoId === lesson.videoObjectKey)) && (
-                          <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))]">
-                            <Check className="h-3 w-3 text-white" />
-                          </div>
-                        )}
+                        {currentVideoHlsUrl &&
+                          currentVideoHlsUrl === lesson.videoHlsUrl && (
+                            <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))]">
+                              <Check className="h-3 w-3 text-white" />
+                            </div>
+                          )}
                       </div>
                     </div>
                   ))}

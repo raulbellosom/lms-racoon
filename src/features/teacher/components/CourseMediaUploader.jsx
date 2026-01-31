@@ -48,10 +48,7 @@ export function CourseMediaUploader({
 
   // Helper to get banner preview
   const getBannerPreview = () => {
-    if (
-      (formData.promoVideoProvider === "minio" && formData.promoVideoHlsUrl) ||
-      formData.promoVideoFileId
-    ) {
+    if (formData.promoVideoProvider === "minio" && formData.promoVideoHlsUrl) {
       // If video is selected, show video cover if available, otherwise generic placeholder
       if (formData.promoVideoCoverFileId) {
         return (
@@ -190,9 +187,8 @@ export function CourseMediaUploader({
 
       setFormData((prev) => ({
         ...prev,
-        promoVideoFileId: selection.provider === "minio" ? "" : selection.value,
         promoVideoProvider: selection.provider,
-        promoVideoHlsUrl: selection.hlsUrl,
+        promoVideoHlsUrl: selection.hlsUrl || "",
         promoVideoCoverFileId: selection.coverId || "",
         bannerFileId: "", // Clear banner, video takes priority
       }));
@@ -217,7 +213,6 @@ export function CourseMediaUploader({
       setFormData((prev) => ({
         ...prev,
         bannerFileId: selection.value,
-        promoVideoFileId: "", // Clear video ID so banner is displayed
         promoVideoProvider: "appwrite", // Reset provider
         promoVideoHlsUrl: "",
         promoVideoCoverFileId: "",
@@ -240,7 +235,6 @@ export function CourseMediaUploader({
     setFormData((prev) => ({
       ...prev,
       bannerFileId: "",
-      promoVideoFileId: "",
       promoVideoProvider: "appwrite",
       promoVideoHlsUrl: "",
       promoVideoCoverFileId: "",
@@ -322,8 +316,7 @@ export function CourseMediaUploader({
           <h3 className="text-lg font-bold">Banner / Trailer</h3>
           {(formData.bannerFileId ||
             (formData.promoVideoProvider === "minio" &&
-              formData.promoVideoHlsUrl) ||
-            formData.promoVideoFileId) && (
+              formData.promoVideoHlsUrl)) && (
             <button
               onClick={handleRemoveBanner}
               className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
@@ -339,8 +332,7 @@ export function CourseMediaUploader({
         >
           {formData.bannerFileId ||
           (formData.promoVideoProvider === "minio" &&
-            formData.promoVideoHlsUrl) ||
-          formData.promoVideoFileId ? (
+            formData.promoVideoHlsUrl) ? (
             <>
               {getBannerPreview()}
               <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -370,7 +362,7 @@ export function CourseMediaUploader({
         onSelect={handleBannerSelect}
         courseId={courseId}
         currentBannerId={formData.bannerFileId}
-        currentVideoId={formData.promoVideoFileId}
+        currentVideoHlsUrl={formData.promoVideoHlsUrl}
       />
     </Card>
   );

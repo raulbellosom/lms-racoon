@@ -37,11 +37,10 @@ export const generateHLS = (inputPath, outputPath) => {
         duration = +durParams[0] * 3600 + +durParams[1] * 60 + +durParams[2];
       })
       .on("end", () => {
-        console.log("Transcoding finished successfully");
         resolve(duration);
       })
       .on("error", (err) => {
-        console.error("An error occurred: " + err.message);
+        console.error("[FFmpeg] Error:", err.message);
         reject(err);
       })
       .run();

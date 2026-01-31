@@ -39,10 +39,6 @@ export const uploadFile = async (
   filePath,
   contentType,
 ) => {
-  console.log(
-    `[MinIO] Uploading file to bucket '${bucketName}' as '${objectName}'`,
-  );
-
   const metaData = {
     "Content-Type": contentType,
   };
@@ -55,6 +51,5 @@ export const uploadFile = async (
     metaData,
   );
 
-  console.log(`[MinIO] Upload successful: ${objectName}`);
   return result;
 };

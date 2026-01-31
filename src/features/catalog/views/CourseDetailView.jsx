@@ -180,25 +180,8 @@ export function CourseDetailView() {
       setStats(statsData);
       setFavoritesCount(favsCount);
 
-      // Fetch promo video cover if applicable
-      if (courseData.promoVideoFileId) {
-        try {
-          const promoLesson = lessonsData.find(
-            (l) => l.videoFileId === courseData.promoVideoFileId,
-          );
-          if (promoLesson?.videoCoverFileId) {
-            courseData.promoVideoCoverFileId = promoLesson.videoCoverFileId;
-          }
-        } catch (e) {
-          console.warn("Failed to resolve promo video cover", e);
-        }
-      }
-      // Re-set course with promo cover
-      setCourse({
-        ...courseData,
-        content,
-        promoVideoCoverFileId: courseData.promoVideoCoverFileId,
-      });
+      // Note: Promo video covers are no longer fetched from lessons
+      // MinIO videos use promoVideoProvider + promoVideoHlsUrl directly
 
       // Fetch category if exists
       if (courseData.categoryId) {

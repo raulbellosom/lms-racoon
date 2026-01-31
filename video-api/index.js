@@ -43,10 +43,5 @@ app.get("/health", (req, res) => {
 // Start server
 const HOST = "127.0.0.1";
 app.listen(PORT, HOST, () => {
-  console.log(`Video API Server running on ${HOST}:${PORT}`);
-  console.log(`ffmpeg path: ${process.env.FFMPEG_PATH || "default"}`);
-  console.log(
-    `MinIO Endpoint: ${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`,
-  );
-  console.log(`MinIO SSL: ${process.env.MINIO_USE_SSL}`);
+  console.log(`Video API running on ${HOST}:${PORT}`);
 });
