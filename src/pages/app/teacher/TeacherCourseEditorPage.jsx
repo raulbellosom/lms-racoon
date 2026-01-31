@@ -18,6 +18,7 @@ import { useToast } from "../../../app/providers/ToastProvider";
 import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
 import { SectionService } from "../../../shared/data/sections-teacher";
 import { LessonService } from "../../../shared/data/lessons-teacher";
+import { VideoApi } from "../../../shared/services/videoApi";
 import { APPWRITE } from "../../../shared/appwrite/ids";
 import { db } from "../../../shared/appwrite/client";
 import { FileService } from "../../../shared/data/files";
@@ -369,6 +370,20 @@ export function TeacherCourseEditorPage() {
       confirmText: t("common.delete"),
       onConfirm: async () => {
         try {
+          // Clean up video files for all lessons in this section
+          const lessonsToDelete = lessonsBySection[section.$id] || [];
+          for (const lesson of lessonsToDelete) {
+            if (lesson.videoProvider === "minio" && lesson.videoHlsUrl) {
+              try {
+                await VideoApi.deleteVideo(lesson.$id);
+              } catch (videoError) {
+                console.warn(
+                  `Failed to delete video for lesson ${lesson.$id}:`,
+                  videoError,
+                );
+              }
+            }
+          }
           await SectionService.delete(section.$id);
           setSections(sections.filter((s) => s.$id !== section.$id));
           closeConfirmation();
@@ -434,6 +449,15 @@ export function TeacherCourseEditorPage() {
       confirmText: t("common.delete"),
       onConfirm: async () => {
         try {
+          // Clean up video files from MinIO/HLS if this is a video lesson
+          if (lesson.videoProvider === "minio" && lesson.videoHlsUrl) {
+            try {
+              await VideoApi.deleteVideo(lesson.$id);
+            } catch (videoError) {
+              console.warn("Failed to delete video files:", videoError);
+              // Continue with lesson deletion anyway
+            }
+          }
           await LessonService.delete(lesson.$id);
           setLessonsBySection({
             ...lessonsBySection,

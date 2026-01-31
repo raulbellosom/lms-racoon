@@ -43,6 +43,6 @@ router.post(
 );
 
 // Delete video for a lesson (cleanup old files)
-router.delete("/:lessonId", videoController.deleteVideo);
+router.delete("/:lessonId/video", videoController.deleteVideo);
 
 export default router;

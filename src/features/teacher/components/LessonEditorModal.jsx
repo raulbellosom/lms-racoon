@@ -504,19 +504,8 @@ export function LessonEditorModal({
         );
 
         try {
-          // If replacing an existing MinIO video, delete old files first
-          if (
-            lesson?.$id &&
-            lesson.videoProvider === "minio" &&
-            lesson.videoHlsUrl
-          ) {
-            try {
-              await VideoApi.deleteVideo(savedLesson.$id);
-            } catch (deleteError) {
-              console.warn("Failed to delete old video:", deleteError);
-              // Continue with upload anyway
-            }
-          }
+          // Note: The backend automatically cleans up old files when uploading
+          // a new video for the same lesson, so no explicit DELETE is needed.
 
           // Upload to MinIO / VideoAPI
           const videoResponse = await VideoApi.uploadVideo(
@@ -774,8 +763,41 @@ export function LessonEditorModal({
                       </div>
                     )}
 
-                    {/* Existing Video State (MinIO/Appwrite) - Only show if video actually exists */}
+                    {/* Existing Video State (MinIO) - Show HLS Video Player */}
                     {!videoFile &&
+                      lesson?.videoHlsUrl &&
+                      formData.videoProvider === "minio" &&
+                      formData.videoStatus === "ready" && (
+                        <div className="absolute inset-0 group/existing">
+                          <VideoPlayer
+                            src={lesson.videoHlsUrl}
+                            className="w-full h-full"
+                          />
+                          {/* Change video overlay button */}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                document
+                                  .getElementById("lesson-video-upload")
+                                  .click();
+                              }}
+                              className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
+                                        opacity-0 group-hover/existing:opacity-100 transition-opacity
+                                        flex items-center gap-2 pointer-events-auto"
+                            >
+                              <RefreshCw className="h-4 w-4 text-white" />
+                              <span className="text-white text-xs font-medium">
+                                {t("teacher.lesson.changeVideo")}
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Existing Video State (Processing or Legacy Appwrite) */}
+                    {!videoFile &&
+                      !lesson?.videoHlsUrl &&
                       ((formData.videoStatus && formData.videoStatus !== "") ||
                         (formData.videoProvider &&
                           formData.videoProvider !== "") ||
