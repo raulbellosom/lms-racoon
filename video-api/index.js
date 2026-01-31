@@ -1,9 +1,9 @@
+import dotenv from "dotenv";
+dotenv.config(); // CRITICAL: Must be first, before other imports that use process.env
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import videoRoutes from "./routes/videos.js";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4015;
