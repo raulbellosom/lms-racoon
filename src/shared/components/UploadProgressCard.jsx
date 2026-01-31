@@ -66,7 +66,7 @@ export function UploadProgressCard() {
     <>
       {/* Floating Card */}
       <div
-        className="fixed bottom-4 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] 
+        className="fixed bottom-4 right-4 z-[9999] w-80 max-w-[calc(100vw-2rem)] 
                    bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border-base))]
                    rounded-xl shadow-2xl overflow-hidden
                    animate-slide-up"
@@ -77,11 +77,11 @@ export function UploadProgressCard() {
         {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-3 
-                     bg-linear-to-r from-[rgb(var(--brand-primary))] to-[rgb(var(--brand-primary))/0.8]
-                     cursor-pointer select-none"
+                     bg-linear-to-r from-[rgb(var(--brand-primary))] to-gray-900
+                     cursor-pointer select-none text-white"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <div className="flex items-center gap-2 text-white">
+          <div className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             <span className="font-semibold text-sm">
               {t("upload.title", "Subidas")} ({uploads.length})
