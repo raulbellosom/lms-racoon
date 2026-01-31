@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Card } from "../../../shared/ui/Card";
+import { ImageViewerModal } from "../../../shared/ui/ImageViewerModal";
 import { BannerSelectionModal } from "./BannerSelectionModal";
 import { FileService } from "../../../shared/data/files";
 import { getBannerById } from "../../../shared/assets/banners";
@@ -35,6 +36,8 @@ export function CourseMediaUploader({
   const { showToast } = useToast();
   const [previewUrl, setPreviewUrl] = React.useState(null);
   const [bannerModalOpen, setBannerModalOpen] = React.useState(false);
+  const [coverViewerOpen, setCoverViewerOpen] = React.useState(false);
+  const [bannerViewerOpen, setBannerViewerOpen] = React.useState(false);
 
   // Generate preview URL if cover exists (existing code)
   React.useEffect(() => {
@@ -246,38 +249,51 @@ export function CourseMediaUploader({
       {/* Cover Image Section */}
       <div>
         <h3 className="mb-4 text-lg font-bold">{t("teacher.coverImage")}</h3>
-        <div
-          className="relative flex aspect-video w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] transition-colors overflow-hidden"
-          onClick={() =>
-            !uploading && document.getElementById("cover-upload").click()
-          }
-        >
+        <div className="relative flex aspect-video w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center overflow-hidden">
           {previewUrl ? (
             <>
               <img
                 src={previewUrl}
                 alt="Cover preview"
-                className="absolute inset-0 h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover cursor-pointer transition-transform hover:scale-105"
+                onClick={() => setCoverViewerOpen(true)}
               />
-              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                <span className="text-white text-sm font-medium flex items-center gap-2">
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    !uploading &&
+                      document.getElementById("cover-upload").click();
+                  }}
+                  className="p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                  title={t("teacher.form.uploadCover")}
+                >
                   <Upload className="h-4 w-4" />
-                  {t("teacher.form.uploadCover")}
-                </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveCover();
+                  }}
+                  className="p-1.5 rounded-full bg-black/50 text-white hover:bg-red-600 transition-colors"
+                  title={t("common.delete")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveCover();
-                }}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-2 py-1 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+                Click para ver a pantalla completa
+              </div>
             </>
           ) : (
-            <div className="text-[rgb(var(--text-muted))]">
+            <div
+              className="text-[rgb(var(--text-muted))] cursor-pointer"
+              onClick={() =>
+                !uploading && document.getElementById("cover-upload").click()
+              }
+            >
               {uploading ? (
                 <div className="flex flex-col items-center gap-2">
                   <LoadingSpinner size="sm" />
@@ -364,6 +380,31 @@ export function CourseMediaUploader({
         currentBannerId={formData.bannerFileId}
         currentVideoHlsUrl={formData.promoVideoHlsUrl}
       />
+
+      {/* Cover Image Viewer */}
+      <ImageViewerModal
+        isOpen={coverViewerOpen}
+        onClose={() => setCoverViewerOpen(false)}
+        src={previewUrl}
+        alt={t("teacher.coverImage")}
+        showDownload={true}
+      />
+
+      {/* Banner Image Viewer */}
+      {formData.bannerFileId && !formData.promoVideoHlsUrl && (
+        <ImageViewerModal
+          isOpen={bannerViewerOpen}
+          onClose={() => setBannerViewerOpen(false)}
+          src={(() => {
+            const pattern = getBannerById(formData.bannerFileId);
+            return pattern
+              ? pattern.url
+              : FileService.getCourseCoverUrl(formData.bannerFileId);
+          })()}
+          alt="Banner"
+          showDownload={true}
+        />
+      )}
     </Card>
   );
 }

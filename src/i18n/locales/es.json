@@ -667,6 +667,16 @@
     "infoTitle": "Info",
     "warningTitle": "Atención"
   },
+  "upload": {
+    "title": "Subidas",
+    "starting": "Iniciando...",
+    "processing": "Procesando video...",
+    "completed": "Completado",
+    "error": "Error",
+    "clearCompleted": "Limpiar completados",
+    "errorTitle": "Error de Subida",
+    "unknownError": "Error desconocido"
+  },
   "catalog": {
     "myCourses": "Ver mis cursos",
     "title": "Explora Cursos",

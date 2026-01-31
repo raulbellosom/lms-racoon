@@ -55,6 +55,7 @@ import {
 } from "../../../shared/ui/Tabs";
 import { Avatar } from "../../../shared/ui/Avatar";
 import { Modal } from "../../../shared/ui/Modal";
+import { ImageViewerModal } from "../../../shared/ui/ImageViewerModal";
 import { getRandomBanner, getBannerById } from "../../../shared/assets/banners";
 import { CategoryService } from "../../../shared/data/categories";
 import { FavoritesService } from "../../../shared/data/favorites";
@@ -93,6 +94,7 @@ export function CourseDetailView() {
   const [instructor, setInstructor] = React.useState(null);
   const [activeTab, setActiveTab] = React.useState("description");
   const [showAllSocials, setShowAllSocials] = React.useState(false);
+  const [instructorAvatarOpen, setInstructorAvatarOpen] = React.useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] =
     React.useState(false);
   const [shouldShowShowMore, setShouldShowShowMore] = React.useState(false);
@@ -613,8 +615,13 @@ export function CourseDetailView() {
                                 instructor.avatarFileId,
                               )}
                               name={instructor.displayName || "Instructor"}
-                              className="h-24 w-24 text-2xl"
+                              className="h-24 w-24 text-2xl cursor-pointer transition-transform hover:scale-105"
                               ring
+                              onClick={() => {
+                                if (instructor.avatarFileId) {
+                                  setInstructorAvatarOpen(true);
+                                }
+                              }}
                             />
 
                             {/* Socials */}
@@ -1046,6 +1053,15 @@ export function CourseDetailView() {
           </div>
         </div>
       </div>
+
+      {/* Instructor Avatar Viewer */}
+      <ImageViewerModal
+        isOpen={instructorAvatarOpen}
+        onClose={() => setInstructorAvatarOpen(false)}
+        src={ProfileService.getAvatarUrl(instructor?.avatarFileId)}
+        alt={`${instructor?.firstName} ${instructor?.lastName}`}
+        showDownload={false}
+      />
     </>
   );
 }

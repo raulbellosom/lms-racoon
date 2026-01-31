@@ -27,6 +27,7 @@ import { AssignmentService } from "../../../shared/data/assignments-teacher";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { useUploadProgress } from "../../../app/providers/UploadProgressContext";
 import { VideoPlayer } from "../../../shared/ui/VideoPlayer";
+import { ImageViewerModal } from "../../../shared/ui/ImageViewerModal";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import { CharacterCountCircle } from "./CharacterCountCircle";
@@ -190,6 +191,7 @@ export function LessonEditorModal({
   // Child Modals State
   const [quizModalOpen, setQuizModalOpen] = React.useState(false);
   const [assignmentModalOpen, setAssignmentModalOpen] = React.useState(false);
+  const [coverViewerOpen, setCoverViewerOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!videoFile) {
@@ -461,6 +463,14 @@ export function LessonEditorModal({
     }
 
     setSaving(true);
+
+    // Start tracking video upload immediately if there's a video file
+    // This ensures the progress card appears right away
+    let videoUploadId = null;
+    if (videoFile) {
+      videoUploadId = uploadProgressManager.addUpload(videoFile.name, "video");
+    }
+
     try {
       let videoCoverFileId = formData.videoCoverFileId;
 
@@ -496,13 +506,7 @@ export function LessonEditorModal({
       const savedLesson = await onSave?.(lessonData, lesson?.$id);
 
       // 3. Handle Video Upload (MinIO) if there is a new video file
-      if (videoFile && savedLesson?.$id) {
-        // Add to upload progress manager
-        const uploadId = uploadProgressManager.addUpload(
-          videoFile.name,
-          "video",
-        );
-
+      if (videoFile && savedLesson?.$id && videoUploadId) {
         try {
           // Note: The backend automatically cleans up old files when uploading
           // a new video for the same lesson, so no explicit DELETE is needed.
@@ -513,7 +517,7 @@ export function LessonEditorModal({
             videoFile,
             (progress) => {
               setLocalUploadProgress(progress);
-              uploadProgressManager.updateProgress(uploadId, progress);
+              uploadProgressManager.updateProgress(videoUploadId, progress);
             },
           );
 
@@ -527,10 +531,10 @@ export function LessonEditorModal({
           });
 
           // Mark upload as complete
-          uploadProgressManager.markComplete(uploadId);
+          uploadProgressManager.markComplete(videoUploadId);
         } catch (videoError) {
           console.error("Video upload failed:", videoError);
-          uploadProgressManager.markError(uploadId, videoError.message);
+          uploadProgressManager.markError(videoUploadId, videoError.message);
           showToast(
             "Lesson saved but video upload failed: " + videoError.message,
             "error",
@@ -556,6 +560,10 @@ export function LessonEditorModal({
     } catch (error) {
       console.error("Failed to save lesson:", error);
       showToast(t("teacher.errors.saveFailed"), "error");
+      // Mark upload as error if we started tracking it
+      if (videoUploadId) {
+        uploadProgressManager.markError(videoUploadId, "Lesson save failed");
+      }
     } finally {
       setSaving(false);
       setUploading(false);
@@ -713,17 +721,24 @@ export function LessonEditorModal({
                       (máx. {UPLOAD_LIMITS.MINIO_VIDEO_MAX_SIZE_MB} MB)
                     </span>
                   </label>
+
+                  {/* Video Preview Area */}
                   <div
-                    className="relative aspect-video border-2 border-dashed border-[rgb(var(--border-base))] 
-                               bg-[rgb(var(--bg-muted))] cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] 
-                               transition-colors overflow-hidden group"
+                    className={`relative aspect-video border-2 border-dashed border-[rgb(var(--border-base))] 
+                               bg-[rgb(var(--bg-muted))] overflow-hidden rounded-lg
+                               ${!videoFile && !lesson?.videoHlsUrl && !formData.videoStatus ? "cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8]" : ""}`}
                     onClick={() => {
-                      if (!videoFile) {
+                      // Only open file picker if no video exists
+                      if (
+                        !videoFile &&
+                        !lesson?.videoHlsUrl &&
+                        !formData.videoStatus
+                      ) {
                         document.getElementById("lesson-video-upload").click();
                       }
                     }}
                   >
-                    {/* Local Video Preview */}
+                    {/* Local Video Preview (new file selected) */}
                     {videoFile && videoPreviewUrl && (
                       <div className="absolute inset-0">
                         <video
@@ -733,65 +748,19 @@ export function LessonEditorModal({
                           controls
                           onClick={(e) => e.stopPropagation()}
                         />
-                        {/* Delete button - modern design (hover only) */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setVideoFile(null);
-                          }}
-                          className="absolute top-3 right-3 p-2.5 bg-black/50 backdrop-blur-sm text-white
-                                   hover:bg-red-500 transition-all duration-200 group/btn
-                                   opacity-0 group-hover:opacity-100"
-                          title={t("common.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        {/* Change video overlay - Centered */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div
-                            className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
-                                        opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                          >
-                            <div className="flex items-center gap-2">
-                              <RefreshCw className="h-4 w-4 text-white" />
-                              <span className="text-white text-xs font-medium">
-                                {t("teacher.lesson.changeVideo")}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     )}
 
-                    {/* Existing Video State (MinIO) - Show HLS Video Player */}
+                    {/* Existing Video (MinIO HLS) */}
                     {!videoFile &&
                       lesson?.videoHlsUrl &&
                       formData.videoProvider === "minio" &&
                       formData.videoStatus === "ready" && (
-                        <div className="absolute inset-0 group/existing">
+                        <div className="absolute inset-0">
                           <VideoPlayer
                             src={lesson.videoHlsUrl}
                             className="w-full h-full"
                           />
-                          {/* Change video overlay button */}
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                document
-                                  .getElementById("lesson-video-upload")
-                                  .click();
-                              }}
-                              className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
-                                        opacity-0 group-hover/existing:opacity-100 transition-opacity
-                                        flex items-center gap-2 pointer-events-auto"
-                            >
-                              <RefreshCw className="h-4 w-4 text-white" />
-                              <span className="text-white text-xs font-medium">
-                                {t("teacher.lesson.changeVideo")}
-                              </span>
-                            </button>
-                          </div>
                         </div>
                       )}
 
@@ -815,21 +784,6 @@ export function LessonEditorModal({
                               ? t("teacher.lesson.processing")
                               : t("teacher.lesson.videoUploaded")}
                           </span>
-                          {/* Change video button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              document
-                                .getElementById("lesson-video-upload")
-                                .click();
-                            }}
-                            className="px-3 py-1.5 bg-[rgb(var(--brand-primary))] text-white 
-                                     text-xs font-medium rounded-lg hover:opacity-90 transition-opacity
-                                     flex items-center gap-1.5"
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                            {t("teacher.lesson.changeVideo")}
-                          </button>
                         </div>
                       )}
 
@@ -837,7 +791,8 @@ export function LessonEditorModal({
                     {!videoFile &&
                       !formData.videoStatus &&
                       !formData.videoFileId &&
-                      formData.videoProvider !== "minio" && (
+                      formData.videoProvider !== "minio" &&
+                      !lesson?.videoHlsUrl && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
                           <div
                             className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/30 
@@ -855,15 +810,55 @@ export function LessonEditorModal({
                           </div>
                         </div>
                       )}
-
-                    <input
-                      id="lesson-video-upload"
-                      type="file"
-                      className="hidden"
-                      accept=".mp4,.webm,.mov,.mkv,video/mp4,video/webm,video/quicktime,video/x-matroska"
-                      onChange={handleVideoUpload}
-                    />
                   </div>
+
+                  {/* Video Action Buttons (shown when video exists) */}
+                  {(videoFile ||
+                    lesson?.videoHlsUrl ||
+                    formData.videoStatus ||
+                    formData.videoProvider === "minio") && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          document.getElementById("lesson-video-upload").click()
+                        }
+                        className="flex-1 px-3 py-2 bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))]
+                                 text-xs font-medium rounded-lg hover:bg-[rgb(var(--bg-muted))/0.7] transition-colors
+                                 flex items-center justify-center gap-1.5 border border-[rgb(var(--border-base))]"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        {t("teacher.lesson.changeVideo")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Clear local file if exists
+                          if (videoFile) {
+                            setVideoFile(null);
+                          }
+                          // Clear existing video data
+                          updateField("videoProvider", "");
+                          updateField("videoStatus", "");
+                          updateField("videoFileId", "");
+                        }}
+                        className="px-3 py-2 bg-red-500/10 text-red-500
+                                 text-xs font-medium rounded-lg hover:bg-red-500/20 transition-colors
+                                 flex items-center justify-center gap-1.5 border border-red-500/20"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {t("common.delete")}
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    id="lesson-video-upload"
+                    type="file"
+                    className="hidden"
+                    accept=".mp4,.webm,.mov,.mkv,video/mp4,video/webm,video/quicktime,video/x-matroska"
+                    onChange={handleVideoUpload}
+                  />
                 </div>
 
                 {/* Cover Preview Card */}
@@ -871,13 +866,28 @@ export function LessonEditorModal({
                   <label className="block text-sm font-semibold text-[rgb(var(--text-secondary))]">
                     {t("teacher.lesson.uploadCover")}
                   </label>
+
+                  {/* Cover Preview Area */}
                   <div
-                    className="relative aspect-video border-2 border-dashed border-[rgb(var(--border-base))] 
-                               bg-[rgb(var(--bg-muted))] cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] 
-                               transition-colors overflow-hidden group"
-                    onClick={() =>
-                      document.getElementById("lesson-cover-upload").click()
-                    }
+                    className={`relative aspect-video border-2 border-dashed border-[rgb(var(--border-base))] 
+                               bg-[rgb(var(--bg-muted))] overflow-hidden rounded-lg
+                               ${!coverFile && !formData.videoCoverFileId ? "cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8]" : "cursor-zoom-in"}`}
+                    onClick={() => {
+                      // If no cover exists, open file picker
+                      if (!coverFile && !formData.videoCoverFileId) {
+                        document.getElementById("lesson-cover-upload").click();
+                      } else {
+                        // Otherwise, open image viewer
+                        const imageUrl = coverFile
+                          ? coverPreviewUrl
+                          : FileService.getCourseCoverUrl(
+                              formData.videoCoverFileId,
+                            );
+                        if (imageUrl) {
+                          setCoverViewerOpen(true);
+                        }
+                      }
+                    }}
                   >
                     {/* Local Cover File Preview */}
                     {coverFile && coverPreviewUrl && (
@@ -887,30 +897,6 @@ export function LessonEditorModal({
                           alt="Cover preview"
                           className="w-full h-full object-cover"
                         />
-                        {/* Delete button (hover only) */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCoverFile(null);
-                          }}
-                          className="absolute top-3 right-3 p-2.5 bg-black/50 backdrop-blur-sm text-white
-                                   hover:bg-red-500 transition-all duration-200 
-                                   opacity-0 group-hover:opacity-100"
-                          title={t("common.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        {/* Change cover overlay - Centered */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div
-                            className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
-                                        opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                          >
-                            <span className="text-white text-xs font-medium">
-                              {t("teacher.lesson.changeCover")}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     )}
 
@@ -924,30 +910,6 @@ export function LessonEditorModal({
                           alt="Cover"
                           className="w-full h-full object-cover"
                         />
-                        {/* Delete button (hover only) */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveCover();
-                          }}
-                          className="absolute top-3 right-3 p-2.5 bg-black/50 backdrop-blur-sm text-white
-                                   hover:bg-red-500 transition-all duration-200 
-                                   opacity-0 group-hover:opacity-100"
-                          title={t("common.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        {/* Change cover overlay - Centered */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div
-                            className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
-                                        opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                          >
-                            <span className="text-white text-xs font-medium">
-                              {t("teacher.lesson.changeCover")}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     )}
 
@@ -970,15 +932,49 @@ export function LessonEditorModal({
                         </div>
                       </div>
                     )}
-
-                    <input
-                      id="lesson-cover-upload"
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleCoverUpload}
-                    />
                   </div>
+
+                  {/* Cover Action Buttons (shown when cover exists) */}
+                  {(coverFile || formData.videoCoverFileId) && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          document.getElementById("lesson-cover-upload").click()
+                        }
+                        className="flex-1 px-3 py-2 bg-[rgb(var(--bg-muted))] text-[rgb(var(--text-secondary))]
+                                 text-xs font-medium rounded-lg hover:bg-[rgb(var(--bg-muted))/0.7] transition-colors
+                                 flex items-center justify-center gap-1.5 border border-[rgb(var(--border-base))]"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        {t("teacher.lesson.changeCover")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (coverFile) {
+                            setCoverFile(null);
+                          } else {
+                            handleRemoveCover();
+                          }
+                        }}
+                        className="px-3 py-2 bg-red-500/10 text-red-500
+                                 text-xs font-medium rounded-lg hover:bg-red-500/20 transition-colors
+                                 flex items-center justify-center gap-1.5 border border-red-500/20"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {t("common.delete")}
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    id="lesson-cover-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
+                  />
                 </div>
               </div>
 
@@ -1187,6 +1183,21 @@ export function LessonEditorModal({
           onSave={handleConfigSaved}
         />
       )}
+
+      {/* Cover Image Viewer Modal */}
+      <ImageViewerModal
+        isOpen={coverViewerOpen}
+        onClose={() => setCoverViewerOpen(false)}
+        src={
+          coverFile
+            ? coverPreviewUrl
+            : formData.videoCoverFileId
+              ? FileService.getCourseCoverUrl(formData.videoCoverFileId)
+              : null
+        }
+        alt="Lesson cover"
+        showDownload={false}
+      />
     </>
   );
 }

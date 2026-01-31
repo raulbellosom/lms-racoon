@@ -202,6 +202,7 @@ export function UploadProgressCard() {
  * Individual Upload Item
  */
 function UploadItem({ upload, onRemove, onShowError }) {
+  const { t } = useTranslation();
   const FileIcon = getFileIcon(upload.fileType);
   const isUploading = upload.status === UPLOAD_STATUS.UPLOADING;
   const isComplete = upload.status === UPLOAD_STATUS.COMPLETE;
@@ -248,17 +249,30 @@ function UploadItem({ upload, onRemove, onShowError }) {
           {isUploading && (
             <div className="mt-2">
               <div className="flex items-center justify-between text-xs text-[rgb(var(--text-muted))] mb-1">
-                <span>{Math.round(upload.progress)}%</span>
+                <span>
+                  {upload.progress < 1
+                    ? t("upload.starting")
+                    : `${Math.round(upload.progress)}%`}
+                </span>
+                {upload.progress >= 85 && upload.fileType === "video" && (
+                  <span className="text-amber-500 animate-pulse">
+                    {t("upload.processing")}
+                  </span>
+                )}
               </div>
-              <div className="h-1.5 bg-[rgb(var(--bg-muted))] rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-300 ease-out"
                   style={{
-                    width: `${upload.progress}%`,
-                    background:
-                      "linear-gradient(90deg, rgb(var(--brand-primary)), rgb(var(--brand-primary))/0.7, rgb(var(--brand-primary)))",
+                    width: `${Math.max(upload.progress, 3)}%`,
+                    backgroundImage:
+                      upload.progress >= 85 && upload.fileType === "video"
+                        ? "linear-gradient(90deg, #10b981, #f59e0b, #10b981)"
+                        : "linear-gradient(90deg, #10b981, #059669, #10b981)",
                     backgroundSize: "200% 100%",
-                    animation: "shimmer 2s linear infinite",
+                    backgroundRepeat: "no-repeat",
+                    animation: "shimmer 1.5s linear infinite",
+                    boxShadow: "0 0 8px rgba(16, 185, 129, 0.6)",
                   }}
                 />
               </div>
@@ -268,12 +282,12 @@ function UploadItem({ upload, onRemove, onShowError }) {
           {/* Status Text */}
           {isComplete && (
             <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-              Completado
+              {t("upload.completed")}
             </p>
           )}
           {isError && (
             <p className="text-xs text-red-500 mt-1 truncate">
-              {upload.error || "Error desconocido"}
+              {upload.error || t("upload.unknownError")}
             </p>
           )}
         </div>

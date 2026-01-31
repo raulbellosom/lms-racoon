@@ -60,3 +60,7 @@ export { cn } from "./cn";
 
 // Language
 export { LanguageSelector } from "./LanguageSelector";
+
+// Media viewers
+export { ImageViewerModal } from "./ImageViewerModal";
+export { VideoPlayer } from "./VideoPlayer";

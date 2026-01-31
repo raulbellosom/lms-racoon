@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { PageLayout } from "../../../shared/ui/PageLayout";
 import { Avatar } from "../../../shared/ui/Avatar";
+import { ImageViewerModal } from "../../../shared/ui/ImageViewerModal";
 import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { Input } from "../../../shared/ui/Input";
@@ -127,6 +128,7 @@ export function ProfileView() {
   const [isEditing, setIsEditing] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [formData, setFormData] = React.useState({});
+  const [avatarViewerOpen, setAvatarViewerOpen] = React.useState(false);
   const fileInputRef = React.useRef(null);
 
   // Initialize form data when editing starts or profile loads
@@ -309,7 +311,12 @@ export function ProfileView() {
                   size="xl"
                   shape="square"
                   ring={false}
-                  className="size-32 border-2 border-[rgb(var(--bg-surface))] shadow-xl sm:size-40"
+                  className="size-32 border-2 border-[rgb(var(--bg-surface))] shadow-xl sm:size-40 cursor-pointer transition-transform hover:scale-105"
+                  onClick={() => {
+                    if (profile?.avatarFileId) {
+                      setAvatarViewerOpen(true);
+                    }
+                  }}
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -784,6 +791,15 @@ export function ProfileView() {
           </div>
         </div>
       </div>
+
+      {/* Profile Avatar Viewer Modal */}
+      <ImageViewerModal
+        isOpen={avatarViewerOpen}
+        onClose={() => setAvatarViewerOpen(false)}
+        src={ProfileService.getAvatarUrl(profile?.avatarFileId)}
+        alt={displayName}
+        showDownload={true}
+      />
     </PageLayout>
   );
 }

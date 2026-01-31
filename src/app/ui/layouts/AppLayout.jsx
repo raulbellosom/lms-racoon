@@ -33,6 +33,7 @@ import {
   DropdownDivider,
 } from "../../../shared/ui/Dropdown";
 import { Avatar } from "../../../shared/ui/Avatar";
+import { ImageViewerModal } from "../../../shared/ui/ImageViewerModal";
 import { useAuth } from "../../providers/AuthProvider";
 import { useCart } from "../../../context/CartContext";
 import { logout } from "../../../shared/services/auth";
@@ -160,6 +161,7 @@ export function AppLayout() {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const [searchModalOpen, setSearchModalOpen] = React.useState(false);
+  const [avatarViewerOpen, setAvatarViewerOpen] = React.useState(false);
 
   // Sidebar state
   const [collapsed, setCollapsed] = React.useState(() => {
@@ -348,7 +350,13 @@ export function AppLayout() {
                   src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
                   size="md"
                   ring
-                  className="transition-transform group-hover:scale-105"
+                  className="transition-transform group-hover:scale-105 cursor-pointer"
+                  onClick={(e) => {
+                    if (auth.profile?.avatarFileId) {
+                      e.stopPropagation();
+                      setAvatarViewerOpen(true);
+                    }
+                  }}
                 />
               </button>
             }
@@ -482,6 +490,12 @@ export function AppLayout() {
                 src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
                 size="md"
                 ring
+                className="cursor-pointer"
+                onClick={() => {
+                  if (auth.profile?.avatarFileId) {
+                    setAvatarViewerOpen(true);
+                  }
+                }}
               />
               <div>
                 <div className="text-sm font-bold">{displayName}</div>
@@ -586,6 +600,15 @@ export function AppLayout() {
       <SearchModal
         open={searchModalOpen}
         onClose={() => setSearchModalOpen(false)}
+      />
+
+      {/* Profile Avatar Viewer */}
+      <ImageViewerModal
+        isOpen={avatarViewerOpen}
+        onClose={() => setAvatarViewerOpen(false)}
+        src={ProfileService.getAvatarUrl(auth.profile?.avatarFileId)}
+        alt={displayName}
+        showDownload={false}
       />
     </div>
   );
