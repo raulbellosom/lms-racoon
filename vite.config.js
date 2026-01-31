@@ -11,6 +11,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: false,
       devOptions: { enabled: false, type: "module" },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB (default is 2MB)
+      },
       includeAssets: [
         "favicon.svg",
         "web/icon-192.png",
