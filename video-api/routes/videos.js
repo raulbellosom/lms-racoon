@@ -36,7 +36,11 @@ const upload = multer({
 });
 
 // Upload video for a lesson
-router.post("/:lessonId", upload.single("video"), videoController.uploadVideo);
+router.post(
+  "/:lessonId/video",
+  upload.single("video"),
+  videoController.uploadVideo,
+);
 
 // Delete video for a lesson (cleanup old files)
 router.delete("/:lessonId", videoController.deleteVideo);

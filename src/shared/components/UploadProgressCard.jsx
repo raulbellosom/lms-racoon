@@ -239,7 +239,7 @@ function UploadItem({ upload, onRemove, onShowError }) {
                 }}
                 className="shrink-0 p-1 hover:bg-[rgb(var(--bg-muted))] rounded transition-colors"
               >
-                <X className="h-3.5 w-3.5 text-[rgb(var(--text-muted))]" />
+                <X className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
               </button>
             )}
           </div>

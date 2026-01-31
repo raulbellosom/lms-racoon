@@ -483,8 +483,9 @@ export function LessonEditorModal({
         videoCoverFileId,
         // New MinIO fields logic is handled after initial save for new files,
         // but we preserve existing state if no new file.
-        videoProvider: formData.videoProvider,
-        videoStatus: formData.videoStatus,
+        // Send null instead of empty string to satisfy Appwrite enum validation
+        videoProvider: formData.videoProvider || null,
+        videoStatus: formData.videoStatus || null,
 
         durationSec: formData.durationSec,
         isFreePreview: formData.isFreePreview,
@@ -569,7 +570,7 @@ export function LessonEditorModal({
     } finally {
       setSaving(false);
       setUploading(false);
-      setUploadProgress(0);
+      setLocalUploadProgress(0);
     }
   };
 
