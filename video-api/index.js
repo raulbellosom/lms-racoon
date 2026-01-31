@@ -1,5 +1,12 @@
 import dotenv from "dotenv";
-dotenv.config(); // CRITICAL: Must be first, before other imports that use process.env
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// CRITICAL: Load .env with explicit path for PM2 compatibility
+dotenv.config({ path: join(__dirname, ".env") });
 
 import express from "express";
 import cors from "cors";
