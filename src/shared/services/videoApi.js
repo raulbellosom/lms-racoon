@@ -8,7 +8,7 @@ export const VideoApi = {
   async uploadVideo(lessonId, file, onProgress) {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("video", file);
 
       const baseUrl = import.meta.env.VITE_VIDEO_API_BASE_URL;
       if (!baseUrl) {
