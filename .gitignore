@@ -93,3 +93,9 @@ coverage/
 # yarn.lock
 # pnpm-lock.yaml
 
+*.zip
+*.rar
+*.tar.gz
+*.tar
+*.gz
+*.7z
