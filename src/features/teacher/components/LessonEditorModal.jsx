@@ -26,6 +26,7 @@ import { QuizService } from "../../../shared/data/quizzes-teacher";
 import { AssignmentService } from "../../../shared/data/assignments-teacher";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { useUploadProgress } from "../../../app/providers/UploadProgressContext";
+import { VideoPlayer } from "../../../shared/ui/VideoPlayer";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
 import { CharacterCountCircle } from "./CharacterCountCircle";
@@ -162,18 +163,17 @@ export function LessonEditorModal({
   const uploadProgressManager = useUploadProgress();
   const isNew = !lesson?.$id;
 
-  // Video preview URL for local file playback
-  const videoPreviewRef = React.useRef(null);
-
+  // State Declarations (Must be before effects)
   const [formData, setFormData] = React.useState({
     title: "",
     description: "",
     kind: "video",
     videoFileId: "", // Keep for legacy display support
-    videoStatus: "ready", // Default to ready if new? No, "pending". But for new lessons it is empty.
-    videoProvider: "appwrite",
+    videoStatus: "", // Empty for new lessons - only 'ready'/'processing' when video actually exists
+    videoProvider: "", // Empty for new lessons
     videoCoverFileId: "",
     durationSec: 0,
+    isFreePreview: false,
   });
 
   const [uploading, setUploading] = React.useState(false);
@@ -183,9 +183,34 @@ export function LessonEditorModal({
   const [coverFile, setCoverFile] = React.useState(null);
   const [attachments, setAttachments] = React.useState([]);
 
+  // Stable Object URLs to prevent re-rendering on every keystroke
+  const [videoPreviewUrl, setVideoPreviewUrl] = React.useState(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = React.useState(null);
+
   // Child Modals State
   const [quizModalOpen, setQuizModalOpen] = React.useState(false);
   const [assignmentModalOpen, setAssignmentModalOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!videoFile) {
+      setVideoPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(videoFile);
+    setVideoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [videoFile]);
+
+  React.useEffect(() => {
+    if (!coverFile) {
+      setCoverPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(coverFile);
+    setCoverPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
+  const videoPreviewRef = React.useRef(null);
 
   // Data for Child Modals
   // If we have a connected quiz/assignment, we store it here
@@ -220,17 +245,18 @@ export function LessonEditorModal({
   React.useEffect(() => {
     const loadData = async () => {
       if (lesson) {
-        setFormData({
+        const newFormData = {
           title: lesson.title || "",
           description: lesson.description || "",
           kind: lesson.kind || "video",
           videoFileId: lesson.videoFileId || "",
-          videoStatus: lesson.videoStatus || "ready", // Assume ready if not specified (legacy)
-          videoProvider: lesson.videoProvider || "appwrite",
+          videoStatus: lesson.videoStatus || "", // Don't assume 'ready' - empty means no video
+          videoProvider: lesson.videoProvider || "", // Don't assume 'appwrite' - empty means no video
           videoCoverFileId: lesson.videoCoverFileId || "",
           durationSec: lesson.durationSec || 0,
           isFreePreview: lesson.isFreePreview || false,
-        });
+        };
+        setFormData(newFormData);
 
         // Load attachments
         if (lesson.attachments && Array.isArray(lesson.attachments)) {
@@ -268,7 +294,7 @@ export function LessonEditorModal({
           kind: "video",
           videoFileId: "",
           videoStatus: "",
-          videoProvider: "minio", // Default for new lessons
+          videoProvider: "", // Empty for new lessons - no video yet
           videoCoverFileId: "",
           durationSec: 0,
           isFreePreview: false,
@@ -483,7 +509,6 @@ export function LessonEditorModal({
             lesson.videoProvider === "minio" &&
             lesson.videoHlsUrl
           ) {
-            console.log("Cleaning up old video before upload...");
             try {
               await VideoApi.deleteVideo(savedLesson.$id);
             } catch (deleteError) {
@@ -699,7 +724,7 @@ export function LessonEditorModal({
                     </span>
                   </label>
                   <div
-                    className="relative aspect-video rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] 
+                    className="relative aspect-video border-2 border-dashed border-[rgb(var(--border-base))] 
                                bg-[rgb(var(--bg-muted))] cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] 
                                transition-colors overflow-hidden group"
                     onClick={() => {
@@ -709,44 +734,52 @@ export function LessonEditorModal({
                     }}
                   >
                     {/* Local Video Preview */}
-                    {videoFile && (
+                    {videoFile && videoPreviewUrl && (
                       <div className="absolute inset-0">
                         <video
                           ref={videoPreviewRef}
-                          src={URL.createObjectURL(videoFile)}
+                          src={videoPreviewUrl}
                           className="w-full h-full object-contain bg-black"
                           controls
                           onClick={(e) => e.stopPropagation()}
                         />
-                        {/* Remove button */}
+                        {/* Delete button - modern design (hover only) */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setVideoFile(null);
                           }}
-                          className="absolute top-2 right-2 p-2 bg-red-500/90 text-white rounded-lg 
-                                     hover:bg-red-600 shadow-lg transition-all z-10"
+                          className="absolute top-3 right-3 p-2.5 bg-black/50 backdrop-blur-sm text-white
+                                   hover:bg-red-500 transition-all duration-200 group/btn
+                                   opacity-0 group-hover:opacity-100"
                           title={t("common.delete")}
                         >
-                          <X className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
-                        {/* Change video overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-linear-to-t from-black/60 to-transparent">
-                          <div className="flex items-center justify-center gap-2">
-                            <RefreshCw className="h-4 w-4 text-white" />
-                            <span className="text-white text-xs font-medium">
-                              {t("teacher.lesson.changeVideo", "Cambiar video")}
-                            </span>
+                        {/* Change video overlay - Centered */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div
+                            className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
+                                        opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                          >
+                            <div className="flex items-center gap-2">
+                              <RefreshCw className="h-4 w-4 text-white" />
+                              <span className="text-white text-xs font-medium">
+                                {t("teacher.lesson.changeVideo")}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Existing Video State (MinIO/Appwrite) */}
+                    {/* Existing Video State (MinIO/Appwrite) - Only show if video actually exists */}
                     {!videoFile &&
-                      (formData.videoStatus === "ready" ||
-                        formData.videoProvider === "minio" ||
-                        formData.videoFileId) && (
+                      ((formData.videoStatus && formData.videoStatus !== "") ||
+                        (formData.videoProvider &&
+                          formData.videoProvider !== "") ||
+                        (formData.videoFileId &&
+                          formData.videoFileId !== "")) && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
                           <div
                             className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 
@@ -756,8 +789,7 @@ export function LessonEditorModal({
                           </div>
                           <span className="text-sm font-medium text-green-600 dark:text-green-400 text-center">
                             {formData.videoStatus === "processing"
-                              ? t("teacher.lesson.processing") ||
-                                "Procesando..."
+                              ? t("teacher.lesson.processing")
                               : t("teacher.lesson.videoUploaded")}
                           </span>
                           {/* Change video button */}
@@ -773,7 +805,7 @@ export function LessonEditorModal({
                                      flex items-center gap-1.5"
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
-                            {t("teacher.lesson.changeVideo", "Cambiar video")}
+                            {t("teacher.lesson.changeVideo")}
                           </button>
                         </div>
                       )}
@@ -792,10 +824,7 @@ export function LessonEditorModal({
                           </div>
                           <div className="text-center">
                             <span className="text-sm font-medium text-[rgb(var(--text-primary))]">
-                              {t(
-                                "teacher.lesson.uploadVideoLabel",
-                                "Subir Video",
-                              )}
+                              {t("teacher.lesson.uploadVideoLabel")}
                             </span>
                             <p className="text-xs text-[rgb(var(--text-muted))] mt-1">
                               MP4, WebM, MOV, MKV
@@ -820,7 +849,7 @@ export function LessonEditorModal({
                     {t("teacher.lesson.uploadCover")}
                   </label>
                   <div
-                    className="relative aspect-video rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] 
+                    className="relative aspect-video border-2 border-dashed border-[rgb(var(--border-base))] 
                                bg-[rgb(var(--bg-muted))] cursor-pointer hover:bg-[rgb(var(--bg-muted))/0.8] 
                                transition-colors overflow-hidden group"
                     onClick={() =>
@@ -828,29 +857,33 @@ export function LessonEditorModal({
                     }
                   >
                     {/* Local Cover File Preview */}
-                    {coverFile && (
+                    {coverFile && coverPreviewUrl && (
                       <div className="absolute inset-0">
                         <img
-                          src={URL.createObjectURL(coverFile)}
+                          src={coverPreviewUrl}
                           alt="Cover preview"
                           className="w-full h-full object-cover"
                         />
-                        {/* Overlay */}
-                        <div className="absolute inset-0 bg-black/20 flex flex-col justify-between p-2">
-                          <div className="flex justify-end">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCoverFile(null);
-                              }}
-                              className="p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 shadow-sm"
-                              title={t("common.delete")}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                          <div className="self-center">
-                            <span className="px-2 py-1 bg-black/60 text-white text-xs rounded-full font-medium backdrop-blur-sm">
+                        {/* Delete button (hover only) */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCoverFile(null);
+                          }}
+                          className="absolute top-3 right-3 p-2.5 bg-black/50 backdrop-blur-sm text-white
+                                   hover:bg-red-500 transition-all duration-200 
+                                   opacity-0 group-hover:opacity-100"
+                          title={t("common.delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        {/* Change cover overlay - Centered */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div
+                            className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
+                                        opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                          >
+                            <span className="text-white text-xs font-medium">
                               {t("teacher.lesson.changeCover")}
                             </span>
                           </div>
@@ -868,22 +901,26 @@ export function LessonEditorModal({
                           alt="Cover"
                           className="w-full h-full object-cover"
                         />
-                        {/* Overlay */}
-                        <div className="absolute inset-0 bg-black/10 flex flex-col justify-between p-2">
-                          <div className="flex justify-end">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveCover();
-                              }}
-                              className="p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 shadow-sm"
-                              title={t("common.delete")}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                          <div className="self-center">
-                            <span className="px-2 py-1 bg-black/60 text-white text-xs rounded-full font-medium backdrop-blur-sm">
+                        {/* Delete button (hover only) */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveCover();
+                          }}
+                          className="absolute top-3 right-3 p-2.5 bg-black/50 backdrop-blur-sm text-white
+                                   hover:bg-red-500 transition-all duration-200 
+                                   opacity-0 group-hover:opacity-100"
+                          title={t("common.delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                        {/* Change cover overlay - Centered */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div
+                            className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full 
+                                        opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                          >
+                            <span className="text-white text-xs font-medium">
                               {t("teacher.lesson.changeCover")}
                             </span>
                           </div>
@@ -902,10 +939,7 @@ export function LessonEditorModal({
                         </div>
                         <div className="text-center">
                           <span className="text-sm font-medium text-[rgb(var(--text-primary))]">
-                            {t(
-                              "teacher.lesson.uploadCoverLabel",
-                              "Subir Portada",
-                            )}
+                            {t("teacher.lesson.uploadCoverLabel")}
                           </span>
                           <p className="text-xs text-[rgb(var(--text-muted))] mt-1">
                             {t("teacher.lesson.coverFormats")}
