@@ -13,6 +13,7 @@ import { Switch } from "../../../shared/ui/Switch";
 import { ConfirmationModal } from "../../../shared/ui/ConfirmationModal";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { LoadingContent } from "../../../shared/ui/LoadingScreen";
+import { CharacterCountCircle } from "./CharacterCountCircle";
 
 // Constants from .env (reused or hardcoded if needed, best to import usually)
 const DB_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
@@ -279,13 +280,23 @@ export function TeacherCouponsManager({ courseId }) {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium mb-1 block">
-              {t("teacher.coupons.code", "Código")}
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium">
+                {t("teacher.coupons.code", "Código")}
+              </label>
+              <CharacterCountCircle
+                current={formData.code.length}
+                max={20}
+                size={18}
+              />
+            </div>
             <Input
               value={formData.code}
               onChange={(e) =>
-                setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                setFormData({
+                  ...formData,
+                  code: e.target.value.toUpperCase().slice(0, 20),
+                })
               }
               placeholder="E.g. BLACKFRIDAY2024"
               maxLength={20}
@@ -320,12 +331,18 @@ export function TeacherCouponsManager({ courseId }) {
                 type="number"
                 min="0"
                 value={formData.value}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const val = e.target.value;
                   setFormData({
                     ...formData,
-                    value: parseFloat(e.target.value),
-                  })
-                }
+                    value: val === "" ? "" : parseFloat(val),
+                  });
+                }}
+                onBlur={() => {
+                  if (formData.value === "" || isNaN(formData.value)) {
+                    setFormData({ ...formData, value: 0 });
+                  }
+                }}
               />
             </div>
           </div>
@@ -339,12 +356,18 @@ export function TeacherCouponsManager({ courseId }) {
                 type="number"
                 min="0"
                 value={formData.maxUses}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const val = e.target.value;
                   setFormData({
                     ...formData,
-                    maxUses: parseInt(e.target.value),
-                  })
-                }
+                    maxUses: val === "" ? "" : parseInt(val),
+                  });
+                }}
+                onBlur={() => {
+                  if (formData.maxUses === "" || isNaN(formData.maxUses)) {
+                    setFormData({ ...formData, maxUses: 0 });
+                  }
+                }}
               />
             </div>
             <div>

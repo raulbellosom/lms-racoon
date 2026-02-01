@@ -14,13 +14,19 @@ const hasAppwrite = () =>
  * @param {string} bucketId - The bucket ID
  * @param {File} file - The file to upload
  * @param {string} [fileId] - Optional custom file ID
+ * @param {Function} [onProgress] - Optional progress callback
  * @returns {Promise<Object>} The uploaded file document
  */
-export async function uploadFile(bucketId, file, fileId = null) {
+export async function uploadFile(
+  bucketId,
+  file,
+  fileId = null,
+  onProgress = null,
+) {
   if (!hasAppwrite()) throw new Error("Appwrite not configured");
 
   const id = fileId || ID.unique();
-  return storage.createFile(bucketId, id, file);
+  return storage.createFile(bucketId, id, file, [], onProgress);
 }
 
 /**
@@ -88,10 +94,16 @@ export async function getFileMetadata(bucketId, fileId) {
 /**
  * Upload course cover image
  * @param {File} file - Image file
+ * @param {Function} [onProgress] - Optional progress callback
  * @returns {Promise<string>} The file ID
  */
-export async function uploadCourseCover(file) {
-  const result = await uploadFile(APPWRITE.buckets.courseCovers, file);
+export async function uploadCourseCover(file, onProgress = null) {
+  const result = await uploadFile(
+    APPWRITE.buckets.courseCovers,
+    file,
+    null,
+    onProgress,
+  );
   return result.$id;
 }
 

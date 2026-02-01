@@ -538,7 +538,13 @@
       "patternsTab": "Patterns",
       "dragDrop": "Click or drag to upload",
       "videoDescription": "Select a video from your lessons to use as trailer",
-      "noVideos": "No videos available"
+      "noVideos": "No videos available",
+      "currentImage": "Current image banner",
+      "currentTrailer": "Current trailer selected",
+      "selectToReplace": "Select a new one to replace",
+      "replaceImage": "Replace image",
+      "deselect": "Deselect",
+      "uploadVideosFirst": "Upload videos in the Content tab first."
     },
     "errors": {
       "invalidFileType": "Invalid file type",
@@ -638,6 +644,12 @@
     "hours": "h",
     "retry": "Retry",
     "help": "Help",
+    "lesson": "Lesson",
+    "videoLesson": "Video lesson",
+    "active": "Active",
+    "inactive": "Inactive",
+    "enabled": "Enabled",
+    "uploading": "Uploading...",
     "themes": {
       "light": "Light",
       "dark": "Dark",

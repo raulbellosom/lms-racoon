@@ -146,6 +146,8 @@ export function TeacherCourseEditorPage() {
     coverFileId: "",
     promoVideoProvider: "appwrite",
     promoVideoHlsUrl: "",
+    bannerFileId: "", // Add this field if it was missing in the state initialization
+    promoVideoCoverFileId: "", // Add this field to persist video cover for banners
   });
 
   // Track initial state for dirty check
@@ -246,16 +248,14 @@ export function TeacherCourseEditorPage() {
         navigate("/app/teach/courses");
         return;
       }
-
       setCourse(data);
-      const promoVideoCoverFileId = ""; // Video covers handled via HLS/MinIO now
 
       const loadedData = {
         title: data.title,
         subtitle: data.subtitle || "",
         description: data.description || "",
-        categoryId: data.categoryId,
-        level: data.level,
+        categoryId: data.categoryId || "",
+        level: data.level || "beginner",
         priceCents: data.priceCents || 0,
         currency: data.currency || "MXN",
         language: data.language || "es",
@@ -263,12 +263,13 @@ export function TeacherCourseEditorPage() {
         bannerFileId: data.bannerFileId || "",
         promoVideoProvider: data.promoVideoProvider || "appwrite",
         promoVideoHlsUrl: data.promoVideoHlsUrl || "",
-        promoVideoCoverFileId: promoVideoCoverFileId,
+        promoVideoCoverFileId: data.promoVideoCoverFileId || "", // Load persisted video cover ID
       };
       setFormData(loadedData);
       setInitialFormData(loadedData);
     } catch (error) {
       console.error("Failed to load course", error);
+      showToast(t("teacher.errors.loadFailed"), "error");
       navigate("/app/teach/courses");
     } finally {
       setLoading(false);

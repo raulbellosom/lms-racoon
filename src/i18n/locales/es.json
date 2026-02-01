@@ -538,7 +538,13 @@
       "patternsTab": "Patrones",
       "dragDrop": "Click o arrastra para subir",
       "videoDescription": "Selecciona un video de tus lecciones para usar como trailer",
-      "noVideos": "No hay lecciones con video disponible"
+      "noVideos": "No hay lecciones con video disponible",
+      "currentImage": "Banner de imagen actual",
+      "currentTrailer": "Trailer actual seleccionado",
+      "selectToReplace": "Selecciona uno nuevo para reemplazar",
+      "replaceImage": "Reemplazar imagen",
+      "deselect": "Deseleccionar",
+      "uploadVideosFirst": "Sube videos en la pestaña de Contenido primero."
     },
     "errors": {
       "invalidFileType": "Tipo de archivo no válido",
@@ -638,6 +644,12 @@
     "hours": "h",
     "retry": "Reintentar",
     "help": "Ayuda",
+    "lesson": "Lección",
+    "videoLesson": "Lección de video",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "enabled": "Habilitado",
+    "uploading": "Subiendo...",
     "themes": {
       "light": "Claro",
       "dark": "Oscuro",

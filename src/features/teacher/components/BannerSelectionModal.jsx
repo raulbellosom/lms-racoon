@@ -14,7 +14,11 @@ import { FileService } from "../../../shared/data/files";
 import { LessonService } from "../../../shared/data/lessons-teacher";
 import { DEFAULT_BANNERS } from "../../../shared/assets/banners";
 import { useToast } from "../../../app/providers/ToastProvider";
-import { LoadingSpinner } from "../../../shared/ui/LoadingScreen";
+import {
+  LoadingSpinner,
+  LoadingContent,
+} from "../../../shared/ui/LoadingScreen";
+import { useUploadProgress } from "../../../app/providers/UploadProgressContext";
 
 export function BannerSelectionModal({
   open,
@@ -30,6 +34,7 @@ export function BannerSelectionModal({
   const [lessons, setLessons] = useState([]);
   const [loadingLessons, setLoadingLessons] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const uploadProgressManager = useUploadProgress();
 
   // Fetch lessons when video tab is active
   useEffect(() => {
@@ -42,13 +47,8 @@ export function BannerSelectionModal({
     setLoadingLessons(true);
     try {
       const allLessons = await LessonService.listByCourse(courseId);
-      // Filter lessons that have a video
-      const videoLessons = allLessons.filter(
-        (l) =>
-          (l.videoStatus === "ready" && l.videoHlsUrl) ||
-          l.videoProvider === "minio" ||
-          l.videoFileId, // Legacy support
-      );
+      // Filter lessons that are strictly of kind 'video'
+      const videoLessons = allLessons.filter((l) => l.kind === "video");
       setLessons(videoLessons);
     } catch (error) {
       console.error("Failed to load lessons for video selection", error);
@@ -66,20 +66,32 @@ export function BannerSelectionModal({
       showToast(t("teacher.errors.invalidFileType"), "error");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      // 8MB
-      showToast(t("teacher.errors.fileTooLarge"), "error");
+    if (file.size > 30 * 1024 * 1024) {
+      // 30MB
+      showToast(`${t("teacher.errors.fileTooLarge")} (max 30MB)`, "error");
       return;
     }
 
     setUploading(true);
+    const uploadId = uploadProgressManager.addUpload(file.name, "cover");
+
     try {
-      const fileId = await FileService.uploadCourseCover(file);
+      const fileId = await FileService.uploadCourseCover(file, (progress) => {
+        if (progress.total > 0) {
+          const percentage = Math.round(
+            (progress.loaded / progress.total) * 100,
+          );
+          uploadProgressManager.updateProgress(uploadId, percentage);
+        }
+      });
+
+      uploadProgressManager.markComplete(uploadId);
       onSelect({ type: "image", value: fileId });
       onOpenChange(false);
     } catch (error) {
       console.error("Banner upload failed", error);
       showToast(t("teacher.errors.uploadFailed"), "error");
+      uploadProgressManager.markError(uploadId, error.message);
     } finally {
       setUploading(false);
     }
@@ -148,20 +160,25 @@ export function BannerSelectionModal({
               {currentBannerId && (
                 <>
                   <ImageIcon className="h-4 w-4 text-[rgb(var(--brand-primary))]" />
-                  <span className="font-medium">Banner de imagen actual</span>
+                  <span className="font-medium">
+                    {t("teacher.banner.currentImage") ||
+                      "Banner de imagen actual"}
+                  </span>
                 </>
               )}
               {currentVideoHlsUrl && (
                 <>
                   <PlayCircle className="h-4 w-4 text-[rgb(var(--brand-primary))]" />
                   <span className="font-medium">
-                    Trailer actual seleccionado
+                    {t("teacher.banner.currentTrailer") ||
+                      "Trailer actual seleccionado"}
                   </span>
                 </>
               )}
             </div>
             <span className="text-xs text-[rgb(var(--text-muted))]">
-              Selecciona uno nuevo para reemplazar
+              {t("teacher.banner.selectToReplace") ||
+                "Selecciona uno nuevo para reemplazar"}
             </span>
           </div>
         )}
@@ -170,7 +187,7 @@ export function BannerSelectionModal({
         <div className="min-h-[300px]">
           {/* UPLOAD TAB */}
           {activeTab === "upload" && (
-            <div className="relative flex h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] transition-colors hover:bg-[rgb(var(--bg-muted))/0.8]">
+            <div className="relative flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] transition-colors hover:bg-[rgb(var(--bg-muted))/0.8]">
               {currentBannerId &&
               !DEFAULT_BANNERS.find((b) => b.id === currentBannerId) ? (
                 // Show current banner with delete option
@@ -178,9 +195,9 @@ export function BannerSelectionModal({
                   <img
                     src={FileService.getCourseCoverUrl(currentBannerId)}
                     alt="Current banner"
-                    className="absolute inset-0 h-full w-full object-cover rounded-xl"
+                    className="absolute inset-0 h-full w-full object-cover rounded-lg"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
                     <span className="text-white text-sm font-medium">
                       Banner actual
                     </span>
@@ -199,7 +216,7 @@ export function BannerSelectionModal({
                     }
                     className="absolute bottom-3 left-1/2 -translate-x-1/2 px-4 py-2 bg-white rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-lg"
                   >
-                    Reemplazar imagen
+                    {t("teacher.banner.replaceImage") || "Reemplazar imagen"}
                   </button>
                 </>
               ) : (
@@ -216,7 +233,7 @@ export function BannerSelectionModal({
                   <div className="pointer-events-none p-6 text-center">
                     {uploading ? (
                       <div className="mx-auto mb-4">
-                        <LoadingSpinner />
+                        <LoadingContent className="py-2" />
                       </div>
                     ) : (
                       <ImageIcon className="mx-auto mb-4 h-12 w-12 text-[rgb(var(--text-muted))]" />
@@ -258,23 +275,25 @@ export function BannerSelectionModal({
                     onClick={() => onSelect({ type: "video", value: null })}
                     className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
                   >
-                    <X className="h-3 w-3" /> Deseleccionar
+                    <X className="h-3 w-3" />{" "}
+                    {t("teacher.banner.deselect") || "Deseleccionar"}
                   </button>
                 )}
               </div>
               {loadingLessons ? (
                 <div className="flex justify-center p-8">
-                  <LoadingSpinner />
+                  <LoadingContent />
                 </div>
               ) : lessons.length === 0 ? (
-                <div className="rounded-xl border bg-[rgb(var(--bg-muted))] p-8 text-center">
+                <div className="rounded-lg border bg-[rgb(var(--bg-muted))] p-8 text-center">
                   <Video className="mx-auto mb-3 h-10 w-10 text-[rgb(var(--text-muted))]" />
                   <p className="font-medium">
                     {t("teacher.banner.noVideos") ||
                       "No hay lecciones con video en este curso."}
                   </p>
                   <p className="mt-1 text-sm text-[rgb(var(--text-secondary))]">
-                    Sube videos en la pestaña de Contenido primero.
+                    {t("teacher.banner.uploadVideosFirst") ||
+                      "Sube videos en la pestaña de Contenido primero."}
                   </p>
                 </div>
               ) : (
@@ -283,7 +302,7 @@ export function BannerSelectionModal({
                     <div
                       key={lesson.$id}
                       className={`
-                                    relative cursor-pointer rounded-xl border p-3 transition-all hover:shadow-md
+                                    relative cursor-pointer rounded-lg border p-3 transition-all hover:shadow-md
                                     ${
                                       currentVideoHlsUrl &&
                                       currentVideoHlsUrl === lesson.videoHlsUrl
@@ -306,15 +325,25 @@ export function BannerSelectionModal({
                       }}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg bg-black/10">
-                          <PlayCircle className="h-8 w-8 text-[rgb(var(--text-muted))]" />
+                        <div className="relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black/10">
+                          {lesson.videoCoverFileId ? (
+                            <img
+                              src={FileService.getCourseCoverUrl(
+                                lesson.videoCoverFileId,
+                              )}
+                              alt={lesson.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <PlayCircle className="h-8 w-8 text-[rgb(var(--text-muted))]" />
+                          )}
                         </div>
                         <div className="min-w-0 pr-6">
                           <h4 className="line-clamp-2 text-sm font-medium">
                             {lesson.title}
                           </h4>
                           <span className="mt-1 block text-xs text-[rgb(var(--text-secondary))]">
-                            {t("common.lesson")}
+                            {t("common.videoLesson")}
                           </span>
                         </div>
                         {currentVideoHlsUrl &&
