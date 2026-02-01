@@ -268,15 +268,17 @@ function getAppwriteEndpoint(log) {
 
   // 3) Normaliza
   // Si viene https -> cámbialo a http (en runtime interno normalmente es http)
-  if (endpoint.startsWith("https://")) {
-    endpoint = endpoint.replace(/^https:\/\//i, "http://");
-    log(`Forced http endpoint for runtime: ${endpoint}`);
-  }
-
-  // Si viene localhost/127.0.0.1 -> eso NO sirve dentro del contenedor runtime
+  // 3) Normaliza
+  // Si viene localhost/127.0.0.1 -> eso NO sirve dentro del contenedor runtime (si Appwrite corre en Docker local)
   // Cambiamos a host interno por Docker. (default: appwrite)
-  endpoint = endpoint.replace("http://localhost", "http://appwrite");
-  endpoint = endpoint.replace("http://127.0.0.1", "http://appwrite");
+  if (endpoint.includes("://localhost") || endpoint.includes("://127.0.0.1")) {
+    endpoint = endpoint.replace("localhost", "appwrite");
+    endpoint = endpoint.replace("127.0.0.1", "appwrite");
+    // Y aseguramos http interno
+    if (endpoint.startsWith("https://")) {
+      endpoint = endpoint.replace("https://", "http://");
+    }
+  }
 
   // Asegura /v1
   endpoint = endpoint.replace(/\/+$/, "");
