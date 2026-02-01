@@ -93,11 +93,12 @@ module.exports = async ({ req, res, log, error }) => {
           admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
           });
+          log("Firebase Admin initialized successfully.");
         } catch (e) {
           error("Firebase init failed: " + e.message);
         }
       } else {
-        log("Skipping notification: Missing FIREBASE_SERVICE_ACCOUNT_JSON");
+        error("Skipping notification: Missing FIREBASE_SERVICE_ACCOUNT_JSON");
       }
     }
 
@@ -117,7 +118,11 @@ module.exports = async ({ req, res, log, error }) => {
           courseId,
         );
         const teacherId = course.teacherId;
-        const studentName = data.studentName || "Un estudiante"; // Ensure enrollment payload has studentName or fetch student profile
+        const studentName = data.studentName || "Un estudiante";
+
+        log(
+          `Processing enrollment for course: ${course.title} (Teacher: ${teacherId})`,
+        );
 
         if (teacherId) {
           // 3. Create Notification Document in Appwrite
@@ -135,10 +140,11 @@ module.exports = async ({ req, res, log, error }) => {
                 body: notificationBody,
                 read: false,
                 type: "sale",
-                // entityId: courseId, // If you add entityId attribute to notifications collection
+                // entityId: courseId,
                 dataJson: JSON.stringify({ entityId: courseId }),
               },
             );
+            log("Internal notification document created.");
           } catch (e) {
             error("Failed to create notification doc: " + e.message);
           }
@@ -156,6 +162,8 @@ module.exports = async ({ req, res, log, error }) => {
               const parsed = JSON.parse(prefs.prefsJson);
               const tokens = parsed.fcmTokens || []; // Array of tokens
 
+              log(`Found ${tokens.length} FCM tokens for teacher.`);
+
               if (tokens.length > 0) {
                 const message = {
                   notification: {
@@ -163,40 +171,58 @@ module.exports = async ({ req, res, log, error }) => {
                     body: notificationBody,
                   },
                   data: {
-                    url: `/app/teach/courses/${courseId}`, // Helper link
+                    url: `/app/teach/courses/${courseId}`,
                     type: "enrollment",
                   },
                   tokens: tokens,
                 };
 
-                const response = await admin.messaging().sendMulticast(message);
-                log(
-                  `Notifications sent: ${response.successCount}, Failed: ${response.failureCount}`,
-                );
-                if (response.failureCount > 0) {
-                  const failedTokens = [];
-                  response.responses.forEach((resp, idx) => {
-                    if (!resp.success) {
-                      failedTokens.push(tokens[idx]);
-                      error(
-                        `FCM Error for token ${tokens[idx]}: ` + resp.error,
-                      );
-                    }
-                  });
-                  // Optional: Remove invalid tokens from user prefs here to clean up
+                try {
+                  const response = await admin
+                    .messaging()
+                    .sendMulticast(message);
+                  log(
+                    `FCM Response - Success: ${response.successCount}, Failed: ${response.failureCount}`,
+                  );
+
+                  if (response.failureCount > 0) {
+                    const failedTokens = [];
+                    response.responses.forEach((resp, idx) => {
+                      if (!resp.success) {
+                        failedTokens.push(tokens[idx]);
+                        error(
+                          `FCM Error for token [${idx}]: ${resp.error.code} - ${resp.error.message}`,
+                        );
+                      }
+                    });
+
+                    // Optional: You could update user prefs to remove invalid tokens
+                    // if (failedTokens.length > 0) { ... }
+                  }
+                } catch (fcmError) {
+                  error(
+                    "FCM sendMulticast threw an error: " + fcmError.message,
+                  );
                 }
               } else {
-                log("No FCM tokens found for teacher");
+                log("No FCM tokens found in user preferences.");
               }
+            } else {
+              log("User preferences json (prefsJson) is empty or missing.");
             }
           } else {
-            log("Teacher has no preferences doc");
+            log(`Teacher (ID: ${teacherId}) has no preferences document.`);
           }
+        } else {
+          log("Course has no teacherId.");
         }
       } catch (e) {
         error("Notification logic failed: " + e.message);
       }
+    } else {
+      log("Firebase Admin not initialized, skipping logic.");
     }
+    // --- NOTIFICATION LOGIC END ---
     // --- NOTIFICATION LOGIC END ---
 
     return res.json({

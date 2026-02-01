@@ -100,6 +100,7 @@ module.exports = async ({ req, res, log, error }) => {
           admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
           });
+          log("Firebase Admin initialized successfully (onReviewCreated).");
         } catch (e) {
           error("Firebase init failed: " + e.message);
         }
@@ -122,6 +123,10 @@ module.exports = async ({ req, res, log, error }) => {
         );
         const teacherId = course.teacherId;
 
+        log(
+          `Processing review for course: ${course.title} (Teacher: ${teacherId})`,
+        );
+
         if (teacherId) {
           const notificationTitle = "Nueva reseña recibida";
           const notificationBody = `Tu curso "${course.title}" ha recibido una nueva calificación.`;
@@ -142,6 +147,7 @@ module.exports = async ({ req, res, log, error }) => {
                 dataJson: JSON.stringify({ entityId: courseId }),
               },
             );
+            log("Internal notification document created.");
           } catch (e) {
             error("Failed to create notification doc: " + e.message);
           }
@@ -159,6 +165,8 @@ module.exports = async ({ req, res, log, error }) => {
               const parsed = JSON.parse(prefs.prefsJson);
               const tokens = parsed.fcmTokens || [];
 
+              log(`Found ${tokens.length} FCM tokens for teacher.`);
+
               if (tokens.length > 0) {
                 const message = {
                   notification: {
@@ -171,18 +179,47 @@ module.exports = async ({ req, res, log, error }) => {
                   },
                   tokens: tokens, // Multicast
                 };
-                const response = await admin.messaging().sendMulticast(message);
-                if (response.failureCount > 0) {
-                  // Handle failures
-                  error(`FCM Code: ${response.failureCount} failed.`);
+
+                try {
+                  const response = await admin
+                    .messaging()
+                    .sendMulticast(message);
+                  log(
+                    `FCM Response - Success: ${response.successCount}, Failed: ${response.failureCount}`,
+                  );
+
+                  if (response.failureCount > 0) {
+                    // Handle failures
+                    response.responses.forEach((resp, idx) => {
+                      if (!resp.success) {
+                        error(
+                          `FCM Error for token [${idx}]: ${resp.error.code} - ${resp.error.message}`,
+                        );
+                      }
+                    });
+                  }
+                } catch (fcmError) {
+                  error(
+                    "FCM sendMulticast threw an error: " + fcmError.message,
+                  );
                 }
+              } else {
+                log("No FCM tokens found in user preferences.");
               }
+            } else {
+              log("User preferences json (prefsJson) is empty or missing.");
             }
+          } else {
+            log(`Teacher (ID: ${teacherId}) has no preferences document.`);
           }
+        } else {
+          log("Course has no teacherId.");
         }
       } catch (e) {
         error("Notification logic failed: " + e.message);
       }
+    } else {
+      log("Firebase Admin not initialized, skipping logic.");
     }
     // --- NOTIFICATION LOGIC END ---
 
