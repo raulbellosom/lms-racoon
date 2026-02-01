@@ -187,17 +187,63 @@ module.exports = async ({ req, res, log, error }) => {
 
                   if (response.failureCount > 0) {
                     const failedTokens = [];
+                    const tokensToRemove = [];
+
                     response.responses.forEach((resp, idx) => {
                       if (!resp.success) {
+                        const errorInfo = resp.error;
                         failedTokens.push(tokens[idx]);
                         error(
-                          `FCM Error for token [${idx}]: ${resp.error.code} - ${resp.error.message}`,
+                          `FCM Error for token [${idx}]: ${errorInfo.code} - ${errorInfo.message}`,
                         );
+
+                        // Identify tokens to remove
+                        if (
+                          errorInfo.code ===
+                            "messaging/registration-token-not-registered" ||
+                          errorInfo.code ===
+                            "messaging/invalid-registration-token"
+                        ) {
+                          tokensToRemove.push(tokens[idx]);
+                        }
                       }
                     });
 
-                    // Optional: You could update user prefs to remove invalid tokens
-                    // if (failedTokens.length > 0) { ... }
+                    if (tokensToRemove.length > 0) {
+                      log(
+                        `Removing ${tokensToRemove.length} invalid tokens from user preferences...`,
+                      );
+                      const validTokens = tokens.filter(
+                        (t) => !tokensToRemove.includes(t),
+                      );
+
+                      // Identify duplicates (if any) and keep unique only
+                      const uniqueTokens = [...new Set(validTokens)];
+
+                      try {
+                        // Re-fetch to ensure we don't overwrite concurrent updates (optimistic locking not available, but good practice)
+                        // Actually, for simplicity, we just update with what we have filtered.
+                        const updatedJson = JSON.stringify({
+                          ...parsed,
+                          fcmTokens: uniqueTokens,
+                        });
+
+                        await db.updateDocument(
+                          databaseId,
+                          userPrefsCollectionId,
+                          prefs.$id,
+                          { prefsJson: updatedJson },
+                        );
+                        log(
+                          "User preferences updated: Invalid tokens removed.",
+                        );
+                      } catch (updateErr) {
+                        error(
+                          "Failed to update user preferences with cleaned tokens: " +
+                            updateErr.message,
+                        );
+                      }
+                    }
                   }
                 } catch (fcmError) {
                   error(

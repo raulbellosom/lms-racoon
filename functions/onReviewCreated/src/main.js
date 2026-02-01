@@ -190,13 +190,56 @@ module.exports = async ({ req, res, log, error }) => {
 
                   if (response.failureCount > 0) {
                     // Handle failures
+                    const tokensToRemove = [];
+
                     response.responses.forEach((resp, idx) => {
                       if (!resp.success) {
+                        const errorInfo = resp.error;
                         error(
-                          `FCM Error for token [${idx}]: ${resp.error.code} - ${resp.error.message}`,
+                          `FCM Error for token [${idx}]: ${errorInfo.code} - ${errorInfo.message}`,
                         );
+                        if (
+                          errorInfo.code ===
+                            "messaging/registration-token-not-registered" ||
+                          errorInfo.code ===
+                            "messaging/invalid-registration-token"
+                        ) {
+                          tokensToRemove.push(tokens[idx]);
+                        }
                       }
                     });
+
+                    if (tokensToRemove.length > 0) {
+                      log(
+                        `Removing ${tokensToRemove.length} invalid tokens from user preferences...`,
+                      );
+                      const validTokens = tokens.filter(
+                        (t) => !tokensToRemove.includes(t),
+                      );
+                      const uniqueTokens = [...new Set(validTokens)];
+
+                      try {
+                        const updatedJson = JSON.stringify({
+                          ...parsed,
+                          fcmTokens: uniqueTokens,
+                        });
+
+                        await db.updateDocument(
+                          databaseId,
+                          userPrefsCollectionId,
+                          prefs.$id,
+                          { prefsJson: updatedJson },
+                        );
+                        log(
+                          "User preferences updated: Invalid tokens removed.",
+                        );
+                      } catch (updateErr) {
+                        error(
+                          "Failed to update user preferences with cleaned tokens: " +
+                            updateErr.message,
+                        );
+                      }
+                    }
                   }
                 } catch (fcmError) {
                   error(
