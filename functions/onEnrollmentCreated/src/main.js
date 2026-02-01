@@ -180,7 +180,7 @@ module.exports = async ({ req, res, log, error }) => {
                 try {
                   const response = await admin
                     .messaging()
-                    .sendMulticast(message);
+                    .sendEachForMulticast(message);
                   log(
                     `FCM Response - Success: ${response.successCount}, Failed: ${response.failureCount}`,
                   );
