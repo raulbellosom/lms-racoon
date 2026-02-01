@@ -361,7 +361,7 @@ export default async ({ req, res, log, error }) => {
         });
       }
 
-      // Verificar que el usuario existe
+      // Verificar que el usuario existe (Buscar por ID, ya que docId = userId)
       const profileDocs = await listDocuments({
         log,
         endpoint,
@@ -370,7 +370,7 @@ export default async ({ req, res, log, error }) => {
         dbId: DB_ID,
         collId: PROFILES_COLL_ID,
         queries: [
-          { method: "equal", attribute: "userAuthId", values: [userAuthId] },
+          { method: "equal", attribute: "$id", values: [userAuthId] },
           { method: "limit", values: [1] },
         ],
       });
@@ -500,7 +500,7 @@ export default async ({ req, res, log, error }) => {
         data: { verified: true },
       });
 
-      // Actualizar el perfil del usuario
+      // Actualizar el perfil del usuario (Buscar por ID)
       const profileDocs2 = await listDocuments({
         log,
         endpoint,
@@ -511,7 +511,7 @@ export default async ({ req, res, log, error }) => {
         queries: [
           {
             method: "equal",
-            attribute: "userAuthId",
+            attribute: "$id",
             values: [tokenDoc.userAuthId],
           },
           { method: "limit", values: [1] },
@@ -575,6 +575,8 @@ export default async ({ req, res, log, error }) => {
       }
 
       const profile = profileDocs.documents[0];
+      // FIX: userAuthId puede no estar en el doc, usamos $id que es igual al userAuthId
+      const userAuthId = profile.userAuthId || profile.$id;
 
       // Si ya está verificado, no hacer nada
       if (profile.emailVerified) {
@@ -596,7 +598,7 @@ export default async ({ req, res, log, error }) => {
           {
             method: "equal",
             attribute: "userAuthId",
-            values: [profile.userAuthId],
+            values: [userAuthId],
           },
           { method: "equal", attribute: "verified", values: [false] },
         ],
@@ -627,7 +629,7 @@ export default async ({ req, res, log, error }) => {
         dbId: DB_ID,
         collId: VERIFICATIONS_COLL_ID,
         data: {
-          userAuthId: profile.userAuthId,
+          userAuthId: userAuthId,
           email,
           token,
           expiresAt,
