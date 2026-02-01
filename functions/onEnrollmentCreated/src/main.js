@@ -134,7 +134,7 @@ module.exports = async ({ req, res, log, error }) => {
                 title: notificationTitle,
                 body: notificationBody,
                 read: false,
-                type: "enrollment",
+                type: "sale",
                 // entityId: courseId, // If you add entityId attribute to notifications collection
                 dataJson: JSON.stringify({ entityId: courseId }),
               },

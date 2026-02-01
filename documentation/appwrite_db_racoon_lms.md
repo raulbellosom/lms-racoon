@@ -473,7 +473,7 @@
 
 **Enum values**
 
-- `type`: `system`, `sale`, `review`, `assignment`, `course_update`
+- `type`: `system`, `sale` (enrollment), `review`, `assignment`, `course_update`, `question` (student), `response` (teacher)
 
 **Indexes**
 
