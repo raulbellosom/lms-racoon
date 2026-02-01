@@ -24,9 +24,23 @@ export const CouponsService = {
 
       const coupon = response.documents[0];
 
-      // Check expiration
-      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
-        throw new Error("Coupon expired");
+      // Check expiration - coupon is valid through the entire expiration day
+      if (coupon.expiresAt) {
+        const utcDate = new Date(coupon.expiresAt);
+        // Create local date using UTC components (assuming 'expiresAt' meant that calendar date)
+        const expirationDate = new Date(
+          utcDate.getUTCFullYear(),
+          utcDate.getUTCMonth(),
+          utcDate.getUTCDate(),
+          23,
+          59,
+          59,
+          999,
+        );
+
+        if (new Date() > expirationDate) {
+          throw new Error("Coupon expired");
+        }
       }
 
       // Check max uses
@@ -67,9 +81,24 @@ export const CouponsService = {
       // We will assume a backend function `onRedemption` handles the counter,
       // or we do it here optimistically.
       const coupon = await databases.getDocument(DB_ID, COL_COUPONS, couponId);
-      await databases.updateDocument(DB_ID, COL_COUPONS, couponId, {
-        usedCount: (coupon.usedCount || 0) + 1,
-      });
+
+      const updateData = {};
+      if ("usedCount" in coupon) {
+        updateData.usedCount = (coupon.usedCount || 0) + 1;
+      } else {
+        console.warn(
+          `Coupon ${couponId} missing usedCount attribute. Increment skipped.`,
+        );
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await databases.updateDocument(
+          DB_ID,
+          COL_COUPONS,
+          couponId,
+          updateData,
+        );
+      }
     } catch (e) {
       console.error("Redemption failed", e);
       throw e;

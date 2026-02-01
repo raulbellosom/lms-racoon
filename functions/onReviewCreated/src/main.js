@@ -138,7 +138,8 @@ module.exports = async ({ req, res, log, error }) => {
                 body: notificationBody,
                 read: false,
                 type: "review",
-                entityId: courseId,
+                // entityId: courseId,
+                dataJson: JSON.stringify({ entityId: courseId }),
                 createdAt: new Date().toISOString(),
               },
             );

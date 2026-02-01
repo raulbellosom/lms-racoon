@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
@@ -49,13 +50,45 @@ export function Combobox({
 }) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
+  const [coords, setCoords] = React.useState({ top: 0, left: 0, width: 0 });
   const containerRef = React.useRef(null);
-  const inputRef = React.useRef(null);
+  const triggerRef = React.useRef(null);
+
+  // Update position when opening
+  const updatePosition = React.useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (open) {
+      updatePosition();
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+    }
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open, updatePosition]);
 
   // Close on click outside
   React.useEffect(() => {
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      // If portal is used, we need to check if click is in container OR in the portal-ed dropdown
+      // Actually, since we'll render in a Portal, we need to be careful.
+      // Easiest is to check if click is inside containerRef OR if it's inside any element with a specific data attribute
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target) &&
+        !e.target.closest("[data-combobox-dropdown]")
+      ) {
         setOpen(false);
         setSearch("");
       }
@@ -120,6 +153,120 @@ export function Combobox({
   const hasError = !!error;
   const hasSuccess = !!success;
 
+  const dropdownContent = (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          data-combobox-dropdown
+          initial={{ opacity: 0, y: -8, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.96 }}
+          transition={{ duration: 0.15 }}
+          style={{
+            position: "absolute",
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+            zIndex: 9999,
+          }}
+          className="mt-1 overflow-hidden rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] shadow-lg"
+        >
+          {/* Search input */}
+          {searchable && (
+            <div className="border-b border-[rgb(var(--border-base))] p-2">
+              <div className="flex items-center gap-2 rounded-lg bg-[rgb(var(--bg-muted))] px-3 py-2 border border-transparent focus-within:border-[rgb(var(--brand-primary))] focus-within:ring-2 focus-within:ring-[rgb(var(--brand-primary)/0.2)] transition-all">
+                <Search className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar..."
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-[rgb(var(--text-muted))]"
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Options list */}
+          <div className="max-h-60 overflow-y-auto p-1">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-[rgb(var(--text-muted))]">
+                No se encontraron resultados
+              </div>
+            ) : (
+              filteredOptions.map((option) => {
+                const isSelected = multiple
+                  ? Array.isArray(value) && value.includes(option.value)
+                  : value === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    disabled={option.disabled}
+                    onClick={() => handleSelect(option)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition",
+                      option.disabled
+                        ? "cursor-not-allowed opacity-50"
+                        : isSelected
+                          ? "bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))]"
+                          : "hover:bg-[rgb(var(--bg-muted))]",
+                    )}
+                  >
+                    {/* Image */}
+                    {option.image && (
+                      <img
+                        src={option.image}
+                        alt=""
+                        className="h-8 w-8 shrink-0 rounded-lg object-cover"
+                      />
+                    )}
+
+                    {/* Icon */}
+                    {option.icon && !option.image && (
+                      <div
+                        className={cn(
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                          isSelected
+                            ? "bg-[rgb(var(--brand-primary)/0.1)]"
+                            : "bg-[rgb(var(--bg-muted))]",
+                        )}
+                      >
+                        <option.icon
+                          className={cn(
+                            "h-4 w-4",
+                            isSelected
+                              ? "text-[rgb(var(--brand-primary))]"
+                              : "text-[rgb(var(--text-muted))]",
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    {/* Label */}
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-medium">{option.label}</div>
+                      {option.description && (
+                        <div className="truncate text-xs text-[rgb(var(--text-muted))]">
+                          {option.description}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Check mark */}
+                    {isSelected && <Check className="h-4 w-4 shrink-0" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   return (
     <div ref={containerRef} className={cn("relative w-full", className)}>
       {/* Label */}
@@ -135,7 +282,7 @@ export function Combobox({
       {/* Trigger */}
       <button
         type="button"
-        ref={inputRef}
+        ref={triggerRef}
         disabled={disabled}
         onClick={() => !disabled && setOpen(!open)}
         className={cn(
@@ -198,112 +345,9 @@ export function Combobox({
         </div>
       </button>
 
-      {/* Dropdown */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.15 }}
-            className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] shadow-lg"
-          >
-            {/* Search input */}
-            {searchable && (
-              <div className="border-b border-[rgb(var(--border-base))] p-2">
-                <div className="flex items-center gap-2 rounded-lg bg-[rgb(var(--bg-muted))] px-3 py-2">
-                  <Search className="h-4 w-4 text-[rgb(var(--text-muted))]" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar..."
-                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-[rgb(var(--text-muted))]"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Options list */}
-            <div className="max-h-60 overflow-y-auto p-1">
-              {filteredOptions.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[rgb(var(--text-muted))]">
-                  No se encontraron resultados
-                </div>
-              ) : (
-                filteredOptions.map((option) => {
-                  const isSelected = multiple
-                    ? Array.isArray(value) && value.includes(option.value)
-                    : value === option.value;
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      disabled={option.disabled}
-                      onClick={() => handleSelect(option)}
-                      className={cn(
-                        "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition",
-                        option.disabled
-                          ? "cursor-not-allowed opacity-50"
-                          : isSelected
-                            ? "bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))]"
-                            : "hover:bg-[rgb(var(--bg-muted))]",
-                      )}
-                    >
-                      {/* Image */}
-                      {option.image && (
-                        <img
-                          src={option.image}
-                          alt=""
-                          className="h-8 w-8 shrink-0 rounded-lg object-cover"
-                        />
-                      )}
-
-                      {/* Icon */}
-                      {option.icon && !option.image && (
-                        <div
-                          className={cn(
-                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                            isSelected
-                              ? "bg-[rgb(var(--brand-primary)/0.1)]"
-                              : "bg-[rgb(var(--bg-muted))]",
-                          )}
-                        >
-                          <option.icon
-                            className={cn(
-                              "h-4 w-4",
-                              isSelected
-                                ? "text-[rgb(var(--brand-primary))]"
-                                : "text-[rgb(var(--text-muted))]",
-                            )}
-                          />
-                        </div>
-                      )}
-
-                      {/* Label */}
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate font-medium">
-                          {option.label}
-                        </div>
-                        {option.description && (
-                          <div className="truncate text-xs text-[rgb(var(--text-muted))]">
-                            {option.description}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Check mark */}
-                      {isSelected && <Check className="h-4 w-4 shrink-0" />}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Dropdown - Portaled */}
+      {typeof document !== "undefined" &&
+        createPortal(dropdownContent, document.body)}
 
       {/* Helper/Error/Success text */}
       {(helperText || error || success) && (

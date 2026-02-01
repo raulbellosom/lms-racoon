@@ -161,6 +161,9 @@
     "paid": "Paid",
     "students": "students",
     "lessons": "lessons",
+    "lesson_one": "lesson",
+    "lessonCount": "{{count}} lesson",
+    "lessonCount_other": "{{count}} lessons",
     "sections": "sections",
     "duration": "Duration",
     "level": "Level",
@@ -168,6 +171,10 @@
       "beginner": "Beginner",
       "intermediate": "Intermediate",
       "advanced": "Advanced"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
     },
     "instructor": "Instructor",
     "aboutInstructor": "About the Instructor",
@@ -187,6 +194,7 @@
     "enrollNow": "Enroll now",
     "buyCourse": "Buy Course",
     "addToCart": "Add to cart",
+    "removeFromCart": "Remove from cart",
     "enrollFree": "Enroll for free",
     "startLearning": "Start learning",
     "continueLearning": "Continue learning",
@@ -194,6 +202,7 @@
     "searchPlaceholder": "Search courses...",
     "notFound": "Course not found",
     "goBack": "Go back",
+    "backToCourse": "Back to Course",
     "notAvailable": "Course not available",
     "notPublished": "This course has not been published yet.",
     "exploreCourses": "Explore courses",
@@ -207,9 +216,41 @@
     "manage": "Manage Course",
     "unavailable": "Not available",
     "addToFavorites": "Add to favorites",
+    "qa": {
+      "title": "Q&A",
+      "askQuestion": "Ask a question",
+      "placeholder": "Share your doubts or comments about this lesson...",
+      "submit": "Post Comment",
+      "showAll": "Show all course questions",
+      "searchPlaceholder": "Search questions...",
+      "noQuestionsLesson": "No questions yet in this lesson.",
+      "noQuestionsCourse": "No questions yet in this course.",
+      "beFirst": "Be the first to ask.",
+      "student": "Student",
+      "instructor": "Instructor",
+      "respond": "Respond",
+      "replyPlaceholder": "Write your answer...",
+      "enrollToAsk": "You must be enrolled to ask questions."
+    },
+    "resources": "Resources",
+    "chapters": "Chapters",
+    "lesson": {
+      "attachments": "Attachments",
+      "videoChapters": "Video Chapters",
+      "chaptersDesc": "Soon you will be able to jump directly to key points in this lesson.",
+      "noDescription": "No detailed description.",
+      "completed": "Lesson Completed",
+      "saving": "Saving...",
+      "markComplete": "Mark as complete"
+    },
+    "locked": {
+      "title": "Locked Content",
+      "description": "Purchase this course to access all lessons and resources."
+    },
     "favoritesDisabled": "Favorites disabled",
     "certificate": "Certificate of completion",
-    "lifetimeAccess": "Lifetime access"
+    "lifetimeAccess": "Lifetime access",
+    "viewCourse": "View Course"
   },
   "student": {
     "welcome": "Hello",
@@ -289,6 +330,11 @@
     "created": "Course created successfully",
     "courseCreated": "Course created successfully",
     "courseUpdated": "Course updated successfully",
+    "myCoursesDescription": "Manage and organize your educational content.",
+    "noCoursesYet": "You don't have any courses yet",
+    "noCoursesDescription": "Start sharing your knowledge by creating your first course. It's easy and fast.",
+    "createFirstCourse": "Create my first course",
+    "newCourse": "New Course",
     "tabs": {
       "details": "Details",
       "curriculum": "Content",
@@ -484,11 +530,32 @@
       "value": "Value",
       "maxUses": "Usage Limit (0=∞)",
       "expiresAt": "Expiration (Optional)",
+      "course": "Course (Optional)",
       "validationError": "Invalid code or value",
       "created": "Coupon created successfully",
       "updated": "Coupon updated successfully",
       "deleted": "Coupon deleted",
-      "updateFailed": "Failed to update status"
+      "updateFailed": "Failed to update status",
+      "copySuccess": "Code copied",
+      "confirmDelete": "Are you sure you want to delete this coupon?",
+      "createdBy": "Created by:",
+      "createdAt": "Created:",
+      "haveCoupon": "Have a coupon?",
+      "placeholder": "Coupon code",
+      "apply": "Apply",
+      "enterCode": "Enter a coupon code",
+      "invalidCode": "Invalid or expired coupon",
+      "remove": "Remove coupon",
+      "errors": {
+        "COUPON_NOT_FOUND": "Coupon not found",
+        "COUPON_EXPIRED": "This coupon has expired",
+        "COUPON_MAX_USES_REACHED": "This coupon has reached its usage limit",
+        "COUPON_NOT_APPLICABLE": "This coupon is not valid for this course",
+        "Coupon expired": "This coupon has expired",
+        "Invalid coupon code": "Invalid coupon code",
+        "Coupon usage limit reached": "This coupon has reached its usage limit",
+        "Coupon not valid for this course": "This coupon is not valid for this course"
+      }
     },
     "reviews": {
       "title": "Course reviews",
@@ -617,6 +684,7 @@
     "edit": "Edit",
     "create": "Create",
     "search": "Search",
+    "searchPlaceholder": "Search...",
     "filter": "Filter",
     "all": "All",
     "none": "None",
@@ -673,6 +741,15 @@
     "teacher": "Instructor",
     "admin": "Administrator"
   },
+  "admin": {
+    "coupons": {
+      "title": "Coupon Management",
+      "subtitle": "Manage all platform coupons (Global and Specific)",
+      "global": "Global (All courses)",
+      "globalDesc": "Applies to any purchase",
+      "emptyDesc": "Create global coupons for marketing campaigns."
+    }
+  },
   "toast": {
     "successTitle": "Done!",
     "errorTitle": "Error",
@@ -724,6 +801,23 @@
       "desc": "Choose how you want to receive alerts.",
       "sound": "Notification Sound",
       "soundDesc": "Play a sound when a new notification arrives."
+    },
+    "timezone": {
+      "title": "Timezone",
+      "desc": "Select your local timezone for accurate date and time display.",
+      "zones": {
+        "America/Mexico_City": "Mexico - Mexico City, Guadalajara",
+        "America/Tijuana": "Mexico - Tijuana",
+        "America/Cancun": "Mexico - Cancun",
+        "America/New_York": "US - Eastern (New York)",
+        "America/Chicago": "US - Central (Chicago)",
+        "America/Los_Angeles": "US - Pacific (Los Angeles)",
+        "Europe/Madrid": "Spain - Madrid",
+        "America/Bogota": "Colombia - Bogota",
+        "America/Lima": "Peru - Lima",
+        "America/Argentina/Buenos_Aires": "Argentina - Buenos Aires",
+        "America/Sao_Paulo": "Brazil - Sao Paulo"
+      }
     }
   }
 }

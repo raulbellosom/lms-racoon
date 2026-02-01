@@ -40,6 +40,7 @@ export function VideoPlayer({
   className = "",
   theaterMode = false,
   onToggleTheater,
+  hideNavArrows = false,
 }) {
   const { t } = useTranslation();
   const videoRef = React.useRef(null);
@@ -132,11 +133,35 @@ export function VideoPlayer({
     setPlaying(!playing);
   };
 
+  const [volume, setVolume] = React.useState(1);
+
   // Handle mute
   const toggleMute = () => {
     if (!videoRef.current) return;
-    videoRef.current.muted = !muted;
-    setMuted(!muted);
+    const newMuted = !muted;
+    videoRef.current.muted = newMuted;
+    setMuted(newMuted);
+
+    // If unmuting, ensure volume is up
+    if (!newMuted && volume === 0) {
+      setVolume(1);
+      videoRef.current.volume = 1;
+    }
+  };
+
+  const handleVolumeChange = (e) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    if (videoRef.current) {
+      videoRef.current.volume = val;
+      if (val === 0) {
+        setMuted(true);
+        videoRef.current.muted = true;
+      } else if (muted) {
+        setMuted(false);
+        videoRef.current.muted = false;
+      }
+    }
   };
 
   // Handle fullscreen
@@ -391,28 +416,49 @@ export function VideoPlayer({
                 <Play className="h-5 w-5" />
               )}
             </button>
-            <button
-              onClick={() => seek(-10)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors hidden sm:block"
-            >
-              <SkipBack className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => seek(10)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors hidden sm:block"
-            >
-              <SkipForward className="h-4 w-4" />
-            </button>
-            <button
-              onClick={toggleMute}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {muted ? (
-                <VolumeX className="h-5 w-5" />
-              ) : (
-                <Volume2 className="h-5 w-5" />
-              )}
-            </button>
+            {!hideNavArrows && (
+              <>
+                <button
+                  onClick={() => seek(-10)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors hidden sm:block"
+                >
+                  <SkipBack className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => seek(10)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors hidden sm:block"
+                >
+                  <SkipForward className="h-4 w-4" />
+                </button>
+              </>
+            )}
+            {/* Volume Control */}
+            <div className="flex items-center group/volume">
+              <button
+                onClick={toggleMute}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title={muted ? t("common.unmute") : t("common.mute")}
+              >
+                {muted || volume === 0 ? (
+                  <VolumeX className="h-5 w-5" />
+                ) : (
+                  <Volume2 className="h-5 w-5" />
+                )}
+              </button>
+
+              <div className="w-0 overflow-hidden transition-all duration-300 ease-in-out group-hover/volume:w-24 group-focus-within/volume:w-24 px-0 group-hover/volume:px-2 group-focus-within/volume:px-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={muted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className="w-20 h-1 bg-white/30 rounded-lg cursor-pointer appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                />
+              </div>
+            </div>
+
             <span className="text-xs font-medium ml-1">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>

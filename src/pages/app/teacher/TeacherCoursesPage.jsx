@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Search,
@@ -20,6 +21,7 @@ import { Input } from "../../../shared/ui/Input";
 import { CourseGridSkeleton } from "../../../shared/ui/Skeleton";
 
 export function TeacherCoursesPage() {
+  const { t } = useTranslation();
   const { auth } = useAuth();
   const [courses, setCourses] = React.useState([]);
   const [stats, setStats] = React.useState({});
@@ -58,15 +60,15 @@ export function TeacherCoursesPage() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-[rgb(var(--text-primary))]">
-            Mis Cursos
+            {t("teacher.myCourses")}
           </h1>
           <p className="mt-1 text-[rgb(var(--text-secondary))]">
-            Administra y organiza tu contenido educativo.
+            {t("teacher.myCoursesDescription")}
           </p>
         </div>
         <Link to="/app/teach/courses/new">
           <Button className="w-full sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Curso
+            <Plus className="mr-2 h-4 w-4" /> {t("teacher.newCourse")}
           </Button>
         </Link>
       </div>
@@ -77,7 +79,7 @@ export function TeacherCoursesPage() {
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[rgb(var(--text-muted))]" />
             <Input
-              placeholder="Buscar curso..."
+              placeholder={t("common.searchPlaceholder")}
               className="pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -94,13 +96,12 @@ export function TeacherCoursesPage() {
           <div className="mb-4 rounded-full bg-[rgb(var(--bg-muted))] p-6">
             <BookOpen className="h-10 w-10 text-[rgb(var(--text-muted))]" />
           </div>
-          <h3 className="text-xl font-bold">No tienes cursos todavía</h3>
+          <h3 className="text-xl font-bold">{t("teacher.noCoursesYet")}</h3>
           <p className="mt-2 max-w-sm text-[rgb(var(--text-secondary))]">
-            Comienza a compartir tu conocimiento creando tu primer curso. Es
-            fácil y rápido.
+            {t("teacher.noCoursesDescription")}
           </p>
           <Link to="/app/teach/courses/new" className="mt-6">
-            <Button>Crear mi primer curso</Button>
+            <Button>{t("teacher.createFirstCourse")}</Button>
           </Link>
         </Card>
       ) : (
@@ -114,14 +115,14 @@ export function TeacherCoursesPage() {
             return (
               <div key={course.$id} className="relative group">
                 <CourseCard course={course} />
-                <div className="absolute top-3 right-3 z-20 flex gap-2">
+                <div className="absolute top-3 left-3 z-20 flex gap-2">
                   <Link to={`/app/teach/courses/${course.$id}`}>
                     <Button
                       size="sm"
                       variant="secondary"
                       className="shadow-lg backdrop-blur-md bg-white/90 hover:bg-white text-black"
                     >
-                      Editar
+                      {t("common.edit")}
                     </Button>
                   </Link>
                 </div>

@@ -66,17 +66,22 @@ export function CourseMediaUploader({
 
   // Helper to get banner preview
   const getBannerPreviewUrl = () => {
+    // 1. Try bannerFileId (covers Images, Patterns, and modern Video covers)
+    if (formData.bannerFileId) {
+      const pattern = getBannerById(formData.bannerFileId);
+      if (pattern) return pattern.url;
+      // It's an Appwrite file ID (image or video cover)
+      return FileService.getCourseCoverUrl(formData.bannerFileId);
+    }
+
+    // 2. Legacy Fallback: Check promoVideo fields if bannerFileId is empty
+    // (Old videos might not have bannerFileId set)
     if (formData.promoVideoProvider === "minio" && formData.promoVideoHlsUrl) {
       if (formData.promoVideoCoverFileId) {
         return FileService.getCourseCoverUrl(formData.promoVideoCoverFileId);
       }
-      return null;
     }
-    if (formData.bannerFileId) {
-      const pattern = getBannerById(formData.bannerFileId);
-      if (pattern) return pattern.url;
-      return FileService.getCourseCoverUrl(formData.bannerFileId);
-    }
+
     return null;
   };
 
@@ -179,32 +184,19 @@ export function CourseMediaUploader({
   };
 
   const handleBannerSelect = async (selection) => {
-    if (selection.type === "video") {
-      // If there was a banner file (not a pattern), delete it to save space
-      const oldBannerId = formData.bannerFileId;
-      if (oldBannerId && !getBannerById(oldBannerId)) {
-        try {
-          await FileService.deleteCourseCover(oldBannerId);
-        } catch (e) {
-          console.warn("Failed to delete replaced banner:", e);
-        }
-      }
+    // Check if we need to delete the previous banner file
+    // We only delete if it was a standalone image (not a pattern, and not a video cover)
+    const oldBannerId = formData.bannerFileId;
+    const wasVideo = !!formData.promoVideoHlsUrl;
+    const isPattern = !!getBannerById(oldBannerId);
 
-      setFormData((prev) => ({
-        ...prev,
-        promoVideoProvider: selection.provider,
-        promoVideoHlsUrl: selection.hlsUrl || "",
-        promoVideoCoverFileId: selection.coverId || "", // Ensure this is set
-        bannerFileId: "", // Clear banner, video takes priority
-      }));
-    } else {
-      // Selecting a banner (image or pattern)
-      // If there was a previous banner file (not a pattern), delete it
-      const oldBannerId = formData.bannerFileId;
+    // If there was a banner, it wasn't a video cover, and it wasn't a pattern...
+    if (oldBannerId && !wasVideo && !isPattern) {
+      // AND we are changing it (not selecting the exact same file again)
+      // Note: For video selection, selection.value is the video ID, not the cover ID, so simple comparison applies
       if (
-        oldBannerId &&
-        !getBannerById(oldBannerId) &&
-        oldBannerId !== selection.value
+        (selection.type === "image" && oldBannerId !== selection.value) ||
+        selection.type === "video"
       ) {
         try {
           await FileService.deleteCourseCover(oldBannerId);
@@ -212,24 +204,37 @@ export function CourseMediaUploader({
           console.warn("Failed to delete replaced banner:", e);
         }
       }
+    }
 
-      // We do NOT delete the promo video file locally (it belongs to a lesson)
-      // just clear the video fields from the form so banner takes priority
+    if (selection.type === "video") {
+      setFormData((prev) => ({
+        ...prev,
+        // Set banner to the video's cover image
+        bannerFileId: selection.coverId || "",
+        promoVideoProvider: selection.provider, // e.g. "minio"
+        promoVideoHlsUrl: selection.hlsUrl || "",
+        promoVideoCoverFileId: selection.coverId || "",
+        // If needed, we could store the video ID/Key somewhere, but user requirements focus on these fields
+      }));
+    } else {
+      // Image or Pattern
       setFormData((prev) => ({
         ...prev,
         bannerFileId: selection.value,
-        promoVideoProvider: "appwrite", // Reset provider
-        promoVideoHlsUrl: "",
-        promoVideoCoverFileId: "", // Clear video cover
+        promoVideoProvider: "", // Clear provider
+        promoVideoHlsUrl: "", // Clear HLS URL
+        promoVideoCoverFileId: "", // Clear video cover reference
       }));
     }
   };
 
   const handleRemoveBanner = async () => {
-    // Only delete banner file physically (if it's not a pattern)
-    // NEVER delete promo video file physically (it belongs to a lesson)
     const oldBannerId = formData.bannerFileId;
-    if (oldBannerId && !getBannerById(oldBannerId)) {
+    const wasVideo = !!formData.promoVideoHlsUrl;
+    const isPattern = !!getBannerById(oldBannerId);
+
+    // Only delete purely uploaded banner images
+    if (oldBannerId && !wasVideo && !isPattern) {
       try {
         await FileService.deleteCourseCover(oldBannerId);
       } catch (e) {
@@ -240,7 +245,7 @@ export function CourseMediaUploader({
     setFormData((prev) => ({
       ...prev,
       bannerFileId: "",
-      promoVideoProvider: "appwrite",
+      promoVideoProvider: "",
       promoVideoHlsUrl: "",
       promoVideoCoverFileId: "",
     }));
@@ -332,16 +337,6 @@ export function CourseMediaUploader({
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold">Banner / Trailer</h3>
-          {(formData.bannerFileId ||
-            (formData.promoVideoProvider === "minio" &&
-              formData.promoVideoHlsUrl)) && (
-            <button
-              onClick={handleRemoveBanner}
-              className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
-            >
-              <Trash2 className="h-3 w-3" /> Eliminar
-            </button>
-          )}
         </div>
 
         <div className="relative flex aspect-video w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] text-center overflow-hidden">

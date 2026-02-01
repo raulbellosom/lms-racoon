@@ -1,20 +1,16 @@
 import React from "react";
-import {
-  Star,
-  Users,
-  BarChart,
-  BookOpen,
-  Eye,
-  ShoppingCart,
-} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Star, Users, BookOpen, Eye, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card } from "../../shared/ui/Card";
 import { Button } from "../../shared/ui/Button";
+import { LevelIndicator } from "../../shared/ui/LevelIndicator";
 import { FileService } from "../../shared/data/files";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../app/providers/AuthProvider";
 
 export function CourseCard({ course, className = "" }) {
+  const { t } = useTranslation();
   const { isInCart, addToCart, removeFromCart } = useCart();
   const { auth } = useAuth();
 
@@ -67,7 +63,7 @@ export function CourseCard({ course, className = "" }) {
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-80">
+          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-80 pb-20">
             <BookOpen className="h-12 w-12 text-white/50" />
           </div>
         )}
@@ -80,7 +76,7 @@ export function CourseCard({ course, className = "" }) {
         {/* Draft Badge (Instructor) */}
         {isPublished === false && (
           <span className="rounded-full bg-black/50 border border-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
-            Borrador
+            {t("courses.status.draft")}
           </span>
         )}
       </div>
@@ -117,7 +113,10 @@ export function CourseCard({ course, className = "" }) {
           <div className="flex items-center justify-between text-xs text-gray-300">
             <div className="flex items-center gap-3">
               {studentsCount > 0 && (
-                <span className="flex items-center gap-1" title="Alumnos">
+                <span
+                  className="flex items-center gap-1"
+                  title={t("courses.students")}
+                >
                   <Users className="h-3.5 w-3.5 text-blue-300" />
                   <span className="font-semibold">{studentsCount}</span>
                 </span>
@@ -135,7 +134,9 @@ export function CourseCard({ course, className = "" }) {
 
             <div className="flex items-center gap-2">
               {priceCents === 0 ? (
-                <span className="font-bold text-emerald-300">Gratis</span>
+                <span className="font-bold text-emerald-300">
+                  {t("courses.free")}
+                </span>
               ) : (
                 <span className="font-bold text-amber-300">
                   {new Intl.NumberFormat("es-MX", {
@@ -149,10 +150,7 @@ export function CourseCard({ course, className = "" }) {
 
           {/* Actions Row */}
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-[10px] text-gray-400">
-              <BarChart className="h-3 w-3" />
-              <span className="capitalize">{level || "General"}</span>
-            </span>
+            <LevelIndicator level={level} size="sm" showText={true} />
 
             <div className="flex gap-2">
               {!isOwner && (
@@ -172,7 +170,11 @@ export function CourseCard({ course, className = "" }) {
                       addToCart(course);
                     }
                   }}
-                  title={inCart ? "Quitar del carrito" : "Añadir al carrito"}
+                  title={
+                    inCart
+                      ? t("courses.removeFromCart")
+                      : t("courses.addToCart")
+                  }
                 >
                   {inCart ? (
                     <ShoppingCart className="h-3.5 w-3.5 fill-current" />
@@ -187,7 +189,7 @@ export function CourseCard({ course, className = "" }) {
                   size="sm"
                   className="h-7 px-3 text-xs bg-indigo-600/90 text-white hover:bg-indigo-500 shadow-sm border border-transparent"
                 >
-                  Ver Curso
+                  {t("courses.viewCourse")}
                 </Button>
               </Link>
             </div>

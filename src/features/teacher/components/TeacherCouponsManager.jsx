@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, Ticket, Percent, DollarSign } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Ticket,
+  Percent,
+  DollarSign,
+  Copy,
+  Check,
+} from "lucide-react";
 import { ID, Query } from "appwrite";
 import { db as databases } from "../../../shared/appwrite/client";
 import { useToast } from "../../../app/providers/ToastProvider";
+import { useAuth } from "../../../app/providers/AuthProvider";
 import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
 import { Input } from "../../../shared/ui/Input";
@@ -22,9 +31,11 @@ const COL_COUPONS = import.meta.env.VITE_APPWRITE_COL_COUPONS;
 export function TeacherCouponsManager({ courseId }) {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { auth } = useAuth();
 
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +63,21 @@ export function TeacherCouponsManager({ courseId }) {
         Query.equal("courseId", courseId),
         Query.orderDesc("$createdAt"),
       ]);
-      setCoupons(res.documents);
+
+      // Filter coupons to only show those created by the current user
+      // We check if the user has 'write' or 'delete' permission on the document
+      const myCoupons = res.documents.filter((doc) => {
+        if (!auth.user || !doc.$permissions) return false;
+        const userId = auth.user.$id;
+        // Check for specific user permission
+        return doc.$permissions.some(
+          (p) =>
+            p.includes(`write("user:${userId}")`) ||
+            p.includes(`delete("user:${userId}")`),
+        );
+      });
+
+      setCoupons(myCoupons);
     } catch (e) {
       console.error("Failed to load coupons", e);
       showToast(t("teacher.errors.loadFailed"), "error");
@@ -137,6 +162,15 @@ export function TeacherCouponsManager({ courseId }) {
   };
 
   const handleDelete = async (id) => {
+    if (
+      !window.confirm(
+        t(
+          "teacher.coupons.confirmDelete",
+          "¿Estás seguro de eliminar este cupón?",
+        ),
+      )
+    )
+      return;
     try {
       await databases.deleteDocument(DB_ID, COL_COUPONS, id);
       setCoupons((prev) => prev.filter((c) => c.$id !== id));
@@ -162,6 +196,13 @@ export function TeacherCouponsManager({ courseId }) {
     } catch (e) {
       showToast(t("teacher.errors.updateFailed"), "error");
     }
+  };
+
+  const handleCopy = (code, id) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    showToast(t("teacher.coupons.copySuccess"), "success");
   };
 
   return (
@@ -200,29 +241,44 @@ export function TeacherCouponsManager({ courseId }) {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {coupons.map((coupon) => (
             <Card key={coupon.$id} className="p-4 relative group">
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-lg text-[rgb(var(--brand-primary))] border border-[rgb(var(--brand-primary))/0.2] bg-[rgb(var(--brand-primary))/0.05] px-2 py-0.5 rounded">
-                    {coupon.code}
-                  </span>
+                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800">
+                    <span className="font-mono font-bold text-lg text-blue-600 dark:text-blue-400">
+                      {coupon.code}
+                    </span>
+                    <button
+                      onClick={() => handleCopy(coupon.code, coupon.$id)}
+                      className="text-blue-400 hover:text-blue-600 dark:text-blue-500 dark:hover:text-blue-300 transition-colors bg-white/50 dark:bg-black/20 p-1 rounded"
+                      title={t("common.copy", "Copiar")}
+                    >
+                      {copiedId === coupon.$id ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                   <Badge variant={coupon.enabled ? "success" : "secondary"}>
                     {coupon.enabled
                       ? t("common.active", "Activo")
                       : t("common.inactive", "Inactivo")}
                   </Badge>
                 </div>
-                <button
-                  onClick={() => handleOpenModal(coupon)}
-                  className="text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))] opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Ticket className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(coupon.$id)}
-                  className="text-[rgb(var(--text-tertiary))] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleOpenModal(coupon)}
+                    className="text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--brand-primary))] opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Ticket className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(coupon.$id)}
+                    className="text-[rgb(var(--text-tertiary))] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-1 mb-4">
@@ -244,7 +300,9 @@ export function TeacherCouponsManager({ courseId }) {
                 {coupon.expiresAt && (
                   <div className="text-xs text-[rgb(var(--text-secondary))]">
                     {t("teacher.coupons.expires", "Expira:")}{" "}
-                    {new Date(coupon.expiresAt).toLocaleDateString()}
+                    {new Date(coupon.expiresAt).toLocaleDateString(undefined, {
+                      timeZone: "UTC",
+                    })}
                   </div>
                 )}
               </div>
@@ -295,7 +353,10 @@ export function TeacherCouponsManager({ courseId }) {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  code: e.target.value.toUpperCase().slice(0, 20),
+                  code: e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 20),
                 })
               }
               placeholder="E.g. BLACKFRIDAY2024"

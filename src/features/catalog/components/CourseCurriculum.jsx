@@ -29,6 +29,7 @@ function SectionItem({
   onPlayPreview,
 }) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  const { t } = useTranslation();
 
   return (
     <div className="border-b border-[rgb(var(--border-base))] last:border-0">
@@ -47,7 +48,7 @@ function SectionItem({
           </span>
         </div>
         <span className="text-xs font-medium text-[rgb(var(--text-secondary))]">
-          {section.lessons?.length || 0} lecciones
+          {t("courses.lessonCount", { count: section.lessons?.length || 0 })}
         </span>
       </button>
 
@@ -100,7 +101,7 @@ function SectionItem({
                         </span>
                         {!isEnrolled && isFree && (
                           <span className="text-[10px] uppercase font-bold text-green-600 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded w-fit mt-0.5">
-                            Gratis
+                            {t("courses.free")}
                           </span>
                         )}
                       </div>
@@ -116,7 +117,7 @@ function SectionItem({
               })}
               {(!section.lessons || section.lessons.length === 0) && (
                 <div className="p-2 text-center text-xs text-[rgb(var(--text-muted))] italic">
-                  Sin lecciones
+                  {t("teacher.curriculum.noSections", "No lessons")}
                 </div>
               )}
             </div>
@@ -137,7 +138,7 @@ export function CourseCurriculum({
   if (!content || content.length === 0) {
     return (
       <div className="py-8 text-center text-[rgb(var(--text-muted))]">
-        No hay contenido disponible todavía.
+        {t("courses.noDescription", "No content available yet.")}
       </div>
     );
   }

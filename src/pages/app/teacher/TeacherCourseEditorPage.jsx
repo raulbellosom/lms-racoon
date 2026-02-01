@@ -113,6 +113,7 @@ export function TeacherCourseEditorPage() {
   // Curriculum State
   const [sections, setSections] = React.useState([]);
   const [lessonsBySection, setLessonsBySection] = React.useState({});
+  const [curriculumLoading, setCurriculumLoading] = React.useState(false);
 
   // Section Modal State
   const [sectionModalOpen, setSectionModalOpen] = React.useState(false);
@@ -204,6 +205,7 @@ export function TeacherCourseEditorPage() {
   }, [tab, courseId]);
 
   const loadCurriculum = async () => {
+    setCurriculumLoading(true);
     try {
       const sects = await SectionService.listByCourse(courseId);
       setSections(sects);
@@ -218,6 +220,8 @@ export function TeacherCourseEditorPage() {
       setLessonsBySection(lessonsMap);
     } catch (error) {
       console.error("Failed to load curriculum", error);
+    } finally {
+      setCurriculumLoading(false);
     }
   };
 
@@ -780,31 +784,36 @@ export function TeacherCourseEditorPage() {
         )}
 
         {/* === CURRICULUM TAB === */}
-        {tab === "curriculum" && (
-          <CurriculumEditor
-            sections={sections}
-            lessonsBySection={lessonsBySection}
-            onAddSection={handleAddSection}
-            onEditSection={handleEditSection}
-            onDeleteSection={handleDeleteSection}
-            onAddLesson={handleAddLesson}
-            onEditLesson={handleEditLesson}
-            onDeleteLesson={handleDeleteLesson}
-            onPreviewLesson={handlePreviewLesson}
-            onReorderLessons={handleReorderLessons}
-            onMakeSectionFree={handleMakeSectionFree}
-            onConfigureQuiz={(lesson) =>
-              navigate(
-                `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/quiz`,
-              )
-            }
-            onConfigureAssignment={(lesson) =>
-              navigate(
-                `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/assignment`,
-              )
-            }
-          />
-        )}
+        {tab === "curriculum" &&
+          (curriculumLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <LoadingScreen />
+            </div>
+          ) : (
+            <CurriculumEditor
+              sections={sections}
+              lessonsBySection={lessonsBySection}
+              onAddSection={handleAddSection}
+              onEditSection={handleEditSection}
+              onDeleteSection={handleDeleteSection}
+              onAddLesson={handleAddLesson}
+              onEditLesson={handleEditLesson}
+              onDeleteLesson={handleDeleteLesson}
+              onPreviewLesson={handlePreviewLesson}
+              onReorderLessons={handleReorderLessons}
+              onMakeSectionFree={handleMakeSectionFree}
+              onConfigureQuiz={(lesson) =>
+                navigate(
+                  `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/quiz`,
+                )
+              }
+              onConfigureAssignment={(lesson) =>
+                navigate(
+                  `/app/teach/courses/${courseId}/curriculum/${lesson.$id}/assignment`,
+                )
+              }
+            />
+          ))}
 
         {/* === QUIZZES TAB === */}
         {tab === "quizzes" && <TeacherQuizGrades courseId={courseId} />}

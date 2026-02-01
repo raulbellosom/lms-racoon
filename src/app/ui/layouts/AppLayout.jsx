@@ -312,7 +312,7 @@ export function AppLayout() {
 
       {/* ========== Desktop Top Navbar ========== */}
       <header
-        className={`fixed top-0 right-0 z-20 hidden h-16 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-6 transition-all duration-300 ease-in-out md:flex ${
+        className={`fixed top-0 right-0 z-50 hidden h-16 items-center justify-between border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-6 transition-all duration-300 ease-in-out md:flex ${
           collapsed ? "left-16" : "left-72"
         }`}
       >

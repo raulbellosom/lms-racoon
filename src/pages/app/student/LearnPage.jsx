@@ -21,16 +21,30 @@ import {
   MessageSquare,
   HelpCircle,
   Folder,
+  Search,
+  MoreVertical,
+  Trash2,
+  Edit2,
 } from "lucide-react";
+import { Avatar } from "../../../shared/ui/Avatar";
+import { Switch } from "../../../shared/ui/Switch";
+import { Input } from "../../../shared/ui/Input";
+import { getProfileById, ProfileService } from "../../../shared/data/profiles";
+import { useTranslation } from "react-i18next";
 import { Card } from "../../../shared/ui/Card";
 import { Tabs, TabsList, TabsTrigger } from "../../../shared/ui/Tabs";
 import { Textarea } from "../../../shared/ui/Textarea";
 import {
   listCommentsForCourse,
   createComment,
+  updateComment,
+  deleteComment,
 } from "../../../shared/data/comments";
 // Removed listAssignmentsForCourse import
 import { Button } from "../../../shared/ui/Button";
+import { Dropdown, DropdownItem } from "../../../shared/ui/Dropdown";
+import { Modal, ModalFooter } from "../../../shared/ui/Modal";
+// Consolidated lucide-react imports above
 import { getCourseById } from "../../../shared/data/courses";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { upsertLessonProgress } from "../../../shared/data/enrollments";
@@ -64,6 +78,7 @@ const LessonViewer = ({
   handleBack,
   markComplete,
 }) => {
+  const { t } = useTranslation();
   // Common Back Button for non-video views
   const BackButton = () => (
     <button
@@ -71,7 +86,7 @@ const LessonViewer = ({
       className="flex items-center gap-2 text-[rgb(var(--text-secondary))] hover:text-[rgb(var(--text-primary))] transition-colors mb-4"
     >
       <ArrowLeft className="h-5 w-5" />
-      <span className="font-bold text-sm">Volver al curso</span>
+      <span className="font-bold text-sm">{t("courses.backToCourse")}</span>
     </button>
   );
 
@@ -91,10 +106,10 @@ const LessonViewer = ({
           <div className="relative z-10">
             <Lock className="h-16 w-16 text-white/40 mx-auto mb-4" />
             <h3 className="text-2xl font-bold text-white mb-2">
-              Contenido Bloqueado
+              {t("courses.locked.title")}
             </h3>
             <p className="text-white/60 max-w-md mx-auto">
-              Adquiere este curso para acceder a todas las lecciones y recursos.
+              {t("courses.locked.description")}
             </p>
           </div>
         </div>
@@ -188,7 +203,133 @@ const LessonTabs = ({
   markComplete,
   setComments,
   courseId,
+  authors,
 }) => {
+  const { t } = useTranslation();
+  const [showAllQuestions, setShowAllQuestions] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [replyingTo, setReplyingTo] = React.useState(null); // commentId
+  const [editingCommentId, setEditingCommentId] = React.useState(null);
+  const [editDraft, setEditDraft] = React.useState("");
+  const [replyDraft, setReplyDraft] = React.useState("");
+  const [mobileReplyOpen, setMobileReplyOpen] = React.useState(false);
+  const [mobileReplyTarget, setMobileReplyTarget] = React.useState(null); // comment object to reply to
+
+  // Filter Comments Logic
+
+  // Filter Comments Logic
+  const filteredComments = React.useMemo(() => {
+    let result = comments.filter((c) => {
+      // 1. Filter by Lesson (unless showAll is true)
+      if (!showAllQuestions && c.lessonId !== current.$id) return false;
+      // 2. Filter by Parent (only top-level)
+      if (c.parentId) return false;
+      return true;
+    });
+
+    if (searchQuery) {
+      const keywords = searchQuery
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((kw) => kw.length >= 2);
+      if (keywords.length > 0) {
+        result = result.filter((c) => {
+          const parentBody = c.body.toLowerCase();
+          const replies = comments.filter((r) => r.parentId === c.$id);
+          const repliesBody = replies
+            .map((r) => r.body.toLowerCase())
+            .join(" ");
+          const fullText = `${parentBody} ${repliesBody}`;
+
+          // All keywords must be present as whole words or starting parts
+          return keywords.every((kw) => {
+            const regex = new RegExp(
+              `\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+              "i",
+            );
+            return regex.test(fullText);
+          });
+        });
+
+        // Relevance Sorting: Count total matches across keywords
+        result.sort((a, b) => {
+          const getScore = (comm) => {
+            const fb = comm.body.toLowerCase();
+            const rb = comments
+              .filter((r) => r.parentId === comm.$id)
+              .map((r) => r.body.toLowerCase())
+              .join(" ");
+            const txt = `${fb} ${rb}`;
+            return keywords.reduce((acc, kw) => {
+              const regex = new RegExp(
+                `\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+                "gi",
+              );
+              return acc + (txt.match(regex)?.length || 0);
+            }, 0);
+          };
+          return getScore(b) - getScore(a);
+        });
+      }
+    }
+    return result;
+  }, [comments, current.$id, showAllQuestions, searchQuery]);
+
+  // Highlight search keywords
+  const renderHighlightedText = (text) => {
+    if (!searchQuery) return text;
+    const keywords = searchQuery
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((kw) => kw.length >= 2);
+    if (keywords.length === 0) return text;
+
+    try {
+      // Use word boundary \b to avoid partial matches like "ia" in "gracias"
+      const pattern = keywords
+        .map((kw) => `\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`)
+        .join("|");
+      const regex = new RegExp(`(${pattern})`, "gi");
+
+      return (
+        <span
+          dangerouslySetInnerHTML={{
+            __html: text.replace(
+              regex,
+              '<mark class="bg-yellow-500/30 text-inherit rounded-xs px-1">$1</mark>',
+            ),
+          }}
+        />
+      );
+    } catch (e) {
+      return text;
+    }
+  };
+
+  // Handle Reply Submit (shared between desktop inline and mobile modal)
+  const handleReplySubmit = async (parentCommentId) => {
+    if (!replyDraft.trim()) return;
+    try {
+      const doc = await createComment({
+        courseId,
+        lessonId: current.$id,
+        userId: auth.user.$id,
+        body: replyDraft.trim(),
+        parentId: parentCommentId,
+      });
+      setComments((prev) => [doc, ...prev]);
+      setReplyDraft("");
+      setReplyingTo(null);
+    } catch (error) {
+      console.error("Failed to create reply", error);
+    }
+  };
+
+  // Count for Tab (Current Lesson Only)
+  const currentLessonCount = comments.filter(
+    (c) => c.lessonId === current.$id && !c.parentId,
+  ).length;
+
   return (
     <div className="mt-6">
       <Tabs value={lessonTab} onValueChange={setLessonTab} className="w-full">
@@ -196,27 +337,33 @@ const LessonTabs = ({
           <TabsTrigger value="description">
             <div className="flex items-center gap-2">
               <BookText className="h-4 w-4" />
-              <span>Descripción</span>
+              <span>{t("courses.description")}</span>
             </div>
           </TabsTrigger>
           {currentAttachments.length > 0 && !isLocked && (
             <TabsTrigger value="resources">
               <div className="flex items-center gap-2">
                 <Folder className="h-4 w-4" />
-                <span>Recursos ({currentAttachments.length})</span>
+                <span>
+                  {t("courses.resources")} ({currentAttachments.length})
+                </span>
               </div>
             </TabsTrigger>
           )}
           <TabsTrigger value="chapters">
             <div className="flex items-center gap-2">
               <Layers3 className="h-4 w-4" />
-              <span>Capítulos</span>
+              <span>{t("courses.chapters")}</span>
             </div>
           </TabsTrigger>
+          {/* Only show count if > 0 per requirement A */}
           <TabsTrigger value="qa">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              <span>Q&A ({comments.filter((c) => !c.parentId).length})</span>
+              <span>
+                {t("courses.qa.title")}
+                {currentLessonCount > 0 && ` (${currentLessonCount})`}
+              </span>
             </div>
           </TabsTrigger>
         </TabsList>
@@ -234,7 +381,7 @@ const LessonTabs = ({
                     </ReactMarkdown>
                   ) : (
                     <p className="italic opacity-60">
-                      Sin descripción detallada.
+                      {t("courses.lesson.noDescription")}
                     </p>
                   )}
                 </div>
@@ -265,13 +412,15 @@ const LessonTabs = ({
 
           {lessonTab === "resources" && (
             <div className="animate-in fade-in duration-300 space-y-3">
-              <h3 className="font-bold text-lg mb-4">Archivos Adjuntos</h3>
+              <h3 className="font-bold text-lg mb-4">
+                {t("courses.lesson.attachments")}
+              </h3>
               {currentAttachments.map((att) => {
                 const Icon = getFileIcon(att.name);
                 return (
                   <div
                     key={att.id}
-                    className="flex items-center justify-between p-4 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] hover:border-[rgb(var(--brand-primary))] transition-colors group"
+                    className="flex items-center justify-between p-4 rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] hover:border-[rgb(var(--brand-primary))] transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-[rgb(var(--bg-muted))] text-[rgb(var(--brand-primary))]">
@@ -304,66 +453,625 @@ const LessonTabs = ({
             <div className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-6 text-center animate-in fade-in duration-300">
               <PlayCircle className="h-10 w-10 mx-auto mb-3 text-[rgb(var(--text-muted))]" />
               <h3 className="text-sm font-bold text-[rgb(var(--text-primary))]">
-                Capítulos del video
+                {t("courses.lesson.videoChapters")}
               </h3>
               <p className="mt-2 text-sm text-[rgb(var(--text-secondary))] max-w-xs mx-auto">
-                Próximamente podrás saltar directamente a los puntos clave de
-                esta lección.
+                {t("courses.lesson.chaptersDesc")}
               </p>
             </div>
           )}
 
           {lessonTab === "qa" && (
             <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Ask Question Box */}
               <div className="rounded-xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-muted))] p-4">
-                <h4 className="text-sm font-bold mb-3">Haz una pregunta</h4>
-                <div className="space-y-3">
-                  <Textarea
-                    value={commentDraft}
-                    onChange={(e) => setCommentDraft(e.target.value)}
-                    placeholder="Comparte tus dudas o comentarios sobre esta lección..."
-                    className="bg-[rgb(var(--bg-surface))] border-none focus:ring-1 focus:ring-[rgb(var(--brand-primary))]"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={!commentDraft.trim()}
-                      onClick={async () => {
-                        if (!commentDraft.trim()) return;
-                        const doc = await createComment({
-                          courseId,
-                          lessonId: current.$id,
-                          userId: auth.user.$id,
-                          body: commentDraft.trim(),
-                        });
-                        setComments((prev) => [doc, ...prev]);
-                        setCommentDraft("");
-                      }}
-                    >
-                      Publicar Comentario
-                    </Button>
+                <h4 className="text-sm font-bold mb-3">
+                  {t("courses.qa.askQuestion")}
+                </h4>
+                {isEnrolled || isOwner ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={commentDraft}
+                      onChange={(e) => setCommentDraft(e.target.value)}
+                      placeholder={t("courses.qa.placeholder")}
+                      className="bg-[rgb(var(--bg-surface))] border-none focus:ring-1 focus:ring-[rgb(var(--brand-primary))]"
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        disabled={!commentDraft.trim()}
+                        onClick={async () => {
+                          if (!commentDraft.trim()) return;
+                          const doc = await createComment({
+                            courseId,
+                            lessonId: current.$id,
+                            userId: auth.user.$id,
+                            body: commentDraft.trim(),
+                          });
+                          setComments((prev) => [doc, ...prev]);
+                          setCommentDraft("");
+                        }}
+                      >
+                        {t("courses.qa.submit")}
+                      </Button>
+                    </div>
                   </div>
+                ) : (
+                  <div className="text-sm text-[rgb(var(--text-secondary))] italic">
+                    {t(
+                      "courses.qa.enrollToAsk",
+                      "Debes estar inscrito para hacer preguntas.",
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Filters & Search */}
+              {/* Filters & Search */}
+              <div className="relative w-full group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[rgb(var(--text-muted))]" />
+                <input
+                  type="text"
+                  placeholder={t("courses.qa.searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-14 pl-12 pr-4 sm:pr-[280px] rounded-2xl border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--brand-primary))] transition-all placeholder:text-[rgb(var(--text-muted))]"
+                />
+
+                {/* Desktop Toggle (Inside) */}
+                <div className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 items-center gap-3 pl-4 border-l border-[rgb(var(--border-base))] h-8">
+                  <Switch
+                    checked={showAllQuestions}
+                    onChange={(checked) => setShowAllQuestions(checked)}
+                    id="show-all-qa-desktop"
+                  />
+                  <label
+                    htmlFor="show-all-qa-desktop"
+                    className="text-sm font-medium cursor-pointer select-none text-[rgb(var(--text-secondary))]"
+                  >
+                    {t("courses.qa.showAll")}
+                  </label>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {comments
-                  .filter((c) => c.lessonId === current.$id && !c.parentId)
-                  .map((c) => (
-                    <div
-                      key={c.$id}
-                      className="rounded-xl border border-[rgb(var(--border-base))] p-4 bg-[rgb(var(--bg-surface))]"
-                    >
-                      <div className="text-sm text-[rgb(var(--text-primary))] whitespace-pre-line">
-                        {c.body}
-                      </div>
-                      <div className="mt-2 text-[10px] text-[rgb(var(--text-muted))] uppercase font-bold">
-                        {new Date(c.$createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  ))}
+              {/* Mobile Toggle (Outside) */}
+              <div className="sm:hidden flex items-center justify-between px-1">
+                <label
+                  htmlFor="show-all-qa-mobile"
+                  className="text-sm font-medium cursor-pointer select-none text-[rgb(var(--text-secondary))]"
+                >
+                  {t("courses.qa.showAll")}
+                </label>
+                <Switch
+                  checked={showAllQuestions}
+                  onChange={(checked) => setShowAllQuestions(checked)}
+                  id="show-all-qa-mobile"
+                />
               </div>
+
+              {/* Comments List */}
+              <div className="space-y-6">
+                {filteredComments.length > 0 ? (
+                  filteredComments.map((c) => {
+                    const author = authors[c.userId];
+                    const isInstructor = author?.role === "teacher";
+                    const isMyComment = auth.user?.$id === c.userId;
+                    const canDelete = isMyComment || isOwner || isInstructor; // Instructors/Owner can delete any? Or just theirs? Sticking to user request: instructor deletes theirs.
+                    // Wait, user said "instructor solo puede borrar SUS comentarios". But usually owner can moderate?
+                    // I will interpret "isMyComment" as the primary deletion rule for now.
+                    // But usually an Instructor/Admin SHOULD delete spam.
+                    // Let's implement: Can Delete if (My Comment OR (I am owner/instructor AND it is a student comment?))
+                    // Simplest interpretation of user request: ONLY delete OWN content.
+                    const canDeleteComment = isMyComment;
+
+                    const replies = comments.filter(
+                      (r) => r.parentId === c.$id,
+                    );
+                    const isEditing = editingCommentId === c.$id;
+
+                    return (
+                      <div
+                        key={c.$id}
+                        className="rounded-xl border border-[rgb(var(--border-base))] p-5 bg-[rgb(var(--bg-surface))]"
+                      >
+                        <div className="flex gap-4 group">
+                          <Avatar
+                            src={ProfileService.getAvatarUrl(
+                              author?.avatarFileId,
+                            )}
+                            name={
+                              author?.firstName && author?.lastName
+                                ? `${author.firstName} ${author.lastName}`
+                                : author?.displayName || "User"
+                            }
+                            size="md"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col mb-1 relative">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-bold text-[rgb(var(--text-primary))]">
+                                    {author?.firstName && author?.lastName
+                                      ? `${author.firstName} ${author.lastName}`
+                                      : author?.displayName ||
+                                        t("courses.qa.student")}
+                                  </span>
+                                  {isInstructor && (
+                                    <span className="text-[10px] bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))] px-1.5 py-0.5 rounded font-bold uppercase">
+                                      {t("courses.qa.instructor")}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-[rgb(var(--text-muted))]">
+                                    • {new Date(c.$createdAt).toLocaleString()}
+                                  </span>
+                                </div>
+
+                                {/* Actions Menu (Edit/Delete) - Replaces hover button */}
+                                {(isMyComment || (isEnrolled && isMyComment)) &&
+                                  !isEditing && (
+                                    <Dropdown
+                                      align="right"
+                                      trigger={
+                                        <button className="p-1 rounded-full text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))] transition-colors">
+                                          <MoreVertical className="h-4 w-4" />
+                                        </button>
+                                      }
+                                    >
+                                      <DropdownItem
+                                        icon={Edit2}
+                                        onClick={() => {
+                                          setEditingCommentId(c.$id);
+                                          setEditDraft(c.body);
+                                          setReplyingTo(null);
+                                        }}
+                                      >
+                                        {t("common.edit")}
+                                      </DropdownItem>
+                                      {canDeleteComment && (
+                                        <DropdownItem
+                                          icon={Trash2}
+                                          danger
+                                          onClick={async () => {
+                                            if (confirm("Are you sure?")) {
+                                              try {
+                                                await deleteComment(c.$id);
+                                                setComments((prev) =>
+                                                  prev.filter(
+                                                    (item) =>
+                                                      item.$id !== c.$id,
+                                                  ),
+                                                );
+                                                // Also remove replies if needed? usually backend handles cascading or we filter
+                                                // Frontend clean up:
+                                                const replyIds = comments
+                                                  .filter(
+                                                    (r) => r.parentId === c.$id,
+                                                  )
+                                                  .map((r) => r.$id);
+                                                setComments((prev) =>
+                                                  prev.filter(
+                                                    (item) =>
+                                                      item.$id !== c.$id &&
+                                                      !replyIds.includes(
+                                                        item.$id,
+                                                      ),
+                                                  ),
+                                                );
+                                              } catch (e) {
+                                                console.error(
+                                                  "Failed to delete",
+                                                  e,
+                                                );
+                                              }
+                                            }
+                                          }}
+                                        >
+                                          {t("common.delete")}
+                                        </DropdownItem>
+                                      )}
+                                    </Dropdown>
+                                  )}
+                              </div>
+                              {author?.headline && (
+                                <span className="text-xs text-[rgb(var(--text-secondary))] line-clamp-1">
+                                  {author.headline}
+                                </span>
+                              )}
+                            </div>
+
+                            {isEditing ? (
+                              <div className="mt-2 space-y-2">
+                                <Textarea
+                                  value={editDraft}
+                                  onChange={(e) => setEditDraft(e.target.value)}
+                                  className="min-h-[80px] bg-[rgb(var(--bg-muted))]"
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setEditingCommentId(null);
+                                      setEditDraft("");
+                                    }}
+                                  >
+                                    {t("common.cancel")}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    disabled={!editDraft.trim() || busy}
+                                    onClick={async () => {
+                                      if (!editDraft.trim()) return;
+                                      try {
+                                        await updateComment(c.$id, {
+                                          body: editDraft,
+                                        });
+                                        setComments((prev) =>
+                                          prev.map((item) =>
+                                            item.$id === c.$id
+                                              ? { ...item, body: editDraft }
+                                              : item,
+                                          ),
+                                        );
+                                        setEditingCommentId(null);
+                                        setEditDraft("");
+                                      } catch (error) {
+                                        console.error(
+                                          "Failed to update comment",
+                                          error,
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    {t("common.save")}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-[rgb(var(--text-primary))] whitespace-pre-line mt-2 group relative">
+                                {renderHighlightedText(c.body)}
+                              </div>
+                            )}
+
+                            {/* Action Bar */}
+                            {(isEnrolled || isOwner) && !isEditing && (
+                              <div className="mt-3 flex items-center gap-4">
+                                <button
+                                  onClick={() => {
+                                    // Check if mobile (simple check) or just open dialog?
+                                    // User asked for modal in responsive.
+                                    // We can use a width check or just always use modal on small screens?
+                                    // For now, let's toggle a state.
+                                    if (window.innerWidth < 640) {
+                                      setMobileReplyTarget(c);
+                                      setMobileReplyOpen(true);
+                                      setReplyDraft("");
+                                    } else {
+                                      if (replyingTo === c.$id) {
+                                        setReplyingTo(null);
+                                        setReplyDraft("");
+                                      } else {
+                                        setReplyingTo(c.$id);
+                                        setReplyDraft("");
+                                      }
+                                    }
+                                  }}
+                                  className="text-xs font-semibold text-[rgb(var(--text-muted))] hover:text-[rgb(var(--brand-primary))] transition-colors flex items-center gap-1"
+                                >
+                                  <MessageSquare className="h-3 w-3" />
+                                  {t("courses.qa.respond", "Responder")}
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Replies List */}
+                            {replies.length > 0 && (
+                              <div className="mt-4 space-y-4 pl-4 border-l-2 border-[rgb(var(--border-base))]">
+                                {replies.map((reply) => {
+                                  const rAuthor = authors[reply.userId];
+                                  const rIsInstructor =
+                                    rAuthor?.role === "teacher";
+                                  const isMyReply =
+                                    auth.user?.$id === reply.userId;
+                                  const isEditingReply =
+                                    editingCommentId === reply.$id;
+
+                                  const canDeleteReply = isMyReply;
+
+                                  return (
+                                    <div
+                                      key={reply.$id}
+                                      className="flex gap-3 group"
+                                    >
+                                      <Avatar
+                                        src={ProfileService.getAvatarUrl(
+                                          rAuthor?.avatarFileId,
+                                        )}
+                                        name={
+                                          rAuthor?.firstName &&
+                                          rAuthor?.lastName
+                                            ? `${rAuthor.firstName} ${rAuthor.lastName}`
+                                            : rAuthor?.displayName || "User"
+                                        }
+                                        size="sm"
+                                      />
+                                      <div className="flex-1">
+                                        <div className="flex flex-col mb-1 relative">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-xs font-bold text-[rgb(var(--text-primary))]">
+                                                {rAuthor?.firstName &&
+                                                rAuthor?.lastName
+                                                  ? `${rAuthor.firstName} ${rAuthor.lastName}`
+                                                  : rAuthor?.displayName ||
+                                                    t("courses.qa.student")}
+                                              </span>
+                                              {rIsInstructor && (
+                                                <span className="text-[9px] bg-[rgb(var(--brand-primary)/0.1)] text-[rgb(var(--brand-primary))] px-1 py-0.5 rounded font-bold uppercase">
+                                                  {t("courses.qa.instructor")}
+                                                </span>
+                                              )}
+                                              <span className="text-[10px] text-[rgb(var(--text-muted))]">
+                                                •{" "}
+                                                {new Date(
+                                                  reply.$createdAt,
+                                                ).toLocaleString()}
+                                              </span>
+                                            </div>
+
+                                            {/* Action Menu (Reply) */}
+                                            {(isMyReply || isOwner) &&
+                                              !isEditingReply && (
+                                                <Dropdown
+                                                  align="right"
+                                                  trigger={
+                                                    <button className="p-1 rounded-full text-[rgb(var(--text-muted))] hover:bg-[rgb(var(--bg-muted))] hover:text-[rgb(var(--text-primary))] transition-colors">
+                                                      <MoreVertical className="h-3 w-3" />
+                                                    </button>
+                                                  }
+                                                >
+                                                  <DropdownItem
+                                                    icon={Edit2}
+                                                    onClick={() => {
+                                                      setEditingCommentId(
+                                                        reply.$id,
+                                                      );
+                                                      setEditDraft(reply.body);
+                                                    }}
+                                                  >
+                                                    {t("common.edit")}
+                                                  </DropdownItem>
+                                                  {canDeleteReply && (
+                                                    <DropdownItem
+                                                      icon={Trash2}
+                                                      danger
+                                                      onClick={async () => {
+                                                        if (
+                                                          confirm(
+                                                            "Are you sure?",
+                                                          )
+                                                        ) {
+                                                          try {
+                                                            await deleteComment(
+                                                              reply.$id,
+                                                            );
+                                                            setComments(
+                                                              (prev) =>
+                                                                prev.filter(
+                                                                  (item) =>
+                                                                    item.$id !==
+                                                                    reply.$id,
+                                                                ),
+                                                            );
+                                                          } catch (e) {
+                                                            console.error(e);
+                                                          }
+                                                        }
+                                                      }}
+                                                    >
+                                                      {t("common.delete")}
+                                                    </DropdownItem>
+                                                  )}
+                                                </Dropdown>
+                                              )}
+                                          </div>
+                                        </div>
+
+                                        {isEditingReply ? (
+                                          <div className="space-y-2">
+                                            <Textarea
+                                              value={editDraft}
+                                              onChange={(e) =>
+                                                setEditDraft(e.target.value)
+                                              }
+                                              className="text-xs min-h-[60px] bg-[rgb(var(--bg-muted))]"
+                                            />
+                                            <div className="flex justify-end gap-2">
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                  setEditingCommentId(null);
+                                                  setEditDraft("");
+                                                }}
+                                              >
+                                                {t("common.cancel")}
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                disabled={!editDraft.trim()}
+                                                onClick={async () => {
+                                                  if (!editDraft.trim()) return;
+                                                  try {
+                                                    await updateComment(
+                                                      reply.$id,
+                                                      { body: editDraft },
+                                                    );
+                                                    setComments((prev) =>
+                                                      prev.map((item) =>
+                                                        item.$id === reply.$id
+                                                          ? {
+                                                              ...item,
+                                                              body: editDraft,
+                                                            }
+                                                          : item,
+                                                      ),
+                                                    );
+                                                    setEditingCommentId(null);
+                                                    setEditDraft("");
+                                                  } catch (error) {
+                                                    console.error(
+                                                      "Failed to update reply",
+                                                      error,
+                                                    );
+                                                  }
+                                                }}
+                                              >
+                                                {t("common.save")}
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="text-xs text-[rgb(var(--text-primary))] whitespace-pre-line group relative">
+                                            {renderHighlightedText(reply.body)}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Reply Form */}
+                            {replyingTo === c.$id && (
+                              <div className="mt-4 flex gap-3 animate-in fade-in slide-in-from-top-2">
+                                <Avatar
+                                  src={ProfileService.getAvatarUrl(
+                                    authors[auth.user?.$id]?.avatarFileId,
+                                  )}
+                                  name={
+                                    authors[auth.user?.$id]?.firstName &&
+                                    authors[auth.user?.$id]?.lastName
+                                      ? `${authors[auth.user?.$id]?.firstName} ${authors[auth.user?.$id]?.lastName}`
+                                      : auth.user?.name || "Me"
+                                  }
+                                  size="sm"
+                                  className="mt-1"
+                                />
+                                <div className="flex-1 space-y-2">
+                                  <Textarea
+                                    autoFocus
+                                    value={replyDraft}
+                                    onChange={(e) =>
+                                      setReplyDraft(e.target.value)
+                                    }
+                                    placeholder={t(
+                                      "courses.qa.replyPlaceholder",
+                                      "Escribe tu respuesta...",
+                                    )}
+                                    className="text-xs min-h-[80px] bg-[rgb(var(--bg-muted))]"
+                                  />
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setReplyingTo(null);
+                                        setReplyDraft("");
+                                      }}
+                                    >
+                                      {t("common.cancel")}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      disabled={!replyDraft.trim()}
+                                      onClick={async () => {
+                                        await handleReplySubmit(c.$id);
+                                      }}
+                                    >
+                                      {t("common.submit")}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12 text-[rgb(var(--text-muted))]">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>
+                      {searchQuery
+                        ? t("common.noResults", "No se encontraron resultados")
+                        : showAllQuestions
+                          ? t("courses.qa.noQuestionsCourse")
+                          : t("courses.qa.noQuestionsLesson")}
+                    </p>
+                    {!searchQuery && !showAllQuestions && (
+                      <p className="text-sm mt-1">{t("courses.qa.beFirst")}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Reply Modal */}
+              <Modal
+                open={mobileReplyOpen}
+                onClose={() => {
+                  setMobileReplyOpen(false);
+                  setReplyDraft("");
+                  setMobileReplyTarget(null);
+                }}
+                title={t("courses.qa.respond", "Responder")}
+                showClose={true}
+                size="md"
+              >
+                <div className="space-y-4">
+                  {mobileReplyTarget && (
+                    <div className="bg-[rgb(var(--bg-muted))] p-3 rounded-lg text-sm text-[rgb(var(--text-secondary))] border-l-2 border-[rgb(var(--brand-primary))] italic">
+                      {mobileReplyTarget.body.length > 100
+                        ? mobileReplyTarget.body.substring(0, 100) + "..."
+                        : mobileReplyTarget.body}
+                    </div>
+                  )}
+                  <Textarea
+                    value={replyDraft}
+                    onChange={(e) => setReplyDraft(e.target.value)}
+                    placeholder={t(
+                      "courses.qa.replyPlaceholder",
+                      "Escribe tu respuesta...",
+                    )}
+                    className="min-h-[120px] text-base"
+                    autoFocus
+                  />
+                  <ModalFooter>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setMobileReplyOpen(false);
+                        setReplyDraft("");
+                      }}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        if (!mobileReplyTarget) return;
+                        await handleReplySubmit(mobileReplyTarget.$id);
+                        setMobileReplyOpen(false);
+                      }}
+                      disabled={!replyDraft.trim() || busy}
+                    >
+                      {t("courses.qa.submit", "Enviar")}
+                    </Button>
+                  </ModalFooter>
+                </div>
+              </Modal>
             </div>
           )}
         </div>
@@ -378,10 +1086,10 @@ const LessonTabs = ({
             >
               <CheckCircle2 className="h-4 w-4" />
               {done[current.$id]
-                ? "Lección Completada"
+                ? t("courses.lesson.completed")
                 : busy
-                  ? "Guardando..."
-                  : "Marcar como completada"}
+                  ? t("courses.lesson.saving")
+                  : t("courses.lesson.markComplete")}
             </Button>
           </div>
         )}
@@ -401,6 +1109,7 @@ const CourseContentList = ({
   toggleSection,
   onSelectLesson,
 }) => {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -411,11 +1120,11 @@ const CourseContentList = ({
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="text-sm font-black uppercase tracking-widest inline-flex items-center gap-2 text-[rgb(var(--brand-primary))]">
           <ListVideo className="h-4 w-4" />
-          Contenido
+          {t("courses.content")}
         </div>
         <div className="rounded-full bg-[rgb(var(--brand-primary)/0.1)] px-2 py-0.5 text-[10px] font-bold text-[rgb(var(--brand-primary))]">
           {course.sections?.flatMap((s) => s.lessons || []).length || 0}{" "}
-          lecciones
+          {t("courses.lessons")}
         </div>
       </div>
 
@@ -560,6 +1269,7 @@ export function LearnPage() {
   const [busy, setBusy] = React.useState(false);
   const [lessonTab, setLessonTab] = React.useState("description");
   const [comments, setComments] = React.useState([]);
+  const [authors, setAuthors] = React.useState({}); // userId -> profile
 
   const [commentDraft, setCommentDraft] = React.useState("");
   const [isEnrolled, setIsEnrolled] = React.useState(false);
@@ -660,8 +1370,38 @@ export function LearnPage() {
 
         // Optional: List comments/assignments
         // We run these without awaiting to not block the main UI render
+        // Optional: List comments/assignments
+        // We run these without awaiting to not block the main UI render
         listCommentsForCourse(c.$id)
-          .then((res) => isMounted && setComments(res))
+          .then(async (res) => {
+            if (!isMounted) return;
+            setComments(res);
+
+            // Fetch authors
+            const userIds = [...new Set(res.map((c) => c.userId))];
+            const newAuthors = {};
+            // Fetch one by one for simplicity (optimize later if needed)
+            for (const uid of userIds) {
+              try {
+                const profile = await getProfileById(uid);
+                newAuthors[uid] = profile;
+              } catch (e) {
+                console.warn("Failed to load author", uid);
+              }
+            }
+
+            // Also fetch current user profile if not present
+            if (auth.user && !newAuthors[auth.user.$id]) {
+              try {
+                const myProfile = await getProfileById(auth.user.$id);
+                newAuthors[auth.user.$id] = myProfile;
+              } catch (e) {
+                console.error("Failed to fetch my profile", e);
+              }
+            }
+
+            if (isMounted) setAuthors((prev) => ({ ...prev, ...newAuthors }));
+          })
           .catch(() => []);
       } catch (err) {
         if (!isMounted) return;
@@ -843,6 +1583,7 @@ export function LearnPage() {
               markComplete={markComplete}
               setComments={setComments}
               courseId={courseId}
+              authors={authors}
             />
             <CourseContentList
               className="hidden lg:block h-fit sticky top-24"
@@ -904,6 +1645,7 @@ export function LearnPage() {
               markComplete={markComplete}
               setComments={setComments}
               courseId={courseId}
+              authors={authors}
             />
           </div>
 

@@ -161,6 +161,9 @@
     "paid": "De pago",
     "students": "estudiantes",
     "lessons": "lecciones",
+    "lesson_one": "lección",
+    "lessonCount": "{{count}} lección",
+    "lessonCount_other": "{{count}} lecciones",
     "sections": "secciones",
     "duration": "Duración",
     "level": "Nivel",
@@ -168,6 +171,10 @@
       "beginner": "Principiante",
       "intermediate": "Intermedio",
       "advanced": "Avanzado"
+    },
+    "status": {
+      "draft": "Borrador",
+      "published": "Publicado"
     },
     "instructor": "Instructor",
     "aboutInstructor": "Acerca del Instructor",
@@ -187,10 +194,42 @@
     "enrollNow": "Inscribirme ahora",
     "buyCourse": "Comprar curso",
     "addToCart": "Añadir al carrito",
+    "removeFromCart": "Quitar del carrito",
     "enrollFree": "Inscribirme gratis",
     "manage": "Gestionar Curso",
     "unavailable": "No disponible",
-    "addToFavorites": "Añadir a favoritos",
+    "addToFavorites": "Agregar a favoritos",
+    "qa": {
+      "title": "Preguntas y Respuestas",
+      "askQuestion": "Haz una pregunta",
+      "placeholder": "Comparte tus dudas o comentarios sobre esta lección...",
+      "submit": "Publicar Comentario",
+      "showAll": "Ver todas las preguntas del curso",
+      "searchPlaceholder": "Buscar en preguntas...",
+      "noQuestionsLesson": "Aún no hay preguntas en esta lección.",
+      "noQuestionsCourse": "Aún no hay preguntas en este curso.",
+      "beFirst": "Sé el primero en preguntar.",
+      "student": "Estudiante",
+      "instructor": "Instructor",
+      "respond": "Responder",
+      "replyPlaceholder": "Escribe tu respuesta...",
+      "enrollToAsk": "Debes estar inscrito para hacer preguntas."
+    },
+    "resources": "Recursos",
+    "chapters": "Capítulos",
+    "lesson": {
+      "attachments": "Archivos Adjuntos",
+      "videoChapters": "Capítulos del video",
+      "chaptersDesc": "Próximamente podrás saltar directamente a los puntos clave de esta lección.",
+      "noDescription": "Sin descripción detallada.",
+      "completed": "Lección Completada",
+      "saving": "Guardando...",
+      "markComplete": "Marcar como completada"
+    },
+    "locked": {
+      "title": "Contenido Bloqueado",
+      "description": "Adquiere este curso para acceder a todas las lecciones y recursos."
+    },
     "favoritesDisabled": "Favoritos desactivado",
     "certificate": "Certificado de finalización",
     "lifetimeAccess": "Acceso de por vida",
@@ -200,6 +239,7 @@
     "searchPlaceholder": "Buscar cursos...",
     "notFound": "Curso no encontrado",
     "goBack": "Volver",
+    "backToCourse": "Volver al curso",
     "notAvailable": "Curso no disponible",
     "notPublished": "Este curso aún no está publicado.",
     "exploreCourses": "Explorar cursos",
@@ -209,7 +249,8 @@
     "previewModeUnpublished": "Este curso aún no está publicado. Solo el instructor puede verlo.",
     "courseDescription": "Descripción del curso",
     "noDescription": "Sin descripción.",
-    "courseContent": "Contenido del curso"
+    "courseContent": "Contenido del curso",
+    "viewCourse": "Ver Curso"
   },
   "student": {
     "welcome": "Hola",
@@ -289,6 +330,11 @@
     "created": "Curso creado correctamente",
     "courseCreated": "Curso creado exitosamente",
     "courseUpdated": "Curso actualizado correctamente",
+    "myCoursesDescription": "Administra y organiza tu contenido educativo.",
+    "noCoursesYet": "No tienes cursos todavía",
+    "noCoursesDescription": "Comienza a compartir tu conocimiento creando tu primer curso. Es fácil y rápido.",
+    "createFirstCourse": "Crear mi primer curso",
+    "newCourse": "Nuevo Curso",
     "tabs": {
       "details": "Detalles",
       "curriculum": "Contenido",
@@ -484,11 +530,32 @@
       "value": "Valor",
       "maxUses": "Límite de Usos (0=∞)",
       "expiresAt": "Vencimiento (Opcional)",
+      "course": "Curso (Opcional)",
       "validationError": "Código inválido o valor incorrecto",
       "created": "Cupón creado correctamente",
       "updated": "Cupón actualizado correctamente",
       "deleted": "Cupón eliminado",
-      "updateFailed": "Error al actualizar estado"
+      "updateFailed": "Error al actualizar estado",
+      "copySuccess": "Código copiado",
+      "confirmDelete": "¿Estás seguro de eliminar este cupón?",
+      "createdBy": "Creado por:",
+      "createdAt": "Creado:",
+      "haveCoupon": "¿Tienes un cupón?",
+      "placeholder": "Código de cupón",
+      "apply": "Aplicar",
+      "enterCode": "Ingresa un código de cupón",
+      "invalidCode": "Cupón inválido o expirado",
+      "remove": "Quitar cupón",
+      "errors": {
+        "COUPON_NOT_FOUND": "Cupón no encontrado",
+        "COUPON_EXPIRED": "Este cupón ha expirado",
+        "COUPON_MAX_USES_REACHED": "Este cupón ha alcanzado su límite de uso",
+        "COUPON_NOT_APPLICABLE": "Este cupón no es válido para este curso",
+        "Coupon expired": "Este cupón ha expirado",
+        "Invalid coupon code": "Código de cupón inválido",
+        "Coupon usage limit reached": "Este cupón ha alcanzado su límite de uso",
+        "Coupon not valid for this course": "Este cupón no es válido para este curso"
+      }
     },
     "reviews": {
       "title": "Reseñas del curso",
@@ -617,6 +684,7 @@
     "edit": "Editar",
     "create": "Crear",
     "search": "Buscar",
+    "searchPlaceholder": "Buscar...",
     "filter": "Filtrar",
     "all": "Todos",
     "none": "Ninguno",
@@ -666,6 +734,15 @@
     "student": "Estudiante",
     "teacher": "Instructor",
     "admin": "Administrador"
+  },
+  "admin": {
+    "coupons": {
+      "title": "Gestión de Cupones",
+      "subtitle": "Administra todos los cupones de la plataforma (Globales y Específicos)",
+      "global": "Global (Todos los cursos)",
+      "globalDesc": "Aplica a cualquier compra",
+      "emptyDesc": "Crea cupones globales para campañas de marketing."
+    }
   },
   "pwa": {
     "installTitle": "Instala la app",
@@ -724,6 +801,23 @@
       "desc": "Elige cómo quieres recibir las alertas.",
       "sound": "Sonido de notificación",
       "soundDesc": "Reproducir un sonido cuando llegue una nueva notificación."
+    },
+    "timezone": {
+      "title": "Zona Horaria",
+      "desc": "Selecciona tu zona horaria local para mostrar fechas y horas correctamente.",
+      "zones": {
+        "America/Mexico_City": "México - Ciudad de México, Guadalajara",
+        "America/Tijuana": "México - Tijuana",
+        "America/Cancun": "México - Cancún",
+        "America/New_York": "EE.UU. - Este (Nueva York)",
+        "America/Chicago": "EE.UU. - Central (Chicago)",
+        "America/Los_Angeles": "EE.UU. - Pacífico (Los Ángeles)",
+        "Europe/Madrid": "España - Madrid",
+        "America/Bogota": "Colombia - Bogotá",
+        "America/Lima": "Perú - Lima",
+        "America/Argentina/Buenos_Aires": "Argentina - Buenos Aires",
+        "America/Sao_Paulo": "Brasil - São Paulo"
+      }
     }
   }
 }

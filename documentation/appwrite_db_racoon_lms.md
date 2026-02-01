@@ -461,15 +461,15 @@
 
 ### 20) `notifications`
 
-| Attribute | Type     | Required | Default | Constraints    | Notes      |
-| --------- | -------- | -------: | ------- | -------------- | ---------- |
-| userId    | string   |       ✅ | —       | min=1 max=36   |            |
-| type      | enum     |       ✅ | —       | —              |            |
-| title     | string   |       ✅ | —       | min=1 max=120  |            |
-| body      | string   |       ✅ | —       | min=1 max=500  |            |
-| dataJson  | string   |       ❌ | "{}"    | min=0 max=2000 | extra data |
-| read      | boolean  |       ❌ | false   | —              |            |
-| readedAt  | datetime |       ❌ | —       | —              |            |
+| Attribute | Type     | Required | Default | Constraints    | Notes                     |
+| --------- | -------- | -------: | ------- | -------------- | ------------------------- |
+| userId    | string   |       ✅ | —       | min=1 max=36   |                           |
+| type      | enum     |       ✅ | —       | —              |                           |
+| title     | string   |       ✅ | —       | min=1 max=120  |                           |
+| body      | string   |       ✅ | —       | min=1 max=500  |                           |
+| dataJson  | string   |       ❌ | "{}"    | min=0 max=2000 | extra data (eg: entityId) |
+| read      | boolean  |       ❌ | false   | —              |                           |
+| readedAt  | datetime |       ❌ | —       | —              |                           |
 
 **Enum values**
 

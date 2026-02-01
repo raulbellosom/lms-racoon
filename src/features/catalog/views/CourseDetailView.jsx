@@ -32,12 +32,16 @@ import {
   Copy,
   ExternalLink,
   Check,
+  Ticket,
+  X,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Card } from "../../../shared/ui/Card";
 
 import { Button } from "../../../shared/ui/Button";
+import { VideoPlayer } from "../../../shared/ui/VideoPlayer";
 import { CourseCurriculum } from "../components/CourseCurriculum";
 import { CourseMetaTags } from "../components/CourseMetaTags";
 import { TeacherCoursesService } from "../../../shared/data/courses-teacher";
@@ -61,7 +65,13 @@ import { CategoryService } from "../../../shared/data/categories";
 import { FavoritesService } from "../../../shared/data/favorites";
 
 import { LoadingScreen } from "../../../shared/ui/LoadingScreen";
-import { checkEnrollmentStatus } from "../../../shared/data/enrollments";
+import { LevelIndicator } from "../../../shared/ui/LevelIndicator";
+import {
+  checkEnrollmentStatus,
+  enrollInCourse,
+} from "../../../shared/data/enrollments";
+import { CouponsService } from "../../../shared/data/coupons";
+import { Input } from "../../../shared/ui/Input";
 
 const SOCIAL_ICONS = {
   website: Globe,
@@ -99,6 +109,7 @@ export function CourseDetailView() {
     React.useState(false);
   const [shouldShowShowMore, setShouldShowShowMore] = React.useState(false);
   const [copiedKey, setCopiedKey] = React.useState(null);
+  const [theaterMode, setTheaterMode] = React.useState(false);
   const reviewsRef = React.useRef(null);
   const descriptionRef = React.useRef(null);
 
@@ -136,6 +147,14 @@ export function CourseDetailView() {
   const [favoritesCount, setFavoritesCount] = React.useState(0);
   const [togglingFavorite, setTogglingFavorite] = React.useState(false);
   const [isEnrolled, setIsEnrolled] = React.useState(false);
+
+  // Coupon states
+  const [showCouponInput, setShowCouponInput] = React.useState(false);
+  const [couponCode, setCouponCode] = React.useState("");
+  const [appliedCoupon, setAppliedCoupon] = React.useState(null);
+  const [couponError, setCouponError] = React.useState("");
+  const [validatingCoupon, setValidatingCoupon] = React.useState(false);
+  const [enrolling, setEnrolling] = React.useState(false);
 
   React.useEffect(() => {
     if (id) {
@@ -232,6 +251,144 @@ export function CourseDetailView() {
     }
   };
 
+  // Coupon validation - does NOT spend the coupon, just validates
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError(
+        t("teacher.coupons.enterCode") || "Ingresa un código de cupón",
+      );
+      return;
+    }
+
+    setValidatingCoupon(true);
+    setCouponError("");
+
+    try {
+      const validatedCoupon = await CouponsService.validateCoupon(
+        couponCode.trim(),
+        course.$id,
+      );
+      setAppliedCoupon(validatedCoupon);
+      setCouponCode("");
+      setShowCouponInput(false);
+    } catch (error) {
+      setCouponError(
+        t(`teacher.coupons.errors.${error.message}`) ||
+          error.message ||
+          t("teacher.coupons.invalidCode"),
+      );
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError("");
+  };
+
+  // Calculate discounted price
+  const calculateDiscountedPrice = () => {
+    if (!course) return 0;
+    if (!appliedCoupon) return course.priceCents;
+
+    if (appliedCoupon.type === "percent") {
+      return Math.round(course.priceCents * (1 - appliedCoupon.value / 100));
+    } else {
+      // Fixed amount discount (in cents)
+      return Math.max(0, course.priceCents - appliedCoupon.value * 100);
+    }
+  };
+
+  const discountedPriceCents = calculateDiscountedPrice();
+
+  const handleEnroll = async () => {
+    if (!auth.user) {
+      navigate("/auth/register", {
+        state: { returnUrl: location.pathname },
+      });
+      return;
+    }
+
+    setEnrolling(true);
+    try {
+      // 1. Check if free or 100% discount
+      if (discountedPriceCents === 0) {
+        // Double check coupon validity if applied
+        if (appliedCoupon) {
+          try {
+            await CouponsService.validateCoupon(appliedCoupon.code, course.$id);
+          } catch (e) {
+            setCouponError(
+              t("teacher.coupons.invalidCode") || "Cupón inválido o expirado",
+            );
+            setEnrolling(false);
+            return;
+          }
+        }
+
+        // 2. Create Enrollment
+        await enrollInCourse({
+          userId: auth.user.$id,
+          courseId: course.$id,
+          priceCents: 0,
+          currency: course.currency || "MXN",
+        });
+
+        // 3. Redeem Coupon if applicable
+        if (appliedCoupon) {
+          try {
+            // We use a generated ID for tracking, or let backend handle it?
+            // The service requires (couponId, userId, orderId).
+            // For free orders, we can use "free_enrollment_{timestamp}" as orderId
+            await CouponsService.redeemCoupon(
+              appliedCoupon.$id,
+              auth.user.$id,
+              `free_${Date.now()}`,
+            );
+          } catch (e) {
+            console.error("Failed to redeem coupon record", e);
+            // Non-blocking, enrollment succeeded
+          }
+        }
+
+        // 4. Success & Redirect
+        const { showToast } =
+          await import("../../../app/providers/ToastProvider").then((m) => ({
+            showToast: window.dispatchEvent,
+          })); // Hacky access or use hook?
+        // We cannot use hook inside callback easily if not defined at top.
+        // But we didn't import useToast at top. Let's redirect directly.
+
+        setIsEnrolled(true);
+        // Find first lesson to redirect? Or just stay here?
+        // Usually better to go to learn page
+        if (
+          course.content &&
+          course.content.length > 0 &&
+          course.content[0].lessons.length > 0
+        ) {
+          navigate(
+            `/app/learn/${course.$id}/${course.content[0].lessons[0].$id}`,
+          );
+        } else {
+          // Reload to show "Go to Course"
+          window.location.reload();
+        }
+      } else {
+        // Payment flow placeholder
+        console.log("Proceed to payment gateway");
+        // Here you would integrate Stripe/PayPal, etc.
+      }
+    } catch (error) {
+      console.error("Enrollment failed", error);
+      // alert("Error al inscribirse. Intenta de nuevo.");
+    } finally {
+      setEnrolling(false);
+    }
+  };
+
   const getFallbackGradient = (id) => {
     const gradients = [
       "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -279,11 +436,19 @@ export function CourseDetailView() {
 
   const formattedPrice =
     course.priceCents === 0
-      ? "Gratis"
+      ? t("courses.free")
       : new Intl.NumberFormat("es-MX", {
           style: "currency",
           currency: course.currency || "MXN",
         }).format(course.priceCents / 100);
+
+  const formattedDiscountedPrice =
+    discountedPriceCents === 0
+      ? t("courses.free")
+      : new Intl.NumberFormat("es-MX", {
+          style: "currency",
+          currency: course.currency || "MXN",
+        }).format(discountedPriceCents / 100);
 
   const coverUrl = course.coverFileId
     ? FileService.getCourseCoverUrl(course.coverFileId)
@@ -341,163 +506,271 @@ export function CourseDetailView() {
           </div>
 
           {/* Content Grid */}
-          <div className="relative z-10 mx-auto max-w-7xl px-6 py-8 md:py-12">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center min-h-[250px]">
-              {/* Left: Course Info */}
-              <div className="flex flex-col justify-center">
-                <div className="mb-6">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2 text-white/90 hover:text-white hover:bg-white/20 pl-0"
-                    onClick={() => {
-                      if (window.history.length > 1) {
-                        navigate(-1);
-                      } else {
-                        navigate(auth.user ? "/app/explore" : "/catalog");
-                      }
-                    }}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    {t("common.back") || "Volver"}
-                  </Button>
-                </div>
-
-                {/* Badges */}
-                <div className="mb-4 flex flex-wrap gap-2 items-center">
-                  {/* Category Badge */}
-                  {category && (
-                    <button
-                      onClick={() =>
-                        navigate(`/app/explore?category=${category.slug}`)
-                      }
-                      className="rounded bg-brand-primary/20 border border-brand-primary/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-brand-primary-light hover:bg-brand-primary/30 transition-colors cursor-pointer"
-                    >
-                      {category.name}
-                    </button>
-                  )}
-                  {/* Level Badge */}
-                  <button
-                    onClick={() =>
-                      navigate(`/app/explore?level=${course.level}`)
-                    }
-                    className="rounded bg-blue-500/20 border border-blue-500/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-300 hover:bg-blue-500/30 transition-colors cursor-pointer"
-                  >
-                    {t(`courses.levels.${course.level}`)}
-                  </button>
-                  {/* Rating */}
-                  <button
-                    onClick={handleScrollToReviews}
-                    className="flex items-center gap-1 text-base font-medium text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
-                  >
-                    <span className="text-amber-400 text-lg">★</span>{" "}
-                    {rating.toFixed(1)}
-                  </button>
-                </div>
-
-                <h1 className="text-3xl font-extrabold md:text-4xl lg:text-5xl leading-tight text-white mb-4 drop-shadow-lg">
-                  {course.title}
-                </h1>
-                <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl drop-shadow-md">
-                  {course.subtitle}
-                </p>
-
-                <div className="flex flex-wrap gap-4 text-sm text-white/80 font-medium mb-4">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {totalStudents} {t("courses.students")}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-4 w-4" />
-                    {favoritesCount}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" /> {t("courses.lastUpdated")}:{" "}
-                    {new Date(course.$updatedAt).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Globe className="h-4 w-4" />{" "}
-                    {t(`common.languages.${course.language}`) ||
-                      course.language}
-                  </div>
-                </div>
-
-                {/* Buttons Row */}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {/* Share - Always visible for published */}
-                  {!isDraft && course.isPublished && (
+          <div className={`relative z-10 mx-auto max-w-7xl px-6 py-8 md:py-12`}>
+            <AnimatePresence mode="wait">
+              {theaterMode ? (
+                /* THEATER MODE LAYOUT */
+                <motion.div
+                  key="theater"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="flex flex-col gap-6"
+                >
+                  {/* Back Button Row */}
+                  <div className="flex items-center justify-between">
                     <Button
-                      variant="outline"
-                      onClick={async () => {
-                        const shareUrl = `${window.location.protocol}//${window.location.host}/courses/${course.$id}`;
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2 text-white/90 hover:text-white hover:bg-white/20 pl-0"
+                      onClick={() => navigate(-1)}
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      {t("common.back") || "Volver"}
+                    </Button>
+                  </div>
 
-                        const shareData = {
-                          title: course.title,
-                          text: course.subtitle,
-                          url: shareUrl,
-                        };
-
-                        try {
-                          if (navigator.share) {
-                            await navigator.share(shareData);
-                          } else {
-                            await navigator.clipboard.writeText(shareUrl);
-                            console.log("Link copied to clipboard!");
-                          }
-                        } catch (err) {
-                          console.error("Share failed:", err);
+                  {/* Video Player - Full Width - No rounded corners */}
+                  <div className="w-full max-w-5xl mx-auto shadow-2xl overflow-hidden border border-white/10 bg-black">
+                    {activeMediaType === "video" ? (
+                      <VideoPlayer
+                        src={activeMediaUrl}
+                        poster={
+                          course.promoVideoCoverFileId
+                            ? FileService.getCourseCoverUrl(
+                                course.promoVideoCoverFileId,
+                              )
+                            : resolvedBannerUrl || coverUrl || undefined
                         }
-                      }}
-                      className="gap-2 border-white/30 bg-black/30 text-white hover:bg-white/20 hover:text-white"
-                    >
-                      <Share2 className="h-4 w-4" />
-                      {t("common.share") || "Compartir"}
-                    </Button>
-                  )}
-
-                  {/* Add to Favorites - Only if Logged In */}
-                  {auth.user && !isOwner && (
-                    <Button
-                      variant={isFavorite ? "secondary" : "outline"}
-                      onClick={handleToggleFavorite}
-                      disabled={togglingFavorite}
-                      className={`gap-2 ${isFavorite ? "text-red-500 bg-white" : "border-white/30 bg-black/30 text-white hover:bg-white/20 hover:text-white"}`}
-                    >
-                      <Heart
-                        className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`}
+                        title={course.title}
+                        className="aspect-video w-full"
+                        theaterMode={theaterMode}
+                        onToggleTheater={() => setTheaterMode(!theaterMode)}
+                        hideNavArrows={true}
                       />
-                      {isFavorite ? "Favorito" : t("courses.addToFavorites")}
-                    </Button>
-                  )}
-                </div>
-              </div>
+                    ) : (
+                      <div className="relative aspect-video w-full group">
+                        <img
+                          src={activeMediaUrl || ""}
+                          alt={course.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
 
-              {/* Right: Banner Image or Video */}
-              <div className="flex items-center justify-center lg:justify-end">
-                <div className="w-full max-w-xl">
-                  {activeMediaType === "video" ? (
-                    <video
-                      src={activeMediaUrl}
-                      controls
-                      className="w-full rounded-xl shadow-2xl border border-white/10"
-                      poster={
-                        course.promoVideoCoverFileId
-                          ? FileService.getCourseCoverUrl(
-                              course.promoVideoCoverFileId,
-                            )
-                          : coverUrl || undefined
-                      }
-                    />
-                  ) : (
-                    <img
-                      src={activeMediaUrl || ""}
-                      alt={course.title}
-                      className="w-full rounded-xl shadow-2xl border border-white/10"
-                    />
-                  )}
+                  {/* Info Row Below Video */}
+                  <div className="grid gap-6 md:grid-cols-3 items-start">
+                    {/* Col 1: Title & Badges */}
+                    <div className="md:col-span-2">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {category && (
+                          <span className="rounded bg-brand-primary/20 border border-brand-primary/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-brand-primary-light">
+                            {category.name}
+                          </span>
+                        )}
+                        <span className="rounded bg-blue-500/20 border border-blue-500/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-300">
+                          {t(`courses.levels.${course.level}`)}
+                        </span>
+                      </div>
+                      <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2 leading-tight">
+                        {course.title}
+                      </h1>
+                      <p className="text-white/80 line-clamp-2 md:line-clamp-3">
+                        {course.subtitle}
+                      </p>
+                    </div>
+
+                    {/* Col 2: Actions & Stats */}
+                    <div className="flex flex-col gap-4 justify-center md:items-end">
+                      <div className="flex flex-wrap gap-2">
+                        {!isDraft && course.isPublished && (
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              /* share logic */
+                            }}
+                            className="gap-2 border-white/30 bg-black/30 text-white hover:bg-white/20"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {auth.user && !isOwner && (
+                          <Button
+                            variant={isFavorite ? "secondary" : "outline"}
+                            onClick={handleToggleFavorite}
+                            className={`gap-2 ${isFavorite ? "text-red-500 bg-white" : "border-white/30 bg-black/30 text-white hover:bg-white/20"}`}
+                          >
+                            <Heart
+                              className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`}
+                            />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex gap-4 text-sm text-white/80 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-4 w-4" /> {totalStudents}
+                        </span>
+                        <span className="flex items-center gap-1 text-amber-400">
+                          <Star className="h-4 w-4 fill-amber-400" />{" "}
+                          {rating.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                /* NORMAL LAYOUT */
+                <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center min-h-[250px]">
+                  {/* Left: Course Info (Existing Code Structure) */}
+                  <div className="flex flex-col justify-center">
+                    <div className="mb-6">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 text-white/90 hover:text-white hover:bg-white/20 pl-0"
+                        onClick={() => navigate(-1)}
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        {t("common.back") || "Volver"}
+                      </Button>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="mb-4 flex flex-wrap gap-2 items-center">
+                      {category && (
+                        <span className="rounded bg-brand-primary/20 border border-brand-primary/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-brand-primary-light">
+                          {category.name}
+                        </span>
+                      )}
+                      <span className="rounded bg-blue-500/20 border border-blue-500/50 px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-300">
+                        {t(`courses.levels.${course.level}`)}
+                      </span>
+                      <button
+                        onClick={handleScrollToReviews}
+                        className="flex items-center gap-1 text-base font-medium text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                      >
+                        <span className="text-amber-400 text-lg">★</span>{" "}
+                        {rating.toFixed(1)}
+                      </button>
+                    </div>
+
+                    <h1 className="text-3xl font-extrabold md:text-4xl lg:text-5xl leading-tight text-white mb-4 drop-shadow-lg">
+                      {course.title}
+                    </h1>
+                    <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl drop-shadow-md">
+                      {course.subtitle}
+                    </p>
+
+                    <div className="flex flex-wrap gap-4 text-sm text-white/80 font-medium mb-4">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {totalStudents} {t("courses.students")}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Heart className="h-4 w-4" />
+                        {favoritesCount}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" /> {t("courses.lastUpdated")}
+                        : {new Date(course.$updatedAt).toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Globe className="h-4 w-4" />{" "}
+                        {t(`common.languages.${course.language}`) ||
+                          course.language}
+                      </div>
+                    </div>
+
+                    {/* Buttons Row */}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {!isDraft && course.isPublished && (
+                        <Button
+                          variant="outline"
+                          onClick={async () => {
+                            // Share logic
+                            const shareUrl = `${window.location.protocol}//${window.location.host}/courses/${course.$id}`;
+                            const shareData = {
+                              title: course.title,
+                              text: course.subtitle,
+                              url: shareUrl,
+                            };
+                            try {
+                              if (navigator.share) {
+                                await navigator.share(shareData);
+                              } else {
+                                await navigator.clipboard.writeText(shareUrl);
+                                console.log("Link copied to clipboard!");
+                              }
+                            } catch (err) {
+                              console.error("Share failed:", err);
+                            }
+                          }}
+                          className="gap-2 border-white/30 bg-black/30 text-white hover:bg-white/20 hover:text-white"
+                        >
+                          <Share2 className="h-4 w-4" />
+                          {t("common.share") || "Compartir"}
+                        </Button>
+                      )}
+                      {auth.user && !isOwner && (
+                        <Button
+                          variant={isFavorite ? "secondary" : "outline"}
+                          onClick={handleToggleFavorite}
+                          disabled={togglingFavorite}
+                          className={`gap-2 ${isFavorite ? "text-red-500 bg-white" : "border-white/30 bg-black/30 text-white hover:bg-white/20 hover:text-white"}`}
+                        >
+                          <Heart
+                            className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`}
+                          />
+                          {isFavorite
+                            ? "Favorito"
+                            : t("courses.addToFavorites")}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Banner Image or Video */}
+                  <motion.div
+                    key="normal"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="flex items-center justify-center lg:justify-end"
+                  >
+                    <div className="w-full max-w-xl">
+                      {activeMediaType === "video" ? (
+                        <div className="w-full aspect-video shadow-2xl border border-white/10 overflow-hidden bg-black">
+                          <VideoPlayer
+                            src={activeMediaUrl}
+                            poster={
+                              course.promoVideoCoverFileId
+                                ? FileService.getCourseCoverUrl(
+                                    course.promoVideoCoverFileId,
+                                  )
+                                : resolvedBannerUrl || coverUrl || undefined
+                            }
+                            title={course.title}
+                            className="w-full h-full"
+                            theaterMode={theaterMode}
+                            onToggleTheater={() => setTheaterMode(!theaterMode)}
+                            hideNavArrows={true}
+                          />
+                        </div>
+                      ) : (
+                        <img
+                          src={activeMediaUrl || ""}
+                          alt={course.title}
+                          className="w-full shadow-2xl border border-white/10"
+                        />
+                      )}
+                    </div>
+                  </motion.div>
                 </div>
-              </div>
-            </div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -922,9 +1195,108 @@ export function CourseDetailView() {
               </div>
 
               <div className="p-6">
-                <div className="mb-2 text-3xl font-black text-[rgb(var(--text-primary))]">
-                  {formattedPrice}
+                {/* Price Display */}
+                <div className="mb-4">
+                  {appliedCoupon ? (
+                    <div className="space-y-1">
+                      <div className="text-lg text-[rgb(var(--text-muted))] line-through">
+                        {formattedPrice}
+                      </div>
+                      <div className="text-3xl font-black text-brand-primary">
+                        {formattedDiscountedPrice}
+                      </div>
+                      {/* Applied Coupon Badge */}
+                      <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/30">
+                        <Ticket className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-bold text-green-600 dark:text-green-400 flex-1">
+                          {appliedCoupon.code}
+                          {appliedCoupon.type === "percent"
+                            ? ` (-${appliedCoupon.value}%)`
+                            : ` (-$${appliedCoupon.value})`}
+                        </span>
+                        <button
+                          onClick={handleRemoveCoupon}
+                          className="p-1 hover:bg-red-500/20 rounded-full text-red-500 transition-colors"
+                          title={t("teacher.coupons.remove") || "Quitar cupón"}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-3xl font-black text-[rgb(var(--text-primary))]">
+                      {formattedPrice}
+                    </div>
+                  )}
                 </div>
+
+                {/* Coupon Section */}
+                {!isOwner &&
+                  !isDraft &&
+                  course.priceCents > 0 &&
+                  !appliedCoupon && (
+                    <div className="mb-4">
+                      {showCouponInput ? (
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              type="text"
+                              placeholder={
+                                t("teacher.coupons.placeholder") ||
+                                "Código de cupón"
+                              }
+                              value={couponCode}
+                              onChange={(e) =>
+                                setCouponCode(e.target.value.toUpperCase())
+                              }
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleApplyCoupon()
+                              }
+                              className="flex-1 h-10 uppercase"
+                              disabled={validatingCoupon}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleApplyCoupon}
+                              disabled={validatingCoupon}
+                              className="h-10 px-4"
+                            >
+                              {validatingCoupon ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                t("teacher.coupons.apply") || "Aplicar"
+                              )}
+                            </Button>
+                          </div>
+                          {couponError && (
+                            <p className="text-xs text-red-500">
+                              {couponError}
+                            </p>
+                          )}
+                          <button
+                            onClick={() => {
+                              setShowCouponInput(false);
+                              setCouponCode("");
+                              setCouponError("");
+                            }}
+                            className="text-xs text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text-secondary))] transition-colors"
+                          >
+                            {t("common.cancel") || "Cancelar"}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowCouponInput(true)}
+                          className="flex items-center gap-2 text-sm text-[rgb(var(--brand-primary))] hover:text-[rgb(var(--brand-primary-light))] transition-colors font-medium"
+                        >
+                          <Ticket className="h-4 w-4" />
+                          {t("teacher.coupons.haveCoupon") ||
+                            "¿Tienes un cupón?"}
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                 <div className="flex gap-3">
                   {/* Secondary Action (Add to Cart) - Icon Button */}
@@ -952,19 +1324,23 @@ export function CourseDetailView() {
                         navigate(`/app/teach/courses/${id}`);
                         return;
                       }
-                      if (!auth.user) {
-                        navigate("/auth/register", {
-                          state: { returnUrl: location.pathname },
-                        });
-                        return;
-                      }
-                      // handleEnroll();
+                      handleEnroll();
                     }}
                   >
                     {isOwner ? (
                       t("courses.manage")
                     ) : isDraft ? (
                       t("courses.unavailable")
+                    ) : enrolling ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        {t("common.processing", "Procesando...")}
+                      </>
+                    ) : discountedPriceCents === 0 ? (
+                      <>
+                        <CheckCircle className="mr-2 h-5 w-5" />
+                        {t("courses.enrollNow", "Inscribirme ahora")}
+                      </>
                     ) : (
                       <>
                         <ShoppingBag className="mr-2 h-5 w-5" />
@@ -982,8 +1358,11 @@ export function CourseDetailView() {
                     <Globe className="h-4 w-4" /> {t("courses.lifetimeAccess")}
                   </div>
                   <div className="flex items-center gap-2">
-                    <BarChart className="h-4 w-4" /> {t("courses.level")}{" "}
-                    <span className="capitalize">{course.level}</span>
+                    <LevelIndicator
+                      level={course.level}
+                      size="sm"
+                      showText={true}
+                    />
                   </div>
                 </div>
               </div>
@@ -1002,15 +1381,58 @@ export function CourseDetailView() {
         >
           <div className="flex items-center gap-4">
             <div className="shrink-0">
-              <div className="text-xl font-black text-[rgb(var(--text-primary))] leading-tight">
-                {formattedPrice}
-              </div>
-              <div className="text-[10px] font-medium text-[rgb(var(--text-muted))] italic">
-                {isDraft ? t("status.draft") : "Oferta limitada"}
-              </div>
+              {appliedCoupon ? (
+                <>
+                  <div className="text-xs text-[rgb(var(--text-muted))] line-through leading-tight">
+                    {formattedPrice}
+                  </div>
+                  <div className="text-xl font-black text-brand-primary leading-tight">
+                    {formattedDiscountedPrice}
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Ticket className="h-3 w-3 text-green-500" />
+                    <span className="text-[10px] font-bold text-green-600 dark:text-green-400">
+                      {appliedCoupon.code}
+                    </span>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="ml-1 text-red-500"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xl font-black text-[rgb(var(--text-primary))] leading-tight">
+                    {formattedPrice}
+                  </div>
+                  <div className="text-[10px] font-medium text-[rgb(var(--text-muted))] italic">
+                    {isDraft ? t("status.draft") : "Oferta limitada"}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-1 gap-2 items-center">
+              {/* Coupon Button (Mobile) - Icon Only */}
+              {!isOwner &&
+                !isDraft &&
+                course.priceCents > 0 &&
+                !appliedCoupon && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 shrink-0 rounded-xl border-border-base bg-bg-surface text-text-primary hover:bg-bg-surface-hover"
+                    onClick={() => setShowCouponInput(true)}
+                    title={
+                      t("teacher.coupons.haveCoupon") || "¿Tienes un cupón?"
+                    }
+                  >
+                    <Ticket className="h-5 w-5" />
+                  </Button>
+                )}
+
               {/* Add to Cart (Mobile) - Icon Only */}
               {!isOwner && !isDraft && (
                 <Button
@@ -1037,11 +1459,21 @@ export function CourseDetailView() {
                     return;
                   }
                   if (!canEnroll) return;
-                  // handleEnroll();
+                  handleEnroll();
                 }}
               >
                 {isOwner ? (
                   t("courses.manage")
+                ) : enrolling ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("common.processing", "Procesando...")}
+                  </>
+                ) : discountedPriceCents === 0 ? (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    {t("courses.enrollNow", "Inscribirme ahora")}
+                  </>
                 ) : (
                   <>
                     <ShoppingBag className="mr-2 h-4 w-4" />
@@ -1051,6 +1483,65 @@ export function CourseDetailView() {
               </Button>
             </div>
           </div>
+
+          {/* Mobile Coupon Input Modal/Overlay */}
+          <AnimatePresence>
+            {showCouponInput && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="absolute left-0 right-0 bottom-full mb-2 mx-4 p-4 rounded-xl bg-[rgb(var(--bg-surface))] border border-[rgb(var(--border-base))] shadow-lg"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-[rgb(var(--text-primary))]">
+                    {t("teacher.coupons.haveCoupon") || "¿Tienes un cupón?"}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowCouponInput(false);
+                      setCouponCode("");
+                      setCouponError("");
+                    }}
+                    className="p-1 hover:bg-[rgb(var(--bg-muted))] rounded-full transition-colors"
+                  >
+                    <X className="h-4 w-4 text-[rgb(var(--text-muted))]" />
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder={
+                      t("teacher.coupons.placeholder") || "Código de cupón"
+                    }
+                    value={couponCode}
+                    onChange={(e) =>
+                      setCouponCode(e.target.value.toUpperCase())
+                    }
+                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                    className="flex-1 h-10 uppercase"
+                    disabled={validatingCoupon}
+                    autoFocus
+                  />
+                  <Button
+                    variant="default"
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon}
+                    className="h-10 px-4"
+                  >
+                    {validatingCoupon ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      t("teacher.coupons.apply") || "Aplicar"
+                    )}
+                  </Button>
+                </div>
+                {couponError && (
+                  <p className="mt-2 text-xs text-red-500">{couponError}</p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

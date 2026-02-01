@@ -58,3 +58,32 @@ export async function createComment({
     },
   );
 }
+
+export async function updateComment(commentId, { body }) {
+  if (!commentId) throw new Error("Comment ID required");
+  if (!hasAppwrite()) {
+    const existing = demoComments.find((c) => c.$id === commentId);
+    if (existing) existing.body = body;
+    return existing;
+  }
+  return db.updateDocument(
+    APPWRITE.databaseId,
+    APPWRITE.collections.comments,
+    commentId,
+    { body },
+  );
+}
+
+export async function deleteComment(commentId) {
+  if (!commentId) throw new Error("Comment ID required");
+  if (!hasAppwrite()) {
+    const idx = demoComments.findIndex((c) => c.$id === commentId);
+    if (idx > -1) demoComments.splice(idx, 1);
+    return true;
+  }
+  return db.deleteDocument(
+    APPWRITE.databaseId,
+    APPWRITE.collections.comments,
+    commentId,
+  );
+}

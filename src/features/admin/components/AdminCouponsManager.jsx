@@ -8,9 +8,11 @@ import {
   DollarSign,
   Loader2,
   Search,
+  Copy,
+  Check,
 } from "lucide-react";
 import { ID, Query } from "appwrite";
-import { db as databases } from "../../../shared/appwrite/client";
+import { db as databases, storage } from "../../../shared/appwrite/client";
 import { useToast } from "../../../app/providers/ToastProvider";
 import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
@@ -21,6 +23,9 @@ import { Switch } from "../../../shared/ui/Switch";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { LoadingContent } from "../../../shared/ui/LoadingScreen";
 import { CharacterCountCircle } from "../../teacher/components/CharacterCountCircle";
+import { Combobox } from "../../../shared/ui/Combobox";
+import { ProfileService, getProfileById } from "../../../shared/data/profiles";
+import { APPWRITE } from "../../../shared/appwrite/ids";
 
 const DB_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const COL_COUPONS = import.meta.env.VITE_APPWRITE_COL_COUPONS;
@@ -33,6 +38,8 @@ export function AdminCouponsManager() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState([]); // For course selection
+  const [creators, setCreators] = useState({}); // { [userId]: { name, role } }
+  const [copiedId, setCopiedId] = useState(null); // For copy feedback
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,6 +70,7 @@ export function AdminCouponsManager() {
         Query.limit(100), // Pagination TODO
       ]);
       setCoupons(res.documents);
+      await loadCreators(res.documents);
     } catch (e) {
       console.error("Failed to load coupons", e);
       showToast(t("teacher.errors.loadFailed"), "error");
@@ -71,16 +79,122 @@ export function AdminCouponsManager() {
     }
   };
 
+  const loadCreators = async (docs) => {
+    try {
+      // Extract unique user IDs from permissions: 'read("user:ID")' or 'write("user:ID")'
+      // Typically the creator has write/delete permissions.
+      const userIds = new Set();
+      docs.forEach((doc) => {
+        if (doc.$permissions) {
+          doc.$permissions.forEach((perm) => {
+            const match = perm.match(/user:([a-zA-Z0-9.\-_]+)/);
+            if (match && match[1]) {
+              userIds.add(match[1]);
+            }
+          });
+        }
+      });
+
+      // Also get instructors from courses if relevant, but let's stick to permissions for "Created By"
+      if (userIds.size === 0) return;
+
+      // Fetch profiles (concurrently)
+      // Note: listDocuments with 'equal("$id", [...ids])' might limit number of IDs.
+      // For robustness, we'll fetch individually or use a query if IDs are few.
+      // Appwrite query supports array in 'equal' for $id? Yes in newer versions.
+      // Let's try fetching distinct profiles.
+      const promises = Array.from(userIds).map((id) =>
+        getProfileById(id).catch(() => null),
+      );
+      const profiles = await Promise.all(promises);
+
+      const creatorMap = {};
+      profiles.forEach((p) => {
+        if (p) {
+          creatorMap[p.$id] = {
+            name: p.displayName || p.email || "Unknown",
+            role: p.role || "user",
+          };
+        }
+      });
+      setCreators((prev) => ({ ...prev, ...creatorMap }));
+    } catch (e) {
+      console.error("Failed to load creators", e);
+    }
+  };
+
   const loadCourses = async () => {
     try {
       const res = await databases.listDocuments(DB_ID, COL_COURSES, [
-        Query.select(["$id", "title"]),
+        Query.select(["$id", "title", "coverFileId", "teacherId"]),
         Query.limit(100),
       ]);
-      setCourses(res.documents);
+
+      const courseDocs = res.documents;
+
+      // Fetch instructors for these courses
+      const teacherIds = [
+        ...new Set(courseDocs.map((c) => c.teacherId).filter(Boolean)),
+      ];
+      if (teacherIds.length > 0) {
+        try {
+          const promises = teacherIds.map((id) =>
+            getProfileById(id).catch(() => null),
+          );
+          const teachers = await Promise.all(promises);
+          const teacherMap = {};
+          teachers.forEach((t) => {
+            if (t)
+              teacherMap[t.$id] =
+                `${t.firstName || ""} ${t.lastName || ""}`.trim() ||
+                t.displayName ||
+                t.email;
+          });
+
+          // Append instructor name to course objects
+          courseDocs.forEach((c) => {
+            if (c.teacherId && teacherMap[c.teacherId]) {
+              c.instructorName = teacherMap[c.teacherId];
+            }
+          });
+        } catch (err) {
+          console.error("Failed to load course instructors", err);
+        }
+      }
+
+      setCourses(courseDocs);
     } catch (e) {
       console.error("Failed to load courses", e);
     }
+  };
+
+  const handleCopy = (code, id) => {
+    navigator.clipboard.writeText(code);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    showToast(t("teacher.coupons.copySuccess"), "success");
+  };
+
+  const getCreatorName = (coupon) => {
+    // Try to find creator from permissions
+    const perms = coupon.$permissions || [];
+    // Prefer 'delete' permission owner as creator usually
+    const ownerPerm = perms.find((p) => p.startsWith('delete("user:'));
+    if (ownerPerm) {
+      const match = ownerPerm.match(/user:([^"]+)/);
+      if (match && creators[match[1]]) {
+        return creators[match[1]].name;
+      }
+    }
+    // Fallback to any user permission
+    const anyUser = perms.find((p) => p.startsWith('read("user:'));
+    if (anyUser) {
+      const match = anyUser.match(/user:([^"]+)/);
+      if (match && creators[match[1]]) {
+        return creators[match[1]].name;
+      }
+    }
+    return t("common.unknown", "Desconocido");
   };
 
   const handleOpenModal = (coupon = null) => {
@@ -163,7 +277,10 @@ export function AdminCouponsManager() {
   const handleDelete = async (id) => {
     if (
       !window.confirm(
-        t("common.confirmDelete", "¿Estás seguro de eliminar este cupón?"),
+        t(
+          "teacher.coupons.confirmDelete",
+          "¿Estás seguro de eliminar este cupón?",
+        ),
       )
     )
       return;
@@ -198,9 +315,8 @@ export function AdminCouponsManager() {
   };
 
   const getCourseName = (id) => {
-    if (!id) return "Global (Todos los cursos)";
     const course = courses.find((c) => c.$id === id);
-    return course ? course.title : "Curso desconocido";
+    return course ? course.title : t("common.unknown", "Curso desconocido");
   };
 
   return (
@@ -239,11 +355,24 @@ export function AdminCouponsManager() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {coupons.map((coupon) => (
             <Card key={coupon.$id} className="p-4 relative group">
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-lg text-[rgb(var(--brand-primary))] border border-[rgb(var(--brand-primary))/0.2] bg-[rgb(var(--brand-primary))/0.05] px-2 py-0.5 rounded">
-                    {coupon.code}
-                  </span>
+                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800">
+                    <span className="font-mono font-bold text-lg text-blue-600 dark:text-blue-400">
+                      {coupon.code}
+                    </span>
+                    <button
+                      onClick={() => handleCopy(coupon.code, coupon.$id)}
+                      className="text-blue-400 hover:text-blue-600 dark:text-blue-500 dark:hover:text-blue-300 transition-colors bg-white/50 dark:bg-black/20 p-1 rounded"
+                      title={t("common.copy", "Copiar")}
+                    >
+                      {copiedId === coupon.$id ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                   <Badge variant={coupon.enabled ? "success" : "secondary"}>
                     {coupon.enabled
                       ? t("common.active", "Activo")
@@ -266,7 +395,7 @@ export function AdminCouponsManager() {
                 </div>
               </div>
 
-              <div className="space-y-1 mb-4">
+              <div className="space-y-2 mb-4">
                 <div className="flex items-center text-sm text-[rgb(var(--text-primary))] font-medium">
                   {coupon.type === "percent" ? (
                     <Percent className="h-3.5 w-3.5 mr-1" />
@@ -290,19 +419,39 @@ export function AdminCouponsManager() {
                   <strong>{coupon.usedCount}</strong> /{" "}
                   {coupon.maxUses > 0 ? coupon.maxUses : "∞"}
                 </div>
-                {coupon.expiresAt && (
-                  <div className="text-xs text-[rgb(var(--text-secondary))]">
-                    {t("teacher.coupons.expires", "Expira:")}{" "}
-                    {new Date(coupon.expiresAt).toLocaleDateString()}
+
+                <div className="flex flex-col gap-1 mt-1 pt-2 border-t border-[rgb(var(--border-base)/0.5)]">
+                  {coupon.expiresAt && (
+                    <div className="text-xs text-[rgb(var(--text-secondary))]">
+                      <span className="font-medium">
+                        {t("teacher.coupons.expires", "Expira:")}
+                      </span>{" "}
+                      {new Date(coupon.expiresAt).toLocaleDateString(
+                        undefined,
+                        {
+                          timeZone: "UTC",
+                        },
+                      )}
+                    </div>
+                  )}
+                  <div className="text-xs text-[rgb(var(--text-tertiary))]">
+                    <span className="font-medium">
+                      {t("teacher.coupons.createdBy")}
+                    </span>{" "}
+                    {getCreatorName(coupon)}
                   </div>
-                )}
+                </div>
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-[rgb(var(--border-base))]">
-                <span className="text-xs text-[rgb(var(--text-tertiary))]">
+              <div className="flex items-center justify-between pt-2 border-t border-[rgb(var(--border-base))]">
+                <span
+                  className="text-xs text-[rgb(var(--text-tertiary))] whitespace-nowrap overflow-hidden text-ellipsis mr-2"
+                  title={`${t("teacher.coupons.createdAt")} ${new Date(coupon.$createdAt).toLocaleDateString()}`}
+                >
+                  {t("teacher.coupons.createdAt")}{" "}
                   {new Date(coupon.$createdAt).toLocaleDateString()}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xs font-medium">
                     {t("common.enabled", "Habilitado")}
                   </span>
@@ -326,6 +475,7 @@ export function AdminCouponsManager() {
             ? t("teacher.coupons.edit", "Editar Cupón")
             : t("teacher.coupons.create", "Crear Cupón")
         }
+        size="lg"
       >
         <div className="space-y-4">
           <div>
@@ -344,7 +494,10 @@ export function AdminCouponsManager() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  code: e.target.value.toUpperCase().slice(0, 20),
+                  code: e.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 20),
                 })
               }
               placeholder="E.g. GLOBALSALE2024"
@@ -354,24 +507,35 @@ export function AdminCouponsManager() {
 
           <div>
             <label className="text-sm font-medium mb-1 block">
-              {t("common.course", "Curso (Opcional - Dejar vacío para Global)")}
+              {t("teacher.coupons.course", "Curso (Optional)")}
             </label>
-            <select
-              className="w-full rounded-md border border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-2 text-sm"
+            <Combobox
+              options={[
+                {
+                  value: "",
+                  label: t("admin.coupons.global", "Global (Todos los cursos)"),
+                  description: t(
+                    "admin.coupons.globalDesc",
+                    "Aplica a cualquier compra",
+                  ),
+                },
+                ...courses.map((course) => ({
+                  value: course.$id,
+                  label: course.title,
+                  image: course.coverFileId
+                    ? storage.getFilePreview(
+                        APPWRITE.buckets.courseCovers,
+                        course.coverFileId,
+                      )
+                    : null,
+                  description: course.instructorName || "", // Display instructor name here
+                })),
+              ]}
               value={formData.courseId}
-              onChange={(e) =>
-                setFormData({ ...formData, courseId: e.target.value })
-              }
-            >
-              <option value="">
-                {t("admin.coupons.global", "Global (Todos los cursos)")}
-              </option>
-              {courses.map((course) => (
-                <option key={course.$id} value={course.$id}>
-                  {course.title}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setFormData({ ...formData, courseId: val })}
+              placeholder={t("common.searchPlaceholder", "Buscar curso...")}
+              className="w-full"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

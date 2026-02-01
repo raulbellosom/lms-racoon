@@ -14,6 +14,7 @@ export { Input } from "./Input";
 export { Textarea } from "./Textarea";
 export { Badge } from "./Badge";
 export { ProgressBar } from "./ProgressBar";
+export { LevelIndicator } from "./LevelIndicator";
 export { Tabs, Tab } from "./Tabs";
 
 // New premium components
