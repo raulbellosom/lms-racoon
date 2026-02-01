@@ -149,10 +149,6 @@ export async function getCurrentUser() {
  * @param {string} token
  */
 export async function verifyEmail(token) {
-  console.log(
-    "Verifying email with function ID:",
-    APPWRITE.functions.emailVerification,
-  );
   const execution = await functions.createExecution(
     APPWRITE.functions.emailVerification,
     JSON.stringify({ action: "verify", token }),
@@ -176,10 +172,6 @@ export async function verifyEmail(token) {
  * @param {string} email
  */
 export async function resendVerificationEmail(email) {
-  console.log(
-    "Resending email with function ID:",
-    APPWRITE.functions.emailVerification,
-  );
   const execution = await functions.createExecution(
     APPWRITE.functions.emailVerification,
     JSON.stringify({ action: "resend", email }),
