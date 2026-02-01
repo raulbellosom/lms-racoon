@@ -30,6 +30,10 @@ export const APPWRITE = {
       "userPreferences",
     ),
     notifications: pick("VITE_APPWRITE_COL_NOTIFICATIONS", "notifications"),
+    emailVerifications: pick(
+      "VITE_APPWRITE_COL_EMAIL_VERIFICATIONS",
+      "emailVerifications",
+    ),
   },
   buckets: {
     avatars: pick("VITE_APPWRITE_BUCKET_AVATARS", "avatars"),
@@ -66,6 +70,10 @@ export const APPWRITE = {
     checkAbandonedCarts: pick(
       "VITE_APPWRITE_FN_CHECK_ABANDONED_CARTS",
       "checkAbandonedCarts",
+    ),
+    emailVerification: pick(
+      "VITE_APPWRITE_FN_EMAIL_VERIFICATION",
+      "emailVerification",
     ),
   },
 };

@@ -171,12 +171,6 @@ La API Key debe tener los siguientes scopes:
 3. Genera una contraseña de aplicación
 4. Usa esa contraseña en `EMAIL_SMTP_PASS`
 
-## Eventos (Opcional)
-
-Si deseas ejecutar la función automáticamente en ciertos eventos:
-
-- **users.\*.create** - Para enviar email de bienvenida (requiere modificar código)
-
 ## Troubleshooting
 
 ### Error: "Server misconfigured"

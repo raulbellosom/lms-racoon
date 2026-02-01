@@ -110,6 +110,25 @@ module.exports = async ({ req, res, log, error }) => {
   if (body.email !== undefined) patch.email = email;
   if (body.phone !== undefined) patch.phone = phone;
 
+  // Fetch Auth User to check for changes
+  let authUser = null;
+  try {
+    authUser = await users.get(userId);
+  } catch (e) {
+    // If user not found in Auth, we can't sync, but we can update profile
+    log(`Auth user ${userId} not found: ${e.message}`);
+  }
+
+  // Check if email changed
+  if (
+    authUser &&
+    email &&
+    email.toLowerCase() !== authUser.email.toLowerCase()
+  ) {
+    patch.emailVerified = false;
+    log(`Email changed for ${userId}: resetting emailVerified to false.`);
+  }
+
   if (body.bio !== undefined) patch.bio = safeStr(body.bio, 500);
   if (body.headline !== undefined) patch.headline = safeStr(body.headline, 120);
   if (body.socials !== undefined) patch.socials = safeStr(body.socials, 2500);
@@ -143,7 +162,8 @@ module.exports = async ({ req, res, log, error }) => {
     }
 
     // 2) Sync auth name, email, phone
-    const authUser = await users.get(userId);
+    // const authUser = await users.get(userId); // Moved up
+    if (!authUser) authUser = await users.get(userId); // Retry if failed before? Or just use existing.
     const updates = [];
 
     // Sync Name

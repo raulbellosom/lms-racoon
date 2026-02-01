@@ -29,20 +29,21 @@
 
 **Doc ID = Auth userId** (espejo del usuario)
 
-| Attribute    | Type    | Required | Default | Constraints    | Notes                     |
-| ------------ | ------- | -------: | ------- | -------------- | ------------------------- |
-| firstName    | string  |       ✅ | —       | min=1 max=40   |                           |
-| lastName     | string  |       ✅ | —       | min=1 max=60   |                           |
-| Role         | enum    |       ✅ | —       | —              | controla UI/permisos      |
-| headline     | string  |       ❌ | ""      | min=0 max=120  | Título profesional        |
-| bio          | string  |       ❌ | ""      | min=0 max=500  |                           |
-| socials      | string  |       ❌ | "{}"    | min=0 max=2500 | JSON links                |
-| avatarFileId | string  |       ❌ | ""      | min=0 max=36   | bucket `avatars`          |
-| phone        | string  |       ❌ | ""      | min=0 max=20   | formato E.164 recomendado |
-| email        | email   |       ✅ | —       | min=0 max=100  | Sync with Auth            |
-| country      | string  |       ❌ | "MX"    | min=0 max=2    | ISO-2                     |
-| suspended    | boolean |       ❌ | false   | —              | Block login               |
-| enabled      | boolean |       ❌ | true    | —              | borrado lógico            |
+| Attribute     | Type    | Required | Default | Constraints    | Notes                     |
+| ------------- | ------- | -------: | ------- | -------------- | ------------------------- |
+| firstName     | string  |       ✅ | —       | min=1 max=40   |                           |
+| lastName      | string  |       ✅ | —       | min=1 max=60   |                           |
+| Role          | enum    |       ✅ | —       | —              | controla UI/permisos      |
+| headline      | string  |       ❌ | ""      | min=0 max=120  | Título profesional        |
+| bio           | string  |       ❌ | ""      | min=0 max=500  |                           |
+| socials       | string  |       ❌ | "{}"    | min=0 max=2500 | JSON links                |
+| avatarFileId  | string  |       ❌ | ""      | min=0 max=36   | bucket `avatars`          |
+| phone         | string  |       ❌ | ""      | min=0 max=20   | formato E.164 recomendado |
+| email         | email   |       ✅ | —       | min=0 max=100  | Sync with Auth            |
+| country       | string  |       ❌ | "MX"    | min=0 max=2    | ISO-2                     |
+| suspended     | boolean |       ❌ | false   | —              | Block login               |
+| enabled       | boolean |       ❌ | true    | —              | borrado lógico            |
+| emailVerified | boolean |       ❌ | false   | —              | Email verification status |
 
 **Enum values**
 
@@ -533,6 +534,24 @@
 **Indexes**
 
 - `uniq_coupon_user` — unique — `couponId`, `userId` (si es 1 user per coupon) or key
+
+---
+
+### 24) `email_verifications`
+
+| Attribute  | Type     | Required | Default | Constraints  | Notes               |
+| ---------- | -------- | -------: | ------- | ------------ | ------------------- |
+| userAuthId | string   |       ✅ | —       | min=1 max=36 | Auth user ID        |
+| email      | email    |       ✅ | —       |              |                     |
+| token      | string   |       ✅ | —       | min=1 max=64 | Unique secure token |
+| expiresAt  | datetime |       ✅ | —       | —            |                     |
+| verified   | boolean  |       ❌ | false   | —            |                     |
+
+**Indexes**
+
+- `uq_token` — unique — `token` (asc)
+- `idx_user` — key — `userAuthId` (asc)
+- `idx_verified` — key — `verified` (asc)
 
 ---
 

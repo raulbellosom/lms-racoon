@@ -80,6 +80,7 @@ module.exports = async ({ req, res, log, error }) => {
       country: "MX",
       enabled: true,
       suspended: false,
+      emailVerified: false,
     };
 
     // Create if not exists, else update (idempotent)
@@ -92,8 +93,56 @@ module.exports = async ({ req, res, log, error }) => {
       // If not found -> create
       await db.createDocument(databaseId, profilesCollectionId, userId, doc);
       log(`profiles/${userId} created`);
-      return res.json({ success: true, action: "created", userId });
+      var result = { success: true, action: "created", userId };
     }
+
+    // -----------------------------------------------------------------------
+    // NEW: Create User Preferences (Default: Mexico)
+    // -----------------------------------------------------------------------
+    const prefsCollectionId =
+      process.env.APPWRITE_USER_PREFERENCES_COLLECTION_ID || "userPreferences";
+    try {
+      // Check if exists first to be safe (idempotent)
+      await db.getDocument(databaseId, prefsCollectionId, userId);
+    } catch (e) {
+      // If not found, create
+      await db.createDocument(databaseId, prefsCollectionId, userId, {
+        userId: userId,
+        language: "es", // Deafult language
+        theme: "system",
+        prefsJson: JSON.stringify({ country: "MX", currency: "MXN" }), // Default Mexico context
+      });
+      log(`userPreferences/${userId} created`);
+    }
+
+    // -----------------------------------------------------------------------
+    // NEW: Trigger Email Verification
+    // -----------------------------------------------------------------------
+    const verificationFunctionId = process.env.APPWRITE_FN_EMAIL_VERIFICATION;
+    if (verificationFunctionId) {
+      try {
+        const functions = new sdk.Functions(client);
+        await functions.createExecution(
+          verificationFunctionId,
+          JSON.stringify({
+            action: "send",
+            userAuthId: userId,
+            email: authUser.email,
+          }),
+          true, // async (fire and forget)
+        );
+        log(`Triggered email verification for ${userId}`);
+      } catch (fnErr) {
+        error(`Failed to trigger email verification: ${fnErr.message}`);
+        // Do not fail the whole function, as profile is already created
+      }
+    } else {
+      log(
+        "EMAIL_VERIFICATION_FUNCTION_ID not set, skipping auto-verification email.",
+      );
+    }
+
+    return res.json(result);
   } catch (err) {
     error("onUserCreated failed: " + err.message);
     return res.json(

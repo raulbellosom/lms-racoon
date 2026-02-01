@@ -59,22 +59,8 @@ module.exports = async ({ req, res, log, error }) => {
 
   const { action } = body;
 
-  // Detect Appwrite Event Trigger (users.*.create)
-  const event = req.headers["x-appwrite-event"];
-  const isUserCreateEvent =
-    event && event.includes("users") && event.includes("create");
-
   // If triggered by event or explicit action
-  if (isUserCreateEvent) {
-    // Extract user data from event payload
-    const { email, name, $id } = body;
-    if (email && name) {
-      log(`Event trigger: sending welcome to ${email}`);
-      // Reuse the existing logic by forcefully setting action (internal hack) or calling the logic directly
-      // Let's call the logic directly to be cleaner
-      return await sendWelcomeEmail({ email, name, log, error, res });
-    }
-  }
+  // (Logic for users.*.create removed as it is handled by onUserCreated)
 
   // =========================================================================
   // ACTION: REQUEST RECOVERY
@@ -348,7 +334,8 @@ module.exports = async ({ req, res, log, error }) => {
       log(`User created via function: ${user.$id} (${email})`);
 
       // Send welcome email if enabled
-      if (sendWelcomeEmail) {
+      // DISABLED: Now using Email Verification via onUserCreated
+      if (false && sendWelcomeEmail) {
         try {
           const appUrl = process.env.APP_BASE_URL || "http://localhost:5173";
           const loginLink = `${appUrl}/login`;
