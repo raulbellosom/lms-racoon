@@ -140,7 +140,6 @@ module.exports = async ({ req, res, log, error }) => {
                 type: "review",
                 // entityId: courseId,
                 dataJson: JSON.stringify({ entityId: courseId }),
-                createdAt: new Date().toISOString(),
               },
             );
           } catch (e) {

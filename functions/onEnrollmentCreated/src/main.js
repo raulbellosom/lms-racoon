@@ -137,7 +137,6 @@ module.exports = async ({ req, res, log, error }) => {
                 type: "enrollment",
                 // entityId: courseId, // If you add entityId attribute to notifications collection
                 dataJson: JSON.stringify({ entityId: courseId }),
-                createdAt: new Date().toISOString(),
               },
             );
           } catch (e) {
