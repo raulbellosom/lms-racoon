@@ -51,9 +51,10 @@ export function VerifyEmailModal({
         variant: "success",
       });
     } catch (err) {
+      console.error(err);
       toast.push({
         title: t("common.error"),
-        message: err.message || "Error",
+        message: err?.message || "Error al reenviar email",
         variant: "error",
       });
     } finally {
@@ -101,6 +102,7 @@ export function VerifyEmailModal({
 
       <ModalFooter className="sm:justify-between">
         <Button
+          type="button"
           variant="ghost"
           onClick={handleResend}
           disabled={isSending || countdown > 0}
@@ -120,6 +122,7 @@ export function VerifyEmailModal({
 
         {mode === "login" ? (
           <Button
+            type="button"
             variant="primary"
             onClick={onClose}
             className="w-full sm:w-auto"
@@ -129,6 +132,7 @@ export function VerifyEmailModal({
           </Button>
         ) : (
           <Button
+            type="button"
             variant="primary"
             onClick={onClose}
             className="w-full sm:w-auto"
