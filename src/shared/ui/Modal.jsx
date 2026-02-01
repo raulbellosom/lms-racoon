@@ -79,7 +79,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 pt-safe pb-safe">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pt-safe pb-safe">
           {/* Overlay */}
           <motion.div
             variants={overlayVariants}

@@ -131,6 +131,17 @@
       "invalidLinkMessage": "El enlace que has utilizado no contiene la información necesaria. Por favor solicita uno nuevo.",
       "requestNewLink": "Solicitar Nuevo Enlace",
       "redirecting": "Redirigiendo en unos segundos..."
+    },
+    "verification": {
+      "title": "Verifica tu correo electrónico",
+      "registerDesc": "Hemos enviado un enlace de confirmación a **{{email}}**. Por favor revísalo para continuar.",
+      "loginDesc": "Tu cuenta **{{email}}** aún no ha sido verificada. Revisa tu bandeja de entrada.",
+      "spamHint": "¿No recibiste el correo? Revisa tu carpeta de Spam.",
+      "resend": "Reenviar correo",
+      "sending": "Enviando...",
+      "sent": "Enviado",
+      "checkEmail": "Entendido, revisar correo",
+      "countdown": "Espera {{count}}s"
     }
   },
   "landing": {

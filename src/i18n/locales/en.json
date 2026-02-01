@@ -131,6 +131,17 @@
       "invalidLinkMessage": "The link you used does not contain the required information. Please request a new one.",
       "requestNewLink": "Request New Link",
       "redirecting": "Redirecting in a few seconds..."
+    },
+    "verification": {
+      "title": "Verify your email",
+      "registerDesc": "We sent a confirmation link to **{{email}}**. Please check it to continue.",
+      "loginDesc": "Your account **{{email}}** is not verified yet. Please check your inbox.",
+      "spamHint": "Didn't receive the email? Check your Spam folder.",
+      "resend": "Resend email",
+      "sending": "Sending...",
+      "sent": "Sent",
+      "checkEmail": "Got it, check email",
+      "countdown": "Wait {{count}}s"
     }
   },
   "landing": {

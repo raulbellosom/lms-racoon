@@ -1,9 +1,8 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
-import { Mail, RefreshCw, Send, CheckCircle2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation, Trans } from "react-i18next";
+import { Mail, RefreshCw, Send, CheckCircle2, MailCheck } from "lucide-react";
 
-import { Modal } from "../../../shared/ui/Modal";
+import { Modal, ModalFooter } from "../../../shared/ui/Modal";
 import { Button } from "../../../shared/ui/Button";
 import { resendVerificationEmail } from "../../../shared/services/auth";
 import { useToast } from "../../../app/providers/ToastProvider";
@@ -48,13 +47,13 @@ export function VerifyEmailModal({
       setCountdown(60); // 60s cooldown
       toast.push({
         title: t("common.success"),
-        message: "Email de verificación reenviado",
+        message: t("auth.verification.sent"),
         variant: "success",
       });
     } catch (err) {
       toast.push({
         title: t("common.error"),
-        message: err.message || "Error al reenviar email",
+        message: err.message || "Error",
         variant: "error",
       });
     } finally {
@@ -62,63 +61,50 @@ export function VerifyEmailModal({
     }
   };
 
-  const title =
+  const descriptionKey =
     mode === "register"
-      ? "¡Cuenta creada con éxito!"
-      : "Verifica tu correo electrónico";
-
-  const description =
-    mode === "register"
-      ? `Hemos enviado un enlace de confirmación a ${email}. Por favor verifica tu cuenta para continuar.`
-      : `Tu cuenta ${email} aún no ha sido verificada. Revisa tu bandeja de entrada.`;
+      ? "auth.verification.registerDesc"
+      : "auth.verification.loginDesc";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="">
-      <div className="text-center sm:text-left">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[rgb(var(--brand-primary)/0.1)] sm:mx-0 sm:h-10 sm:w-10">
+    <Modal open={isOpen} onClose={onClose} title="">
+      <div className="flex flex-col items-center sm:flex-row sm:items-start sm:gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--brand-primary)/0.1)]">
           <Mail
             className="h-6 w-6 text-[rgb(var(--brand-primary))]"
             aria-hidden="true"
           />
         </div>
 
-        <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+        <div className="mt-4 text-center sm:mt-0 sm:text-left">
           <h3 className="text-lg font-semibold leading-6 text-[rgb(var(--text-primary))]">
-            {title}
+            {t("auth.verification.title")}
           </h3>
-          <div className="mt-2 text-sm text-[rgb(var(--text-muted))]">
-            <p>{description}</p>
-            <p className="mt-4 text-xs font-medium">
-              ¿No recibiste el correo? Revisa tu carpeta de Spam.
+          <div className="mt-2 space-y-2 text-sm text-[rgb(var(--text-secondary))]">
+            <p>
+              <Trans
+                i18nKey={descriptionKey}
+                values={{ email }}
+                components={{
+                  strong: (
+                    <strong className="font-semibold text-[rgb(var(--text-primary))]" />
+                  ),
+                }}
+              />
+            </p>
+            <p className="text-xs font-medium text-[rgb(var(--text-muted))]">
+              {t("auth.verification.spamHint")}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 sm:flex sm:flex-row-reverse sm:gap-3">
-        {mode === "login" ? (
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="mt-3 inline-flex w-full justify-center sm:mt-0 sm:w-auto"
-          >
-            Entendido, revisar correo
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            onClick={onClose}
-            className="w-full sm:w-auto"
-          >
-            Ir a Iniciar Sesión
-          </Button>
-        )}
-
+      <ModalFooter className="sm:justify-between">
         <Button
           variant="ghost"
           onClick={handleResend}
           disabled={isSending || countdown > 0}
-          className="mt-3 inline-flex w-full justify-center sm:mt-0 sm:w-auto"
+          className="w-full sm:w-auto"
         >
           {isSending ? (
             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -127,9 +113,30 @@ export function VerifyEmailModal({
           ) : (
             <Send className="mr-2 h-4 w-4" />
           )}
-          {countdown > 0 ? `Reenviado en ${countdown}s` : "Reenviar correo"}
+          {countdown > 0
+            ? t("auth.verification.countdown", { count: countdown })
+            : t("auth.verification.resend")}
         </Button>
-      </div>
+
+        {mode === "login" ? (
+          <Button
+            variant="primary"
+            onClick={onClose}
+            className="w-full sm:w-auto"
+          >
+            <MailCheck className="mr-2 h-4 w-4" />
+            {t("auth.verification.checkEmail")}
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            onClick={onClose}
+            className="w-full sm:w-auto"
+          >
+            {t("auth.loginButton")}
+          </Button>
+        )}
+      </ModalFooter>
     </Modal>
   );
 }
