@@ -11,6 +11,7 @@ dotenv.config({ path: join(__dirname, ".env") });
 import express from "express";
 import cors from "cors";
 import videoRoutes from "./routes/videos.js";
+import * as minioService from "./services/minioService.js";
 
 const app = express();
 const PORT = process.env.PORT || 4015;
@@ -41,7 +42,19 @@ app.get("/health", (req, res) => {
 });
 
 // Start server
-const HOST = "127.0.0.1";
-app.listen(PORT, HOST, () => {
-  console.log(`Video API running on ${HOST}:${PORT}`);
-});
+const startServer = async () => {
+  try {
+    // Ensure MinIO buckets exist
+    await minioService.ensureBuckets();
+
+    const HOST = "127.0.0.1";
+    app.listen(PORT, HOST, () => {
+      console.log(`Video API running on ${HOST}:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start Video API:", error);
+    process.exit(1);
+  }
+};
+
+startServer();

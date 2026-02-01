@@ -46,6 +46,7 @@ export const uploadVideo = async (req, res) => {
       objectKey,
       file.path,
       file.mimetype,
+      file.size,
     );
 
     // 2. Transcode to HLS

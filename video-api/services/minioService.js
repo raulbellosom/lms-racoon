@@ -2,6 +2,7 @@ import * as Minio from "minio";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,11 +10,27 @@ const __dirname = dirname(__filename);
 // Load .env from parent directory (video-api/.env)
 dotenv.config({ path: join(__dirname, "..", ".env") });
 
+// Validate required environment variables
+const requiredEnv = [
+  "MINIO_ENDPOINT",
+  "MINIO_PORT",
+  "MINIO_ACCESS_KEY",
+  "MINIO_SECRET_KEY",
+];
+
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+
+if (missingEnv.length > 0) {
+  throw new Error(
+    `Missing required MinIO environment variables: ${missingEnv.join(", ")}`,
+  );
+}
+
 /**
  * MinIO Client Configuration
  * - Uses PATH-STYLE access (required for IP-based endpoints)
  * - Connects to internal MinIO server (127.0.0.1:9000)
- * - Does NOT create buckets dynamically (buckets must exist)
+ * - Singleton instance initialized at module load
  */
 const minioClient = new Minio.Client({
   endPoint: process.env.MINIO_ENDPOINT,
@@ -25,12 +42,36 @@ const minioClient = new Minio.Client({
 });
 
 /**
- * Upload a file directly to MinIO
- * ASSUMES the bucket already exists (no dynamic bucket creation)
+ * Ensure necessary buckets exist
+ * Should be called once at application startup.
+ */
+export const ensureBuckets = async () => {
+  const bucketName = "raw-videos";
+  try {
+    const exists = await minioClient.bucketExists(bucketName);
+    if (!exists) {
+      await minioClient.makeBucket(bucketName);
+      console.log(`[MinIO] Created bucket: ${bucketName}`);
+    } else {
+      console.log(`[MinIO] Bucket exists: ${bucketName}`);
+    }
+  } catch (error) {
+    console.error(
+      `[MinIO] Error verifying/creating bucket ${bucketName}:`,
+      error,
+    );
+    throw error;
+  }
+};
+
+/**
+ * Upload a file using a stream
+ * ASSUMES the bucket already exists (ensured at startup)
  * @param {string} bucketName - Target bucket (must exist)
  * @param {string} objectName - Object key/path within bucket
  * @param {string} filePath - Local file path to upload
  * @param {string} contentType - MIME type of the file
+ * @param {number} size - Size of the file in bytes
  * @returns {Promise} Upload result
  */
 export const uploadFile = async (
@@ -38,20 +79,29 @@ export const uploadFile = async (
   objectName,
   filePath,
   contentType,
+  size,
 ) => {
   const metaData = {
     "Content-Type": contentType,
   };
 
-  // Direct upload - bucket must already exist
-  const result = await minioClient.fPutObject(
-    bucketName,
-    objectName,
-    filePath,
-    metaData,
-  );
+  const fileStream = fs.createReadStream(filePath);
 
-  return result;
+  try {
+    // putObject with stream is better for large files and avoids reading entire file into memory
+    // It is also more stable than fPutObject in some contexts as it gives more control
+    const result = await minioClient.putObject(
+      bucketName,
+      objectName,
+      fileStream,
+      size,
+      metaData,
+    );
+    return result;
+  } catch (error) {
+    console.error(`[MinIO] Upload error for ${objectName}:`, error);
+    throw error;
+  }
 };
 
 /**
