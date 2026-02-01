@@ -1,4 +1,4 @@
-import { account, db, ID } from "../appwrite/client";
+import { account, db, functions, ID } from "../appwrite/client";
 import { APPWRITE } from "../appwrite/ids";
 
 /**
@@ -142,4 +142,50 @@ export async function getCurrentUser() {
   } catch {
     return null;
   }
+}
+
+/**
+ * Verifies email using the token
+ * @param {string} token
+ */
+export async function verifyEmail(token) {
+  const execution = await functions.createExecution(
+    APPWRITE.functions.emailVerification,
+    JSON.stringify({ action: "verify", token }),
+    false, // async = false (wait for result)
+  );
+
+  if (execution.status === "failed") {
+    throw new Error("Verification failed: " + execution.response);
+  }
+
+  const response = JSON.parse(execution.responseBody || execution.response);
+  if (!response.ok) {
+    throw new Error(response.error || "Verification failed");
+  }
+
+  return response;
+}
+
+/**
+ * Resends verification email
+ * @param {string} email
+ */
+export async function resendVerificationEmail(email) {
+  const execution = await functions.createExecution(
+    APPWRITE.functions.emailVerification,
+    JSON.stringify({ action: "resend", email }),
+    false, // async = false (wait for result)
+  );
+
+  if (execution.status === "failed") {
+    throw new Error("Resend failed: " + execution.response);
+  }
+
+  const response = JSON.parse(execution.responseBody || execution.response);
+  if (!response.ok) {
+    throw new Error(response.error || "Resend failed");
+  }
+
+  return response;
 }

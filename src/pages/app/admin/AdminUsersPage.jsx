@@ -64,6 +64,10 @@ export function AdminUsersPage() {
   });
   const [creating, setCreating] = React.useState(false);
 
+  // Confirmation State
+  const [confirmAction, setConfirmAction] = React.useState(null); // { type: 'suspend'|'disable', user: User }
+  const [confirming, setConfirming] = React.useState(false);
+
   // Debounced search
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -126,42 +130,52 @@ export function AdminUsersPage() {
     }
   };
 
-  const handleToggleStatus = async (user) => {
-    const newStatus = !user.enabled;
-    try {
-      // Logic for "logical" delete/disable in profiles collection
-      await ProfileService.update(user.$id, { enabled: newStatus });
-      setUsers(
-        users.map((u) =>
-          u.$id === user.$id ? { ...u, enabled: newStatus } : u,
-        ),
-      );
-      showToast(
-        `Usuario ${newStatus ? "habilitado" : "deshabilitado (borrado lógico)"}`,
-        newStatus ? "success" : "warning",
-      );
-    } catch (error) {
-      console.error("Failed to toggle status", error);
-      showToast("Error al cambiar estado", "error");
-    }
+  const handleToggleStatus = (user) => {
+    setConfirmAction({ type: "disable", user });
   };
 
-  const handleToggleSuspend = async (user) => {
-    const newSuspendStatus = !user.suspended;
+  const handleToggleSuspend = (user) => {
+    setConfirmAction({ type: "suspend", user });
+  };
+
+  const executeConfirmAction = async () => {
+    if (!confirmAction) return;
+    setConfirming(true);
+
+    const { type, user } = confirmAction;
+
     try {
-      await ProfileService.update(user.$id, { suspended: newSuspendStatus });
-      setUsers(
-        users.map((u) =>
-          u.$id === user.$id ? { ...u, suspended: newSuspendStatus } : u,
-        ),
-      );
-      showToast(
-        `Acceso ${newSuspendStatus ? "suspendido" : "restaurado"}`,
-        newSuspendStatus ? "warning" : "success",
-      );
+      if (type === "disable") {
+        const newStatus = !user.enabled;
+        await ProfileService.update(user.$id, { enabled: newStatus });
+        setUsers(
+          users.map((u) =>
+            u.$id === user.$id ? { ...u, enabled: newStatus } : u,
+          ),
+        );
+        showToast(
+          `Usuario ${newStatus ? "habilitado" : "deshabilitado (borrado lógico)"}`,
+          newStatus ? "success" : "warning",
+        );
+      } else if (type === "suspend") {
+        const newSuspendStatus = !user.suspended;
+        await ProfileService.update(user.$id, { suspended: newSuspendStatus });
+        setUsers(
+          users.map((u) =>
+            u.$id === user.$id ? { ...u, suspended: newSuspendStatus } : u,
+          ),
+        );
+        showToast(
+          `Acceso ${newSuspendStatus ? "suspendido" : "restaurado"}`,
+          newSuspendStatus ? "warning" : "success",
+        );
+      }
+      setConfirmAction(null);
     } catch (error) {
-      console.error("Failed to toggle suspend", error);
-      showToast("Error al cambiar estado de suspensión", "error");
+      console.error("Action failed", error);
+      showToast("Error al procesar la acción", "error");
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -697,6 +711,47 @@ export function AdminUsersPage() {
           <Button onClick={handleCreateUser} disabled={creating}>
             {creating && <LoadingSpinner size="sm" className="mr-2" />}
             Crear Usuario
+          </Button>
+        </ModalFooter>
+      </Modal>
+      {/* Confirmation Modal */}
+      <Modal
+        open={!!confirmAction}
+        onClose={() => !confirming && setConfirmAction(null)}
+        title={
+          confirmAction?.type === "disable"
+            ? confirmAction?.user?.enabled
+              ? "Deshabilitar Usuario"
+              : "Habilitar Usuario"
+            : confirmAction?.user?.suspended
+              ? "Restaurar Acceso"
+              : "Suspender Acceso"
+        }
+        description={
+          confirmAction?.type === "disable"
+            ? confirmAction?.user?.enabled
+              ? `¿Estás seguro de que quieres deshabilitar a ${confirmAction.user.firstName}? Esto impedirá que inicie sesión.`
+              : `¿Quieres volver a habilitar a ${confirmAction.user.firstName}?`
+            : confirmAction?.user?.suspended
+              ? `¿Quieres restaurar el acceso de ${confirmAction.user.firstName}?`
+              : `¿Estás seguro de suspender temporalmente a ${confirmAction.user.firstName}?`
+        }
+      >
+        <ModalFooter>
+          <Button
+            variant="secondary"
+            onClick={() => setConfirmAction(null)}
+            disabled={confirming}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={executeConfirmAction}
+            disabled={confirming}
+            variant="destructive"
+          >
+            {confirming && <LoadingSpinner size="sm" className="mr-2" />}
+            Confirmar
           </Button>
         </ModalFooter>
       </Modal>

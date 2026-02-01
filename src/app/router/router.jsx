@@ -39,6 +39,7 @@ import {
 
 import { ForgotPasswordPage } from "../../pages/public/ForgotPasswordPage";
 import { ResetPasswordPage } from "../../pages/public/ResetPasswordPage";
+import { VerifyEmailPage } from "../../pages/public/VerifyEmailPage";
 import { CartPage } from "../../pages/public/CartPage";
 
 export const router = createBrowserRouter([
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
       // Password reset routes - accessible to BOTH logged-in and guest users
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
       { path: "/reset-password", element: <ResetPasswordPage /> },
+      { path: "/verify-email", element: <VerifyEmailPage /> },
 
       {
         element: <PublicLayout />,

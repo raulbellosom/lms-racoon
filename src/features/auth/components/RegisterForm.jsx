@@ -7,7 +7,8 @@ import { motion } from "framer-motion";
 import { Button } from "../../../shared/ui/Button";
 import { AuthInput } from "./AuthInput";
 import { PasswordInput } from "./PasswordInput";
-import { register } from "../../../shared/services/auth";
+import { register, logout } from "../../../shared/services/auth";
+import { VerifyEmailModal } from "./VerifyEmailModal";
 import { authStore } from "../../../app/stores/authStore";
 import { useToast } from "../../../app/providers/ToastProvider";
 
@@ -27,6 +28,7 @@ export function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [errors, setErrors] = React.useState({});
   const [busy, setBusy] = React.useState(false);
+  const [showVerifyModal, setShowVerifyModal] = React.useState(false);
 
   // Real-time validation
   const validateField = (field, value) => {
@@ -120,35 +122,18 @@ export function RegisterForm() {
         password,
         name: fullName,
       });
-      authStore.setState({ session: { ok: true }, user, profile });
+      // Enforce clean state: Logout immediately so they can't access app
+      // and must verify email + login manually.
+      await logout();
+
       toast.push({
         title: t("toast.successTitle"),
-        message: t("auth.welcomeBack"),
+        message: "Cuenta creada. Por favor verifica tu email.",
         variant: "success",
       });
 
-      // Check for returnUrl
-      const searchParams = new URLSearchParams(window.location.search);
-      let returnUrl =
-        searchParams.get("redirect") ||
-        localStorage.getItem("racoon-return-url") ||
-        location.state?.returnUrl ||
-        "/app/home";
-
-      // Clear the stored return URL
-      localStorage.removeItem("racoon-return-url");
-
-      // Ensure returnUrl is absolute path relative to root if it starts with /
-      if (!returnUrl.startsWith("/") && !returnUrl.startsWith("http")) {
-        returnUrl = "/" + returnUrl;
-      }
-
-      // If returning to public cart alias, switch to app cart
-      if (returnUrl === "/cart") {
-        returnUrl = "/app/cart";
-      }
-
-      navigate(returnUrl, { replace: true });
+      setShowVerifyModal(true);
+      // Navigation happens when modal closes
     } catch (err) {
       toast.push({
         title: t("toast.errorTitle"),
@@ -263,6 +248,16 @@ export function RegisterForm() {
           {t("auth.privacy")}
         </a>
       </p>
+
+      <VerifyEmailModal
+        isOpen={showVerifyModal}
+        onClose={() => {
+          setShowVerifyModal(false);
+          navigate("/login");
+        }}
+        email={email}
+        mode="register"
+      />
     </motion.form>
   );
 }

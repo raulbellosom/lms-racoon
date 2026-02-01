@@ -6,7 +6,8 @@ import { motion } from "framer-motion";
 
 import { Button } from "../../../shared/ui/Button";
 import { AuthInput } from "./AuthInput";
-import { login } from "../../../shared/services/auth";
+import { login, logout } from "../../../shared/services/auth";
+import { VerifyEmailModal } from "./VerifyEmailModal";
 import { authStore } from "../../../app/stores/authStore";
 import { useToast } from "../../../app/providers/ToastProvider";
 
@@ -23,6 +24,7 @@ export function LoginForm() {
   const [password, setPassword] = React.useState("");
   const [errors, setErrors] = React.useState({});
   const [busy, setBusy] = React.useState(false);
+  const [showVerifyModal, setShowVerifyModal] = React.useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -49,6 +51,15 @@ export function LoginForm() {
     setBusy(true);
     try {
       const { user, profile } = await login({ email, password });
+
+      // Check email verification
+      if (profile && !profile.emailVerified) {
+        await logout();
+        setShowVerifyModal(true);
+        setBusy(false);
+        return; // Stop login flow
+      }
+
       authStore.setState({ session: { ok: true }, user, profile });
       toast.push({
         title: t("toast.successTitle"),
@@ -139,6 +150,13 @@ export function LoginForm() {
       >
         {busy ? t("common.loading") : t("auth.loginButton")}
       </Button>
+
+      <VerifyEmailModal
+        isOpen={showVerifyModal}
+        onClose={() => setShowVerifyModal(false)}
+        email={email}
+        mode="login"
+      />
     </motion.form>
   );
 }
