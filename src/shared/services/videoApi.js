@@ -17,7 +17,14 @@ export const VideoApi = {
       }
 
       const xhr = new XMLHttpRequest();
+      // CRITICAL: Disable timeout for large uploads (browser default allows it, but being explicit is safer)
+      xhr.timeout = 0;
+
       xhr.open("POST", `${baseUrl}/api/lessons/${lessonId}/video`);
+
+      // Ensure no Authorization header conflicts if needed, but usually strictly not setting Content-Type
+      // lets browser set it with boundary.
+      // xhr.setRequestHeader("Authorization", `Bearer ${token}`); // If auth is needed later
 
       if (onProgress) {
         xhr.upload.onprogress = (event) => {
@@ -39,14 +46,23 @@ export const VideoApi = {
         } else {
           try {
             const errorData = JSON.parse(xhr.responseText);
-            reject(new Error(errorData.error || "Video upload failed"));
+            reject(
+              new Error(
+                errorData.error || `Upload failed with status ${xhr.status}`,
+              ),
+            );
           } catch (e) {
-            reject(new Error("Video upload failed with status " + xhr.status));
+            reject(new Error(`Video upload failed with status ${xhr.status}`));
           }
         }
       };
 
-      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.onerror = () =>
+        reject(
+          new Error("Network error during upload (check connection/CORS)"),
+        );
+      xhr.ontimeout = () => reject(new Error("Upload timed out"));
+      xhr.onabort = () => reject(new Error("Upload aborted by user"));
 
       xhr.send(formData);
     });

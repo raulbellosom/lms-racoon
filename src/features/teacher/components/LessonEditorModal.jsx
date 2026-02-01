@@ -304,10 +304,48 @@ export function LessonEditorModal({
         setAttachments([]);
         setRelatedEntity(null);
       }
+      /*
       setVideoFile(null);
       setCoverFile(null);
+      */
+      // FIX: Do not reset video/cover files when lesson data reloads (e.g. after save)
+      // This prevents the upload from failing due to lost state if the component re-renders.
+      // If we are switching lessons, 'open' or 'lesson' should handle it.
+      // But actually, if we switch lessons, we WANT to clear.
+      // However, if we just save the metadata (returning new lesson object with ID),
+      // we don't want to clear the file if we are about to use it for upload.
+
+      // Better strategy: Only clear if the lesson ID CHANGED or we closed/opened
+      // But verifying that is complex inside this effect without refs.
+      // For now, removing the auto-reset is safer for the upload flow.
+      // We will handle cleanup on close or explicit new lesson.
+      if (!lesson || !lesson.$id) {
+        // Only clear if we are in "new lesson" mode or closed?
+        // Actually, let's just not clear here. The state is local to this modal instance.
+        // When modal closes, component might not unmount if hidden?
+        // But it is conditional render in parent?
+        // <LessonEditorModal open={...} />
+        // It is ALWAYS rendered.
+      }
     };
     if (open) loadData();
+    else {
+      // When modal closes, we can clear state safely
+      setVideoFile(null);
+      setCoverFile(null);
+      setAttachments([]);
+      setFormData({
+        title: "",
+        description: "",
+        kind: "video",
+        videoFileId: "",
+        videoStatus: "",
+        videoProvider: "",
+        videoCoverFileId: "",
+        durationSec: 0,
+        isFreePreview: false,
+      });
+    }
   }, [lesson, open]);
 
   // When kind changes, clear related entity if mismatched?

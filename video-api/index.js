@@ -48,9 +48,15 @@ const startServer = async () => {
     await minioService.ensureBuckets();
 
     const HOST = "127.0.0.1";
-    app.listen(PORT, HOST, () => {
+    const server = app.listen(PORT, HOST, () => {
       console.log(`Video API running on ${HOST}:${PORT}`);
     });
+
+    // Increase timeout for large uploads (e.g. 10GB upload on slow connection)
+    // Default is 2 minutes (120000). Set to 30 minutes.
+    server.timeout = 30 * 60 * 1000;
+    server.keepAliveTimeout = 30 * 60 * 1000;
+    server.headersTimeout = 31 * 60 * 1000; // Must be > keepAliveTimeout
   } catch (error) {
     console.error("Failed to start Video API:", error);
     process.exit(1);

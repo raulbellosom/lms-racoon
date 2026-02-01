@@ -38,6 +38,12 @@ const upload = multer({
 // Upload video for a lesson
 router.post(
   "/:lessonId/video",
+  (req, res, next) => {
+    console.log(
+      `[Video] Incoming upload request for lesson ${req.params.lessonId}`,
+    );
+    next();
+  },
   upload.single("video"),
   videoController.uploadVideo,
 );
