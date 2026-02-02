@@ -9,11 +9,22 @@ import { useAuth } from "../../../app/providers/AuthProvider";
 export function usePushNotifications() {
   const { user } = useAuth().auth;
   const { preferences, updateSettings } = usePreferences();
-  const [permissionStatus, setPermissionStatus] = useState(
-    Notification.permission,
-  );
+  // Safe initialization
+  const [permissionStatus, setPermissionStatus] = useState(() => {
+    if (typeof Notification !== "undefined") {
+      return Notification.permission;
+    }
+    return "default"; // or 'denied' depending on fallback preference
+  });
 
   const subscribe = async (isManual = true) => {
+    // Safety check
+    if (typeof Notification === "undefined") {
+      console.warn("Notifications API not supported in this browser.");
+      if (isManual) alert("Tu navegador no soporta notificaciones.");
+      return;
+    }
+
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
     if (!vapidKey) {
       console.warn("VITE_FIREBASE_VAPID_KEY is missing.");
@@ -44,6 +55,12 @@ export function usePushNotifications() {
 
   useEffect(() => {
     if (!user) return;
+
+    // Safety check before accessing Notification
+    if (typeof Notification === "undefined") {
+      return;
+    }
+
     // Check permission on mount
     setPermissionStatus(Notification.permission);
 
