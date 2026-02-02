@@ -143,6 +143,7 @@ module.exports = async ({ req, res, log, error }) => {
                 // entityId: courseId,
                 dataJson: JSON.stringify({ entityId: courseId }),
               },
+              [sdk.Permission.read(sdk.Role.user(teacherId))],
             );
             log("Internal notification document created.");
           } catch (e) {
